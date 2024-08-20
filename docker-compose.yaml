@@ -1,0 +1,63 @@
+version: '3'
+services:
+    redis:
+        container_name: redis-lung
+        image: redis:alpine
+        restart: always
+        ports:
+            - '6379:6379'
+        command: redis-server --loglevel warning
+        volumes:
+            - ./docker-volumes/cache:/data
+    redis-commander:
+        container_name: redis-commander-lung
+        image: ghcr.io/joeferner/redis-commander:latest
+        restart: always
+        ports:
+            - '8081:8081'
+        environment:
+            - REDIS_HOSTS=local:redis:6379
+    postgresql-master:
+        container_name: postgresql-master-lung-container
+        image: 'docker.io/bitnami/postgresql:11-debian-10'
+        ports:
+            - '5400:5432'
+        volumes:
+            - 'postgresql_master_data:/bitnami/postgresql'
+        environment:
+            - POSTGRESQL_PGAUDIT_LOG=READ,WRITE
+            - POSTGRESQL_LOG_HOSTNAME=true
+            - POSTGRESQL_REPLICATION_MODE=master
+            - POSTGRESQL_REPLICATION_USER=repl_user
+            - POSTGRESQL_REPLICATION_PASSWORD=repl_password
+            - POSTGRESQL_USERNAME=admin
+            - POSTGRESQL_PASSWORD=admin
+            - POSTGRESQL_DATABASE=health-care
+            - ALLOW_EMPTY_PASSWORD=no
+    postgresql-slave:
+        container_name: postgresql-slave-lung-container
+        image: 'docker.io/bitnami/postgresql:11-debian-10'
+        ports:
+            - '5401:5432'
+        depends_on:
+            - postgresql-master
+        environment:
+            - POSTGRESQL_USERNAME=postgres
+            - POSTGRESQL_PASSWORD=postgres
+            - POSTGRESQL_DATABASE=health-care
+            - POSTGRESQL_MASTER_HOST=postgresql-master
+            - POSTGRESQL_PGAUDIT_LOG=READ
+            - POSTGRESQL_LOG_HOSTNAME=true
+            - POSTGRESQL_REPLICATION_MODE=slave
+            - POSTGRESQL_REPLICATION_USER=repl_user
+            - POSTGRESQL_REPLICATION_PASSWORD=repl_password
+            - POSTGRESQL_MASTER_PORT_NUMBER=5432
+    adminer:
+        container_name: adminer-lung
+        image: adminer
+        restart: always
+        ports:
+            - '9999:8080'
+volumes:
+    postgresql_master_data:
+        driver: local
