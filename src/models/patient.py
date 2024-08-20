@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING  # type: ignore
 from uuid import uuid4
 
+from regex import D
 from sqlalchemy import UUID, Column, ForeignKey, Integer, String, Text, event
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -9,9 +10,11 @@ from src.core.database.postgresql import Model
 if TYPE_CHECKING:
     from src.models.appointment_model import AppointmentModel
     from src.models.billing_model import BillingModel
+    from src.models.doctor_model import DoctorModel
     from src.models.user import UserModel
 else:
     UserModel = "UserModel"
+    DoctorModel = "DoctorModel"
 
 default_avatar = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSn5k7ItLSv5Rd7mdIOYQyPuvfr26Q5cdjk2AMGgw3wnBLmZ5LTOUsXh0jQ92RgRGx8G6g&usqp=CAU"
 
@@ -53,6 +56,9 @@ class PatientModel(Model):
     insurance_number: Mapped[str | None] = mapped_column(String, nullable=True)
 
     emergancy_contact_number: Mapped[str | None] = mapped_column(
+        String, nullable=True)
+
+    primay_care_doctor: Mapped[str | None] = mapped_column(
         String, nullable=True)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))

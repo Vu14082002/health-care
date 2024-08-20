@@ -8,7 +8,7 @@ from src.core.security.authentication import JsonWebToken
 from src.core.security.password import PasswordHandler
 from src.enum import (CACHE_ACCESS_TOKEN, CACHE_REFRESH_TOKEN,
                       KEY_CACHE_LOGOUT, ErrorCode)
-from src.helper import role
+from src.helper import role_repository
 from src.models.patient import PatientModel
 from src.models.user import UserModel
 from src.repositories import UserRepository

@@ -7,7 +7,7 @@ from src.core.exception import BadRequest, InternalServer
 from src.enum import ErrorCode
 from src.factory import Factory
 from src.helper.patient_helper import PatientHelper
-from src.helper.user import UserHelper
+from src.helper.user_repository import UserHelper
 from src.models.role import EnumRole, RoleModel
 from src.models.user import UserModel
 from src.schema.register import (RequestLoginSchema,
