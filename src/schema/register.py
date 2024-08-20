@@ -8,19 +8,19 @@ class RequestRegisterPatientSchema(BaseModel):
     first_name: str
     last_name: str
     date_of_birth: str
+    gender: Literal["male", "female", "other"] | None = "other"
     phone_number: str
     address: str
     nation: str
     occupation: str
     insurance_number: str | None = None
-    phone_number_urgent: str | None = None
-    gender: Literal["male", "female", "other"] | None = "other"
+    emergancy_contact_number: str | None = None
     password: str
 
 
 class ResponsePatientSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: str
+    id: int
     first_name: str
     last_name: str
     date_of_birth: str
@@ -36,9 +36,9 @@ class ResponsePatientSchema(BaseModel):
     updated_at: int = -1
     is_deleted: bool = False
 
-    @field_serializer('id')
-    def serialize_dt(self, identifier: UUID, _info):
-        return str(identifier)
+    # @field_serializer('id')
+    # def serialize_dt(self, identifier: UUID, _info):
+    #     return str(identifier)
 
 
 class RequestLoginSchema(BaseModel):

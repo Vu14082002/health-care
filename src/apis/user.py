@@ -11,7 +11,7 @@ from src.schema import RequestRegisterPatientSchema
 class RegisterApi(HTTPEndpoint):
     async def post(self, form_data: RequestRegisterPatientSchema):
         try:
-            user_helper = await Factory()().get_user_helper()
+            user_helper = await Factory().get_user_helper()
             user_saved = await user_helper.insert_user(form_data.model_dump())
             return user_saved
         except Exception as e:

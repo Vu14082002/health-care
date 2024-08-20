@@ -36,14 +36,13 @@ class UserHelper:
         if not PasswordHandler.verify(_user.password, plain_password=password):
             raise Unauthorized(msg="Password is incorrect",
                                error_code=ErrorCode.UNAUTHORIZED.name)
-
         role_name = _user.roles[0].name
 
         _patient: PatientModel = _user.patient
 
         token: TokenSchema = TokenSchema(**_patient.as_dict)
         token.role = role_name
-        token = self._gen_token(token.model_dump())
+        token = self._gen_token(token.model_dump())  # type:ignore
         await redis.set(token, phone, CACHE_ACCESS_TOKEN)
         return {"token": token}
 

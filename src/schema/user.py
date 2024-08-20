@@ -33,23 +33,24 @@ class QueryResponseSchema(BaseModel):
 
 
 class TokenSchema(BaseModel):
-    id: UUID
+    id: int
     first_name: str
     last_name: str
-    email: str | None
-    phone_number: str
-    address: str
-    avatar: str | None
-    date_of_birth: str
-    occupation: str
+    date_of_birth: str | None
     gender: str
+    phone_number: str
+    address: str | None
+    nation: str
+    avatar: str
+    occupation: str
     insurance_number: str | None
+    emergancy_contact_number: str | None
     role: str = ''
 
     class Config:
         populate_by_name = True
         from_attributes = True
 
-    @field_serializer('id')
-    def serialize_dt(self, id: UUID, _info):
-        return str(id)
+    # @field_serializer('id')
+    # def serialize_dt(self, id: UUID, _info):
+    #     return str(id)

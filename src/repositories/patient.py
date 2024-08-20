@@ -34,13 +34,13 @@ class PatientRepository(PostgresRepository[PatientModel]):
 
             # check email have been registered
 
-            where = destruct_where(self.model_class, {"email": data.email})
-            if where is not None:
-                exists_query = select(exists().where(where))
-                patient_exists = await self.session.scalar(exists_query)
-                if patient_exists:
-                    raise BadRequest(
-                        error_code=ErrorCode.EMAIL_HAVE_BEEN_REGISTERED.name, msg="Email have been registered")
+            # where = destruct_where(self.model_class, {"email": data.email})
+            # if where is not None:
+            #     exists_query = select(exists().where(where))
+            #     patient_exists = await self.session.scalar(exists_query)
+            #     if patient_exists:
+            #         raise BadRequest(
+            #             error_code=ErrorCode.EMAIL_HAVE_BEEN_REGISTERED.name, msg="Email have been registered")
 
             # find role patient
             query = select(RoleModel).where(RoleModel.name == "patient")

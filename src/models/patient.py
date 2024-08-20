@@ -23,8 +23,11 @@ def gen_uuid() -> str:
 class PatientModel(Model):
     __tablename__ = "patient"
 
-    id: Mapped[str] = mapped_column(
-        UUID, primary_key=True, autoincrement=False, default=gen_uuid())
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        autoincrement=True
+    )
 
     first_name: Mapped[str] = mapped_column(String, nullable=False)
 

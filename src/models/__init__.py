@@ -23,7 +23,7 @@ async def create_tables():
     engine = create_async_engine(config.POSTGRES_URL_MASTER, echo=True)
     async with engine.begin() as conn:
         try:
-            async def check_tables_and_data(connection):
+            def check_tables_and_data(connection):
                 inspector = inspect(connection)
                 appointment_table_exists = inspector.has_table(
                     'appointment', schema='public')

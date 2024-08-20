@@ -45,5 +45,5 @@ class LoginApi(HTTPEndpoint):
     async def post(self, form_data: RequestLoginSchema) -> Dict[str, Any]:
 
         user_helper: UserHelper = await Factory().get_user_helper()
-        _ = await user_helper.login(form_data.phone, form_data.password)
-        return {"message": "Login success"}
+        reponse_json = await user_helper.login(form_data.phone, form_data.password)
+        return reponse_json
