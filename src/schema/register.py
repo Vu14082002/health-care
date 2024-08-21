@@ -1,7 +1,10 @@
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, field_serializer
+from click import File
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
+
+from src.models.user import Role
 
 
 class RequestRegisterPatientSchema(BaseModel):
@@ -15,7 +18,10 @@ class RequestRegisterPatientSchema(BaseModel):
     occupation: str
     insurance_number: str | None = None
     emergancy_contact_number: str | None = None
-    password: str
+    password_hash: str = Field(alias="password")
+
+    class Config:
+        from_attributes = True
 
 
 class ResponsePatientSchema(BaseModel):

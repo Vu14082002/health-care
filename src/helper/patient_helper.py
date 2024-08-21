@@ -2,7 +2,7 @@ import logging
 
 from src.core.exception import BadRequest, InternalServer
 from src.enum import ErrorCode
-from src.models.patient import PatientModel
+from src.models.patient_model import PatientModel
 from src.repositories.patient_repository import PatientRepository
 from src.repositories.user import UserRepository
 from src.schema.register import (RequestRegisterPatientSchema,

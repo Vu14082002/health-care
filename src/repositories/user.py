@@ -4,7 +4,7 @@ from typing import Any, Dict
 from sqlalchemy import select
 
 from src.core.database.postgresql import PostgresRepository, Transactional
-from src.models.patient import PatientModel
+from src.models.patient_model import PatientModel
 from src.models.user import UserModel
 from src.repositories.global_func import destruct_where
 

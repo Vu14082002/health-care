@@ -6,16 +6,16 @@ from src.core import HTTPEndpoint
 from src.core.exception import BadRequest, InternalServer
 from src.enum import ErrorCode
 from src.factory import Factory
+from src.helper.doctor_helper import DoctorHelper
 from src.helper.patient_helper import PatientHelper
 from src.helper.user_repository import UserHelper
-from src.models.role import EnumRole, RoleModel
 from src.models.user import UserModel
 from src.schema.register import (RequestLoginSchema,
                                  RequestRegisterPatientSchema,
                                  ResponsePatientSchema)
 
 
-class RegisterApi(HTTPEndpoint):
+class PatientRegisterApi(HTTPEndpoint):
     async def post(self, form_data: RequestRegisterPatientSchema) -> Dict[str, Any]:
         try:
             patient_helper: PatientHelper = await Factory().get_patient_helper()
@@ -30,9 +30,9 @@ class RegisterApi(HTTPEndpoint):
                                  error_code=ErrorCode.SERVER_ERROR.name) from e
 
 
-class DoctorRegisterApi(HTTPEndpoint):
-    async def post(self, form_data: RequestRegisterPatientSchema) -> Dict[str, Any]:
-
+class DoctorPatientRegisterApi(HTTPEndpoint):
+    async def post(self, form_data: RequestRegisterPatientSchema):
+        docker_helper: DoctorHelper = await Factory().get_doctor_helper()
         return {"message": "Doctor register success"}
 
 

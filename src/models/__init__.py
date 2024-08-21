@@ -10,13 +10,23 @@ from src.config import config
 from src.core.database.postgresql import Model, get_session
 from src.core.database.postgresql.repository import Base
 from src.models.appointment_model import AppointmentModel
-from src.models.billing_model import BillingModel
+from src.models.dermatology_medical import DermatologyMedicalRecords
 from src.models.doctor_model import DoctorModel
 from src.models.inventory_model import InventoryModel
-from src.models.patient import PatientModel
-from src.models.role import EnumRole, RoleModel
+from src.models.medical_model import MedicalModel
+from src.models.patient_model import PatientModel
+from src.models.payment_model import PaymentModel
+from src.models.rating_model import RatingModel
 from src.models.user import UserModel
-from src.models.user_roles import UserRolesModel
+from src.models.working_schedule_model import WorkingScheduleModel
+
+
+async def manage_database():
+    engine = create_async_engine(config.POSTGRES_URL_MASTER, echo=True)
+    async with engine.begin() as conn:
+        _ = conn.execute(text("DROP DATABASE IF EXISTS health_care"))
+        _ = conn.execute(text("CREATE DATABASE health_care"))
+        _ = conn.commit()
 
 
 async def create_tables():
@@ -24,44 +34,17 @@ async def create_tables():
     async with engine.begin() as conn:
         try:
             def check_tables_and_data(connection):
-                inspector = inspect(connection)
-                appointment_table_exists = inspector.has_table(
-                    'appointment', schema='public')
-                bill_exists = inspector.has_table(
-                    'bill', schema='public')
-                doctor_table_exists = inspector.has_table(
-                    'doctor', schema='public')
-                inventory_table_exists = inspector.has_table(
-                    'inventory', schema='public')
-                patient_table_exist = inspector.has_table(
-                    'patient', schema='public')
-                role_table_exist = inspector.has_table(
-                    'role', schema='public')
-                user_table_exist = inspector.has_table(
-                    'user', schema='public')
-                user_roles_table_exists = inspector.has_table(
-                    'user_roles', schema='public')
-                tables = (appointment_table_exists, bill_exists, doctor_table_exists,
-                          inventory_table_exists, patient_table_exist, role_table_exist, user_table_exist, user_roles_table_exists)
-
-                # Check if any table does not exist
-                if False in tables:
-                    Base.metadata.create_all(connection)
-                    print("Tables created")
-                    # Create initial data if tables were created
-                    current_dir = os.getcwd()
-                    sql_file_path = os.path.join(current_dir, 'init.sql')
-                    with open(sql_file_path, encoding='utf-8', mode='r') as f:
-                        sql_script = f.read()
-                        statements = sql_script.split(';')
-                        for statement in statements:
-                            if statement.strip():
-                                connection.execute(text(statement))
-                        connection.commit()
-                    return True
-                else:
-                    return False
-
+                Base.metadata.create_all(connection)
+                # current_dir = os.getcwd()
+                # sql_file_path = os.path.join(current_dir, 'init.sql')
+                # with open(sql_file_path, encoding='utf-8', mode='r') as f:
+                #     sql_script = f.read()
+                #     statements = sql_script.split(';')
+                #     for statement in statements:
+                #         if statement.strip():
+                #             connection.execute(text(statement))
+                # connection.commit()
+                return True
             result = await conn.run_sync(check_tables_and_data)
             if result is False:
                 print("Tables already exist.")
@@ -71,4 +54,6 @@ async def create_tables():
         finally:
             await engine.dispose()
 
-asyncio.run(create_tables())
+if config.ENV == 'DB':
+    asyncio.run(manage_database())
+    asyncio.run(create_tables())

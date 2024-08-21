@@ -7,11 +7,9 @@ from src.core.database.postgresql import PostgresRepository, Transactional
 from src.core.exception import BadRequest, InternalServer
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
-from src.models import patient
-from src.models.patient import PatientModel
-from src.models.role import RoleModel
-from src.models.user import UserModel
-from src.models.user_roles import UserRolesModel
+from src.models import patient_model
+from src.models.patient_model import PatientModel
+from src.models.user import Role, UserModel
 from src.repositories.global_func import destruct_where
 from src.schema.register import RequestRegisterPatientSchema
 
@@ -32,38 +30,12 @@ class PatientRepository(PostgresRepository[PatientModel]):
                 raise BadRequest(msg="User have been registered",
                                  error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name)
 
-            # check email have been registered
-
-            # where = destruct_where(self.model_class, {"email": data.email})
-            # if where is not None:
-            #     exists_query = select(exists().where(where))
-            #     patient_exists = await self.session.scalar(exists_query)
-            #     if patient_exists:
-            #         raise BadRequest(
-            #             error_code=ErrorCode.EMAIL_HAVE_BEEN_REGISTERED.name, msg="Email have been registered")
-
-            # find role patient
-            query = select(RoleModel).where(RoleModel.name == "patient")
-
-            result_role = await self.session.execute(query)
-            # role model process
-            role_model: RoleModel | None = result_role.scalar_one_or_none()
-
-            if role_model is None:
-                raise InternalServer(
-                    msg="Role patient not found", error_code=ErrorCode.SERVER_ERROR.name)
-
-            # user_model process
-            password_hash = PasswordHandler.hash(data.password)
+            password_hash = PasswordHandler.hash(data.password_hash)
             user_model = UserModel()
-            user_model.phone = data.phone_number
-            user_model.password = password_hash
-            user_model.roles.append(role_model)
-
-            # patient model process
-
-            patient_data = data.model_dump(exclude={"password"})
-
+            user_model.phone_number = data.phone_number
+            user_model.password_hash = password_hash
+            user_model.role = Role.PATIENT.value
+            patient_data = data.model_dump(exclude={"password_hash"})
             patient_model = PatientModel(**patient_data)
             patient_model.user = user_model
 

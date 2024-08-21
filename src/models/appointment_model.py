@@ -9,11 +9,8 @@ from src.core.database.postgresql import Model
 
 if TYPE_CHECKING:
     from src.models.doctor_model import DoctorModel
-    from src.models.patient import PatientModel
-
-else:
-    PatientModel = "PatientModel"
-    DoctorModel = "DoctorModel"
+    from src.models.patient_model import PatientModel
+    from src.models.payment_model import PaymentModel
 
 
 class AppointmentModelStatus(enum.Enum):
@@ -21,6 +18,11 @@ class AppointmentModelStatus(enum.Enum):
     APPROVED = "approved"
     REJECTED = "rejected"
     COMPLETED = "completed"
+
+
+class AppointmentModelTypeStatus(enum.Enum):
+    HOME = "home"
+    CLINIC = "clinic"
 
 
 class AppointmentModel(Model):
@@ -43,8 +45,14 @@ class AppointmentModel(Model):
 
     status: Mapped[str] = mapped_column(
         String(50), nullable=False, default=AppointmentModelStatus.PENDING.value)
+    type_status: Mapped[str] = mapped_column(
+        String(50), nullable=False, default=AppointmentModelTypeStatus.CLINIC.value)
 
     patient: Mapped["PatientModel"] = relationship(
         "PatientModel", back_populates="appointments")
+
     doctor: Mapped["DoctorModel"] = relationship(
         "DoctorModel", back_populates="appointments")
+
+    payment: Mapped["PaymentModel"] = relationship(
+        "PaymentModel", back_populates="appointment")

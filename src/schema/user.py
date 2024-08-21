@@ -19,7 +19,7 @@ class QuerySchema(BaseModel):
 
 
 class QueryResponseItemSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
     id: int
     username: str

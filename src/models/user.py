@@ -1,66 +1,47 @@
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING, List
+from enum import Enum as PyEnum
+from telnetlib import DO
+from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import Column, Enum, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
-from src.models.user_roles import UserRolesModel
 
 if TYPE_CHECKING:
-    from src.models.patient import PatientModel
-    from src.models.role import RoleModel
-    from src.models.user_roles import UserRolesModel
+    from src.models.doctor_model import DoctorModel
+    from src.models.patient_model import PatientModel
 else:
+    DoctorModel = "DoctorModel"
     PatientModel = "PatientModel"
-    RoleModel = "RoleModel"
-    UserRolesModel = "UserRolesModel"
 
 
-def get_current_time() -> int:
-    """Returns the current UTC timestamp as an integer."""
-    return int(datetime.now(timezone.utc).timestamp())
+class Role(PyEnum):
+    ADMIN = "ADMIN"
+    DOCTOR = "DOCTOR"
+    PATIENT = "PATIENT"
 
 
 class UserModel(Model):
     __tablename__ = "user"
 
     id: Mapped[int] = mapped_column(
-        name="id",
-        type_=Integer,
+        Integer,
         primary_key=True,
         autoincrement=True
     )
 
-    phone: Mapped[str] = mapped_column(
-        name="username",
-        type_=String,
-        nullable=False,
-        unique=True
-    )
+    phone_number: Mapped[str] = mapped_column(
+        String, nullable=False, unique=True)
 
-    password: Mapped[str] = mapped_column(
-        name="password",
-        type_=String,
-        nullable=False
-    )
+    password_hash: Mapped[str] = mapped_column(String, nullable=False)
 
-    roles: Mapped[List["RoleModel"]] = relationship(
-        "RoleModel",
-        secondary="user_roles",
-        back_populates="users",
-        uselist=True,
-        lazy="joined"
-    )
+    role: Mapped[String] = mapped_column(
+        String, nullable=False, default=Role.PATIENT.value)
 
-    user_roles: Mapped[List["UserRolesModel"]] = relationship(
-        "UserRolesModel",
-        back_populates="user"
-    )
-
+    doctor: Mapped["DoctorModel"] = relationship(
+        "DoctorModel", uselist=False, back_populates="user")
     patient: Mapped["PatientModel"] = relationship(
-        "PatientModel",
-        back_populates="user",
-        uselist=False,
-        lazy="joined"
-    )
+        "PatientModel", uselist=False, back_populates="user")
+
+    def __repr__(self):
+        return f"<User(id={self.id}, phone_number='{self.phone_number}', role='{self.role}')>"
