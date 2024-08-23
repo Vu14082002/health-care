@@ -11,7 +11,7 @@ from src.enum import (CACHE_ACCESS_TOKEN, CACHE_REFRESH_TOKEN,
 from src.models.patient_model import PatientModel
 from src.models.user import UserModel
 from src.repositories import UserRepository
-from src.schema.register import RequestLoginSchema
+from src.schema.register import RequestAdminRegisterSchema, RequestLoginSchema
 from src.schema.user import TokenSchema
 
 redis = RedisBackend()
@@ -23,6 +23,9 @@ class UserHelper:
         self.user_repository = user_repository
         self.jwt = JsonWebToken(config.ACCESS_TOKEN,
                                 config.REFRESH_TOKEN, config.ALGORITHM)
+
+    async def register_admin(self, data: RequestAdminRegisterSchema):
+        return await self.user_repository.register_admin(data)
 
     async def insert_user(self, user: Dict[str, Any]):
         return await self.user_repository.insert_user(user)

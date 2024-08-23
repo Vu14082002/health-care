@@ -1,21 +1,18 @@
-FROM python:3.8.13-alpine3.16
-RUN apk update && apk add --no-cache  tzdata git make  build-base
+# Use an official Python runtime as a parent image
+FROM python:3.10
 
-# RUN apk upgrade -U \
-#     && apk add --no-cache -u ca-certificates libva-intel-driver mpc1-dev libffi-dev build-base supervisor python3-dev build-base linux-headers pcre-dev curl busybox-extras \
-#     && rm -rf /tmp/* /var/cache/* 
+# Set the working directory in the container
+WORKDIR /app
 
-RUN apk add gcc
-RUN apk add libffi-dev
+# Copy the current directory contents into the container at /app
+COPY . /app
 
-RUN pip install gunicorn
+# Install any needed dependencies specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY requirements.txt /
-RUN pip --no-cache-dir install --upgrade pip setuptools
-RUN pip --no-cache-dir install -r requirements.txt
-RUN mkdir -p /webapps
+# Make port 8080 available to the world outside this container
+EXPOSE 5005
 
-COPY conf/supervisor/worker.conf /etc/supervisord.conf
-COPY . /webapps
-WORKDIR /webapps
 
+# Run app.py when the container launches
+CMD ["python", "main.py"]

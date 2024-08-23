@@ -13,3 +13,7 @@
 -   Update to database: `alembic upgrade head`
 
 # lung-heatlh-care
+
+deploy
+docker build -t sherlockvufullsnack/lung-health_care-api:latest .
+docker push sherlockvufullsnack/lung-health_care-api:latest

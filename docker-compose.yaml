@@ -1,5 +1,34 @@
 version: '3'
 services:
+    health_care_python_service:
+        container_name: health_care-python-service
+        build:
+            context: .
+            dockerfile: Dockerfile
+        ports:
+            - '5005:5005'
+        volumes:
+            - .:/app
+        # environment:
+        #     - ENV=ENV
+        #     - POSTGRES_URL_MASTER=${POSTGRES_URL_MASTER}
+        #     - POSTGRES_URL_SLAVE=${POSTGRES_URL_SLAVE}
+        #     - BROKER_URL=${BROKER_URL}
+        #     - REDIS_URL=${REDIS_URL:-redis://localhost:6379/0}
+        #     - PORT=${PORT}
+        #     - ACCESS_TOKEN=${ACCESS_TOKEN}
+        #     - REFRESH_TOKEN=${REFRESH_TOKEN}
+        #     - ALGORITHM=${ALGORITHM}
+        #     - PREFIX_URL=${PREFIX_URL}
+        #     - ACCOUNT_SID=${ACCOUNT_SID}
+        #     - AUTH_TOKEN=${AUTH_TOKEN}
+        depends_on:
+            - postgresql-master
+            - postgresql-slave
+            - redis
+            - redis-commander
+            - adminer
+
     redis:
         container_name: redis-lung
         image: redis:alpine
@@ -9,6 +38,7 @@ services:
         command: redis-server --loglevel warning
         volumes:
             - ./docker-volumes/cache:/data
+
     redis-commander:
         container_name: redis-commander-lung
         image: ghcr.io/joeferner/redis-commander:latest
@@ -17,6 +47,7 @@ services:
             - '8081:8081'
         environment:
             - REDIS_HOSTS=local:redis:6379
+
     postgresql-master:
         container_name: postgresql-master-lung-container
         image: 'docker.io/bitnami/postgresql:11-debian-10'
@@ -32,8 +63,9 @@ services:
             - POSTGRESQL_REPLICATION_PASSWORD=repl_password
             - POSTGRESQL_USERNAME=admin
             - POSTGRESQL_PASSWORD=admin
-            - POSTGRESQL_DATABASE=health-care
+            - POSTGRESQL_DATABASE=health_care
             - ALLOW_EMPTY_PASSWORD=no
+
     postgresql-slave:
         container_name: postgresql-slave-lung-container
         image: 'docker.io/bitnami/postgresql:11-debian-10'
@@ -44,7 +76,7 @@ services:
         environment:
             - POSTGRESQL_USERNAME=postgres
             - POSTGRESQL_PASSWORD=postgres
-            - POSTGRESQL_DATABASE=health-care
+            - POSTGRESQL_DATABASE=health_care
             - POSTGRESQL_MASTER_HOST=postgresql-master
             - POSTGRESQL_PGAUDIT_LOG=READ
             - POSTGRESQL_LOG_HOSTNAME=true
@@ -52,12 +84,14 @@ services:
             - POSTGRESQL_REPLICATION_USER=repl_user
             - POSTGRESQL_REPLICATION_PASSWORD=repl_password
             - POSTGRESQL_MASTER_PORT_NUMBER=5432
+
     adminer:
         container_name: adminer-lung
         image: adminer
         restart: always
         ports:
             - '9999:8080'
+
 volumes:
     postgresql_master_data:
         driver: local

@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional
 from uuid import UUID
 
 from click import File
@@ -44,6 +44,31 @@ class RequestRegisterDoctorSchema(BaseModel):
         from_attributes = True
 
 
+class RequestAdminRegisterSchema(BaseModel):
+    phone_number: str
+    password_hash: str = Field(alias="password")
+
+
+class ReponseDoctorSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
+
+    id: int
+    first_name: str
+    last_name: str
+    phone_number: str
+    date_of_birth: str
+    gender: str = Field(default="other")
+    specialization: str
+    experience_years: int
+    insurance_number: Optional[str] = None
+    certifications: Optional[str] = None
+    hospital_address_work: Optional[str] = None
+    address: str
+    avatar: str
+    description: Optional[str] = None
+    nation: str
+
+
 class ResponsePatientSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -58,6 +83,15 @@ class ResponsePatientSchema(BaseModel):
     occupation: str
     insurance_number: str | None = None
     emergancy_contact_number: str | None = None
+    created_at: int = -1
+    updated_at: int = -1
+    is_deleted: bool = False
+
+
+class ReponseAdinSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    phone_number: str
     created_at: int = -1
     updated_at: int = -1
     is_deleted: bool = False

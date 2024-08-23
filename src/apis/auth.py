@@ -10,8 +10,10 @@ from src.helper.doctor_helper import DoctorHelper
 from src.helper.patient_helper import PatientHelper
 from src.helper.user_repository import UserHelper
 from src.models.user import UserModel
-from src.schema.doctor_schema import ReponseGetAllDoctorsSchame, ReponseDoctorSchema
-from src.schema.register import (RequestLoginSchema,
+from src.schema.doctor_schema import ReponseGetAllDoctorsSchame
+from src.schema.register import (ReponseAdinSchema, ReponseDoctorSchema,
+                                 RequestAdminRegisterSchema,
+                                 RequestLoginSchema,
                                  RequestRegisterDoctorSchema,
                                  RequestRegisterPatientSchema,
                                  ResponsePatientSchema)
@@ -41,8 +43,11 @@ class DoctorPatientRegisterApi(HTTPEndpoint):
 
 
 class AdminRegisterApi(HTTPEndpoint):
-    async def post(self, form_data: RequestRegisterPatientSchema) -> Dict[str, Any]:
-        return {"message": "Admin register success"}
+    async def post(self, form_data: RequestAdminRegisterSchema):
+        _user_helper: UserHelper = await Factory().get_user_helper()
+        _result = await _user_helper.register_admin(form_data)
+        _reponse = ReponseAdinSchema(**_result.as_dict)
+        return _reponse.model_dump(mode="json")
 
 
 class LoginApi(HTTPEndpoint):
