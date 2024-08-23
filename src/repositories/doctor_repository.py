@@ -16,7 +16,7 @@ from src.schema.register import RequestRegisterDoctorSchema
 
 class DoctorRepository(PostgresRepository[DoctorModel]):
 
-    async def get_all(self, skip: int = 0, limit: int = 10, join_: set[str] | None = None, where: Optional[Dict[str, Any]] = None, order_by: Optional[Dict[str, str]] = None) -> list[DoctorModel]:
+    async def get_all(self, skip: int = 0, limit: int = 10, join_: set[str] | None = None, where: Dict[str, Any] | None = None, order_by: Dict[str, str] | None = None) -> list[DoctorModel]:
         if where is None:
             where = {}
         if order_by is None:
@@ -45,7 +45,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 "phone_number": data.phone_number})
             if where is None:
                 raise BadRequest(
-                    ErrorCode.INVALID_PARAMETER.name, msg="Invalid parameter")
+                    error_code=ErrorCode.INVALID_PARAMETER.name, msg="Invalid parameter")
 
             exists_query = select(exists().where(where))
 

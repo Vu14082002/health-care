@@ -11,7 +11,7 @@ routes = [
     RouteSwagger("/auth/patient/register", PatientRegisterApi,
                  methods=["POST"], tags=["PATIENT"]),
     RouteSwagger("/auth/doctor/register", DoctorPatientRegisterApi,
-                 methods=["POST"], tags=["DOCOTR"]),
+                 methods=["POST"], tags=["DOCTOR"]),
     RouteSwagger("/auth/admin/register", AdminRegisterApi,
                  tags=["ADMIN"]),
     RouteSwagger("/auth/login", LoginApi,
@@ -19,5 +19,5 @@ routes = [
 
     # Doctor api
     RouteSwagger("/doctor", DoctorApi,
-                 methods=["GET"], tags=["Doctor,PATIENT,ADMIN"]),
+                 methods=["GET"], tags=["DOCTOR,PATIENT,ADMIN"]),
 ]

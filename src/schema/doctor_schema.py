@@ -7,6 +7,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class RequestGetAllDoctorsSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
+    key_word: str | None = None
+    phone_number: str | None = None
     current_page: Optional[int] = Field(default=1)
     page_size: Optional[int] = Field(default=10)
 

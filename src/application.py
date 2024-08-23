@@ -24,8 +24,9 @@ from src.swagger import SwaggerUI
 schemas = SchemaGenerator(
     {
         "openapi": "3.0.0",
-        "info": {"title": "Lung  health Care", "version": "1.0"},
-        "servers": [{"url": "/" if config.ENV == "DEV" else config.PREFIX_URL}],
+        "info": {"title": "Health Care", "version": "1.0"},
+        # "servers": [{"url": "/" if config.ENV == "DEV" else config.PREFIX_URL}],
+        "servers": [{"url": "/"}, {"url": "/" if config.ENV == "DEV" else config.PREFIX_URL}],
         "components": {
             "securitySchemes": {
                 "bearerAuth": {
