@@ -21,8 +21,7 @@ class UserHelper:
 
     def __init__(self, user_repository: UserRepository) -> None:
         self.user_repository = user_repository
-        self.jwt = JsonWebToken(config.ACCESS_TOKEN,
-                                config.REFRESH_TOKEN, config.ALGORITHM)
+        self.jwt = JsonWebToken()
 
     async def register_admin(self, data: RequestAdminRegisterSchema):
         return await self.user_repository.register_admin(data)

@@ -10,7 +10,6 @@ from src.helper.doctor_helper import DoctorHelper
 from src.helper.patient_helper import PatientHelper
 from src.helper.user_repository import UserHelper
 from src.models.user import UserModel
-from src.schema.doctor_schema import ReponseGetAllDoctorsSchame
 from src.schema.register import (ReponseAdinSchema, ReponseDoctorSchema,
                                  RequestAdminRegisterSchema,
                                  RequestLoginSchema,

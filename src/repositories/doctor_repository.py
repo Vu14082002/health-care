@@ -22,22 +22,18 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         if order_by is None:
             order_by = {"created_at": "desc"}
         try:
-            # condition: Any | None = destruct_where(
-            #     self.model_class, where)
-            # order_expressions: List[Any] = process_orderby(
-            #     self.model_class, order_by)
-            # query = select(self.model_class)
-
-            # if condition is not None:
-            #     query = query.where(condition)
-            # query = query.order_by(
-            #     *order_expressions).offset(skip).limit(limit)
-            # result = await self.session.execute(query)
-
-            # data: List[DoctorModel] = list(result.scalars().all())
-            # return data
-            doctors: list[DoctorModel] = await super().orm_get_all(skip, limit, join_, where, order_by)
-            return doctors
+            condition: Any | None = destruct_where(
+                self.model_class, where)
+            order_expressions: List[Any] = process_orderby(
+                self.model_class, order_by)
+            query = select(self.model_class)
+            if condition is not None:
+                query = query.where(condition)
+            query = query.order_by(
+                *order_expressions).offset(skip).limit(limit)
+            result = await self.session.execute(query)
+            data: List[DoctorModel] = list(result.scalars().all())
+            return data
         except Exception as e:
             log.error(e)
             raise e
@@ -71,3 +67,12 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         except Exception as e:
             log.error(e)
             raise e
+
+    async def count_record(self, where: dict[str, Any] | None = None):
+        where_condition = destruct_where(
+            self.model_class, where if where is not None else {})
+        if where_condition is None:
+            query = select(self.model_class)
+        else:
+            query = select(self.model_class).where(where_condition)
+        return await super()._count(query)

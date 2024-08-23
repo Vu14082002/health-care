@@ -1,9 +1,8 @@
 import pickle
-from typing import Any
-
-import redis.asyncio as aioredis
 import ujson
 
+from typing import Any
+import redis.asyncio as aioredis
 from src.config import config
 from src.core.cache.base import BaseBackend
 
@@ -15,7 +14,6 @@ class RedisBackend(BaseBackend):
         result = await redis.get(key)
         if not result:
             return
-
         try:
             return ujson.loads(result.decode("utf8"))
         except UnicodeDecodeError:
@@ -32,3 +30,7 @@ class RedisBackend(BaseBackend):
     async def delete_startswith(self, value: str) -> None:
         async for key in redis.scan_iter(f"{value}::*"):
             await redis.delete(key)
+
+    async def delete(self, key: str) -> None:
+        print("Deleting key: ", key)
+        await redis.delete(key)

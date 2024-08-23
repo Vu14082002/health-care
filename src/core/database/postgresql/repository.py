@@ -1,8 +1,11 @@
+# -*- coding: utf-8 -*-
 from datetime import datetime, timezone
 from functools import reduce
+from operator import and_
 from typing import Any, Generic, Type, TypeVar
 
-from sqlalchemy import Boolean, Integer, Select, String, event, select
+from sqlalchemy import (Boolean, Integer, Select, String, and_, asc, between,
+                        desc, event, or_, select)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column
 from sqlalchemy.sql import func
@@ -32,7 +35,12 @@ class PostgresRepository(Generic[ModelType]):
         return model
 
     async def get_all(
-        self, skip: int = 0, limit: int = 100, join_: set[str] | None = None
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        join_: set[str] | None = None,
+        where: dict = None,
+        order_by: tuple[str, str] | None = None,
     ) -> list[ModelType]:
         """
         Returns a list of model instances.
@@ -40,14 +48,55 @@ class PostgresRepository(Generic[ModelType]):
         :param skip: The number of records to skip.
         :param limit: The number of record to return.
         :param join_: The joins to make.
+        :param where: The conditions for the WHERE clause.
         :return: A list of model instances.
         """
         query = self._query(join_)
         query = query.offset(skip).limit(limit)
 
+        if where is not None:
+            conditions = []
+            for k, v in where.items():
+                if k != "$or":
+                    column = getattr(self.model_class, k)
+                    if isinstance(v, dict):
+                        gt = v.get("$gt")
+                        lt = v.get("$lt")
+                        _or = v.get("$or")
+                        nen = v.get("$ne")
+                        if gt is not None and lt is not None:
+                            conditions.append(between(column, gt, lt))
+                        elif gt is not None:
+                            conditions.append(column > gt)
+                        elif lt is not None:
+                            conditions.append(column < lt)
+                        if _or is not None:
+                            conditions.append(or_(*[column == i for i in _or]))
+                        if nen is not None:
+                            conditions.append(column != nen)
+                    else:
+                        conditions.append(column == v)
+                else:
+                    _or = v
+                    or_conditions = []
+                    for or_condition in _or:
+                        for k, v in or_condition.items():
+                            column = getattr(self.model_class, k)
+                            or_conditions.append(column == v)
+                    conditions.append(or_(*or_conditions))
+
+            # Kết hợp các điều kiện bằng `and_`
+            query = query.where(and_(*conditions))
+
+        if order_by is not None:
+            column, direction = order_by
+            if direction.lower() == "desc":
+                query = query.order_by(desc(getattr(self.model_class, column)))
+            else:
+                query = query.order_by(asc(getattr(self.model_class, column)))
+
         if join_ is not None:
             return await self.all_unique(query)
-
         return await self._all(query)
 
     async def get_by(
@@ -82,7 +131,24 @@ class PostgresRepository(Generic[ModelType]):
         :param model: The model to delete.
         :return: None
         """
-        self.session.delete(model)
+        await self.session.delete(model)
+
+    async def update(self, model: ModelType, attributes: dict[str, Any]) -> ModelType:
+        """
+        Updates the model.
+
+        :param model: The model to update.
+        :param attributes: The attributes to update the model with.
+        :return: The updated model instance.
+        """
+        for key, value in attributes.items():
+            if hasattr(model, key):
+                setattr(model, key, value)
+
+        self.session.add(model)
+        await self.session.commit()
+
+        return model
 
     def _query(
         self,
@@ -192,6 +258,7 @@ class PostgresRepository(Generic[ModelType]):
         :param value: The value to filter by.
         :return: The filtered query.
         """
+
         return query.where(getattr(self.model_class, field) == value)
 
     def _maybe_join(self, query: Select, join_: set[str] | None = None) -> Select:
@@ -258,6 +325,10 @@ class Model(Base):
         onupdate=int(datetime.now(timezone.utc).timestamp())
     )
     is_deleted = mapped_column(name="is_deleted", type_=Boolean, default=False)
+
+    @property
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
     @property
     def as_dict(self):

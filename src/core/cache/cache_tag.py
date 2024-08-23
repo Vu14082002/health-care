@@ -2,5 +2,8 @@ from enum import Enum
 
 
 class CacheTag(Enum):
-    GET_USER_LIST = "get_user_list"
-    GET_BOOK_LIST = "get_book_list"
+    GET_HEALTH_CHECK = "get_health_check"
+    GET_USER_INFO = "get_user_info"
+    GET_CATEGORIES = "get_categories"
+    GET_HISTORY = "get_chat_history"
+    GET_QUESTION = "get_question"

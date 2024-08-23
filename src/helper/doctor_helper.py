@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 
 from src.models.doctor_model import DoctorModel
 from src.repositories.doctor_repository import DoctorRepository
-from src.schema.doctor_schema import ReponseGetAllDoctorsSchame
+from src.schema.doctor_schema import DoctorSchema, ReponseGetAllDoctorsSchema
 from src.schema.register import RequestRegisterDoctorSchema
 
 
@@ -13,16 +13,20 @@ class DoctorHelper:
     def __init__(self, *, doctor_repository: DoctorRepository):
         self.doctor_repository = doctor_repository
 
-    async def get_all_doctor(self, skip: int = 0, limit: int = 10, join_: set[str] | None = None, where: dict[str, Any] | None = None, order_by: dict[str, str] | None = None) -> ReponseGetAllDoctorsSchame:
+    async def get_all_doctor(self, current_page: int = 1, page_size: int = 10, join_: set[str] | None = None, where: dict[str, Any] | None = None, order_by: dict[str, str] | None = None):
         try:
+            skip = (current_page - 1) * page_size
+            limit = page_size
             _doctors: list[DoctorModel] = await self.doctor_repository.get_all(skip, limit, join_, where, order_by)
-            current_page = math.ceil(skip/limit) + 1
-            total_page = 10
-            page_size = limit
-            data_respone: ReponseGetAllDoctorsSchame = ReponseGetAllDoctorsSchame(
-                data=_doctors, current_page=current_page, total_page=total_page, page_size=page_size)  # type: ignore
 
-            return data_respone
+            count_record = await self.doctor_repository.count_record(where)
+
+            total_page = math.ceil(count_record / limit)
+
+            items = [DoctorSchema(**doctor.as_dict) for doctor in _doctors]
+            result = ReponseGetAllDoctorsSchema(
+                items=items, current_page=current_page, page_size=page_size, total_page=total_page)
+            return result
         except Exception as e:
             raise e
 

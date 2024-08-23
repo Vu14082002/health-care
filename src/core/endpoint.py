@@ -1,26 +1,20 @@
 from __future__ import annotations
-
+from starlette.endpoints import HTTPEndpoint as StarletteHTTPEndpoint
+from starlette.requests import Request
+from starlette.responses import Response, JSONResponse
+from starlette.concurrency import run_in_threadpool
+from pydantic import BaseModel
+from src.core.exception import BadRequest, BaseException
+from src.core import logger
+from src.core.security import Authorization
+from pydash import get
+import sentry_sdk
+import typing
 import asyncio
 import functools
 import inspect
-import traceback
-import typing
-
-import sentry_sdk
 import ujson
-from pydantic import BaseModel
-from pydash import get
-from starlette.concurrency import run_in_threadpool
-from starlette.endpoints import HTTPEndpoint as StarletteHTTPEndpoint
-from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
-
-from src.core import logger
-from src.core.cache.redis_backend import RedisBackend
-from src.core.exception import BadRequest, BaseException
-from src.core.security import Authorization
-
-redis = RedisBackend()
+import traceback
 
 
 def is_async_callable(obj: typing.Any) -> bool:
@@ -118,8 +112,7 @@ class HTTPEndpoint(StarletteHTTPEndpoint):
                         mode="json"
                     )
                 response = JSONResponse(
-                    content={"data": response,
-                             "errors": None, "error_code": None},
+                    content={"data": response, "errors": None, "error_code": None},
                     status_code=200,
                 )
 

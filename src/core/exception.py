@@ -2,7 +2,7 @@ from src.enum import ErrorCode
 
 
 class BaseException(Exception):
-    def __init__(self, *args: object, msg="") -> None:
+    def __init__(self, msg="", *args: object) -> None:
         super().__init__(*args)
         self.msg = msg
         self.status = 400
@@ -13,26 +13,26 @@ class BaseException(Exception):
 class BadRequest(BaseException):
     def __init__(
         self,
-        *args: object,
         msg="Bad request",
-        errors=None,
+        errors={},
         error_code=ErrorCode.BAD_REQUEST.name,
+        *args: object
     ) -> None:
         super().__init__(msg, *args)
-        self.errors = {} if errors is None else errors
+        self.errors = errors
         self.error_code = error_code
 
 
 class Forbidden(BaseException):
     def __init__(
         self,
-        *args: object,
         msg="Forbidden",
-        errors=None,
+        errors={},
         error_code=ErrorCode.FORBIDDEN.name,
+        *args: object
     ) -> None:
         super().__init__(msg, *args)
-        self.errors = {} if errors is None else errors
+        self.errors = errors
         self.status = 403
         self.error_code = error_code
 
@@ -40,13 +40,13 @@ class Forbidden(BaseException):
 class NotFound(BaseException):
     def __init__(
         self,
-        *args: object,
         msg="NotFound",
-        errors=None,
+        errors={},
         error_code=ErrorCode.NOT_FOUND.name,
+        *args: object
     ) -> None:
         super().__init__(msg, *args)
-        self.errors = {} if errors is None else errors
+        self.errors = errors
         self.status = 404
         self.error_code = error_code
 
@@ -54,9 +54,9 @@ class NotFound(BaseException):
 class MethodNotAllow(BaseException):
     def __init__(
         self,
-        *args: object,
         msg="Method not allow",
         error_code=ErrorCode.METHOD_NOT_ALLOW.name,
+        *args: object
     ) -> None:
         super().__init__(msg, *args)
         self.status = 405
@@ -66,14 +66,13 @@ class MethodNotAllow(BaseException):
 class ConflictError(BaseException):
     def __init__(
         self,
-        *args: object,
         msg="Conflict",
-        errors=None,
+        errors={},
         error_code=ErrorCode.CONFLICT.name,
-
+        *args: object
     ) -> None:
         super().__init__(msg, *args)
-        self.errors = {} if errors is None else errors
+        self.errors = errors
         self.status = 409
         self.error_code = error_code
 
@@ -81,13 +80,13 @@ class ConflictError(BaseException):
 class InternalServer(BaseException):
     def __init__(
         self,
-        *args: object,
         msg="Internal server error",
-        errors=None,
+        errors={},
         error_code=ErrorCode.SERVER_ERROR.name,
+        *args: object
     ) -> None:
         super().__init__(msg, *args)
-        self.errors = {} if errors is None else errors
+        self.errors = errors
         self.status = 500
         self.error_code = error_code
 
@@ -95,13 +94,13 @@ class InternalServer(BaseException):
 class Unauthorized(BaseException):
     def __init__(
         self,
-        *args: object,
         msg="Unauthorized",
-        errors=None,
+        errors={},
         error_code=ErrorCode.UNAUTHORIZED.name,
+        *args: object
     ) -> None:
         super().__init__(msg, *args)
-        self.errors = {} if errors is None else errors
+        self.errors = errors
         self.status = 401
         self.error_code = error_code
 
@@ -109,12 +108,12 @@ class Unauthorized(BaseException):
 class SignatureVerifyFail(BaseException):
     def __init__(
         self,
-        *args: object,
         msg="Signature verify fail",
-        errors=None,
+        errors={},
         error_code=ErrorCode.SIGNATURE_VERIFY_FAIL.name,
+        *args: object
     ) -> None:
         super().__init__(msg, *args)
-        self.errors = {} if errors is None else errors
+        self.errors = errors
         self.status = 409
         self.error_code = error_code

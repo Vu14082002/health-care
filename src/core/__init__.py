@@ -1,2 +1,2 @@
 from .logger import logger
-from .enpoint import HTTPEndpoint
+from .endpoint import HTTPEndpoint
