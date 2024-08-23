@@ -1,11 +1,17 @@
 import logging as log
 from typing import Any, Dict, List, Optional, Sequence, Union
 
-from sqlalchemy import select
+from numpy import where
+from sqlalchemy import exists, insert, select
 
 from src.core.database.postgresql import PostgresRepository, Transactional
+from src.core.exception import BadRequest
+from src.core.security.password import PasswordHandler
+from src.enum import ErrorCode
 from src.models.doctor_model import DoctorModel
+from src.models.user import Role, UserModel
 from src.repositories.global_func import destruct_where, process_orderby
+from src.schema.register import RequestRegisterDoctorSchema
 
 
 class DoctorRepository(PostgresRepository[DoctorModel]):
@@ -32,6 +38,36 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             # return data
             doctors: list[DoctorModel] = await super().orm_get_all(skip, limit, join_, where, order_by)
             return doctors
+        except Exception as e:
+            log.error(e)
+            raise e
+
+    async def insert(self, data: RequestRegisterDoctorSchema):
+        try:
+            # check if user have been registered
+            where = destruct_where(UserModel, {
+                "phone_number": data.phone_number})
+            if where is None:
+                raise BadRequest(
+                    ErrorCode.INVALID_PARAMETER.name, msg="Invalid parameter")
+
+            exists_query = select(exists().where(where))
+
+            patient_exists = await self.session.scalar(exists_query)
+            if patient_exists:
+                raise BadRequest(msg="User have been registered",
+                                 error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name)
+            password_hash = PasswordHandler.hash(data.password_hash)
+            user_model = UserModel()
+            user_model.phone_number = data.phone_number
+            user_model.password_hash = password_hash
+            user_model.role = Role.DOCTOR.value
+            doctor_model = data.model_dump(exclude={"password_hash"})
+            docker_instance = DoctorModel(**doctor_model)
+            docker_instance.user = user_model
+            self.session.add(docker_instance)
+            _ = await self.session.commit()
+            return docker_instance
         except Exception as e:
             log.error(e)
             raise e

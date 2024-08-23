@@ -7,6 +7,7 @@ from src.core.route import RouteSwagger
 routes = [
     # register route
     RouteSwagger("/health_check", HealthCheck, methods=["GET"], tags=["User"]),
+    # OKE
     RouteSwagger("/auth/patient/register", PatientRegisterApi,
                  methods=["POST"], tags=["PATIENT"]),
     RouteSwagger("/auth/doctor/register", DoctorPatientRegisterApi,

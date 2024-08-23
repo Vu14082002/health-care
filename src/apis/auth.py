@@ -10,16 +10,18 @@ from src.helper.doctor_helper import DoctorHelper
 from src.helper.patient_helper import PatientHelper
 from src.helper.user_repository import UserHelper
 from src.models.user import UserModel
+from src.schema.doctor_schema import ReponseGetAllDoctorsSchame, ReponseDoctorSchema
 from src.schema.register import (RequestLoginSchema,
+                                 RequestRegisterDoctorSchema,
                                  RequestRegisterPatientSchema,
                                  ResponsePatientSchema)
 
 
 class PatientRegisterApi(HTTPEndpoint):
-    async def post(self, form_data: RequestRegisterPatientSchema) -> Dict[str, Any]:
+    async def post(self, form_data: RequestRegisterPatientSchema):
         try:
-            patient_helper: PatientHelper = await Factory().get_patient_helper()
-            response_data: ResponsePatientSchema = await patient_helper.create_patient(data=form_data)
+            patient_helper = await Factory().get_patient_helper()
+            response_data = await patient_helper.create_patient(data=form_data)
             return response_data.model_dump()
         except BadRequest as e:
             raise e
@@ -31,9 +33,11 @@ class PatientRegisterApi(HTTPEndpoint):
 
 
 class DoctorPatientRegisterApi(HTTPEndpoint):
-    async def post(self, form_data: RequestRegisterPatientSchema):
-        docker_helper: DoctorHelper = await Factory().get_doctor_helper()
-        return {"message": "Doctor register success"}
+    async def post(self, form_data: RequestRegisterDoctorSchema):
+        docker_helper = await Factory().get_doctor_helper()
+        reulst = await docker_helper.create_doctor(form_data)
+        reponse = ReponseDoctorSchema(**reulst.as_dict)
+        return reponse.model_dump(mode="json")
 
 
 class AdminRegisterApi(HTTPEndpoint):

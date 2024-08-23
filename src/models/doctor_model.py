@@ -24,8 +24,8 @@ class DoctorModel(Model):
     first_name: Mapped[str] = mapped_column(String, nullable=False)
 
     last_name: Mapped[str] = mapped_column(String, nullable=False)
-
-    date_of_birth: Mapped[Date] = mapped_column(Date, nullable=False)
+    phone_number: Mapped[str] = mapped_column(String, nullable=False)
+    date_of_birth: Mapped[str] = mapped_column(String, nullable=False)
 
     gender: Mapped[str] = mapped_column(
         String, nullable=False, default="other")
@@ -34,14 +34,19 @@ class DoctorModel(Model):
 
     experience_years: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    certifications: Mapped[str] = mapped_column(Text, nullable=True)
+    insurance_number: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    clinic_address: Mapped[str] = mapped_column(String, nullable=False)
+    certifications: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    hopital_address_work: Mapped[str | None] = mapped_column(
+        String, nullable=True)
+    address: Mapped[str] = mapped_column(String, nullable=False)
     avatar: Mapped[str] = mapped_column(
         Text, nullable=True, default=default_avatar)
 
     description: Mapped[str] = mapped_column(Text, nullable=True)
+
+    nation: Mapped[str] = mapped_column(String, nullable=False)
 
     working_schedules: Mapped["WorkingScheduleModel"] = relationship(
         "WorkingScheduleModel", back_populates="doctor"

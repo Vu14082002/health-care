@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 from src.models.doctor_model import DoctorModel
 from src.repositories.doctor_repository import DoctorRepository
 from src.schema.doctor_schema import ReponseGetAllDoctorsSchame
+from src.schema.register import RequestRegisterDoctorSchema
 
 
 class DoctorHelper:
@@ -28,6 +29,13 @@ class DoctorHelper:
     async def get_doctor_by_id(self, doctor_id: int) -> DoctorModel | None:
         try:
             doctor: DoctorModel | None = await self.doctor_repository.get_by_id(doctor_id)
+            return doctor
+        except Exception as e:
+            raise e
+
+    async def create_doctor(self, data: RequestRegisterDoctorSchema):
+        try:
+            doctor = await self.doctor_repository.insert(data)
             return doctor
         except Exception as e:
             raise e

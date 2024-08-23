@@ -18,13 +18,14 @@ class PatientRepository(PostgresRepository[PatientModel]):
 
     async def insert_patient(self, data: RequestRegisterPatientSchema) -> PatientModel:
         try:
-            where = destruct_where(self.model_class, {
+            where = destruct_where(UserModel, {
                 "phone_number": data.phone_number})
             if where is None:
                 raise BadRequest(
                     ErrorCode.INVALID_PARAMETER.name, msg="Invalid parameter")
 
             exists_query = select(exists().where(where))
+
             patient_exists = await self.session.scalar(exists_query)
             if patient_exists:
                 raise BadRequest(msg="User have been registered",

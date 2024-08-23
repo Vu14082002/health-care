@@ -15,8 +15,8 @@ class PatientHelper:
 
     async def create_patient(self, data: RequestRegisterPatientSchema) -> ResponsePatientSchema:
         try:
-            result: PatientModel = await self.patient_repository.insert_patient(data)
-            data_response: ResponsePatientSchema = ResponsePatientSchema(
+            result = await self.patient_repository.insert_patient(data)
+            data_response = ResponsePatientSchema(
                 **result.as_dict)
             return data_response
         except BadRequest as e:
