@@ -33,6 +33,7 @@ class QueryResponseSchema(BaseModel):
 
 
 class TokenSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
     id: int
     first_name: str
     last_name: str
@@ -46,10 +47,6 @@ class TokenSchema(BaseModel):
     insurance_number: str | None
     emergancy_contact_number: str | None
     role: str = ''
-
-    class Config:
-        populate_by_name = True
-        from_attributes = True
 
     # @field_serializer('id')
     # def serialize_dt(self, id: UUID, _info):

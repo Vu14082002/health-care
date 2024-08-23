@@ -39,9 +39,9 @@ class UserModel(Model):
         String, nullable=False, default=Role.PATIENT.value)
 
     doctor: Mapped["DoctorModel"] = relationship(
-        "DoctorModel", uselist=False, back_populates="user")
+        "DoctorModel", uselist=False, back_populates="user", lazy="joined")
     patient: Mapped["PatientModel"] = relationship(
-        "PatientModel", uselist=False, back_populates="user")
+        "PatientModel", uselist=False, back_populates="user", lazy="joined")
 
     def __repr__(self):
         return f"<User(id={self.id}, phone_number='{self.phone_number}', role='{self.role}')>"

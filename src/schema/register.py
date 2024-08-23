@@ -98,5 +98,5 @@ class ReponseAdinSchema(BaseModel):
 
 
 class RequestLoginSchema(BaseModel):
-    phone: str
+    phone_number: str
     password: str

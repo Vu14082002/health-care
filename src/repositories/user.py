@@ -3,6 +3,7 @@ import logging as log
 from typing import Any, Dict
 
 from sqlalchemy import exists, select
+from sqlalchemy.orm import joinedload, selectinload
 
 from src.core.database.postgresql import PostgresRepository, Transactional
 from src.core.exception import BadRequest

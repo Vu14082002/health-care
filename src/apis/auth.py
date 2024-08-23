@@ -52,7 +52,6 @@ class AdminRegisterApi(HTTPEndpoint):
 
 class LoginApi(HTTPEndpoint):
     async def post(self, form_data: RequestLoginSchema) -> Dict[str, Any]:
-
         user_helper: UserHelper = await Factory().get_user_helper()
-        reponse_json = await user_helper.login(form_data.phone, form_data.password)
+        reponse_json = await user_helper.login(form_data.phone_number, form_data.password)
         return reponse_json

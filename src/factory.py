@@ -4,7 +4,7 @@ from src.core.database.postgresql import get_session
 from src.helper import DoctorHelper, PatientHelper, UserHelper
 from src.models import DoctorModel, PatientModel, UserModel
 from src.repositories import (DoctorRepository, PatientRepository,
-                              UserRepository, doctor_repository)
+                              UserRepository)
 
 
 class Factory:
