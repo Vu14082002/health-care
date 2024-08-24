@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from functools import reduce
 from operator import and_
-from typing import Any, Generic, Type, TypeVar
+from typing import Any, Dict, Generic, List, Type, TypeVar, Union
 
 from sqlalchemy import (Boolean, Integer, Select, String, and_, asc, between,
                         desc, event, or_, select)
@@ -54,39 +54,39 @@ class PostgresRepository(Generic[ModelType]):
         query = self._query(join_)
         query = query.offset(skip).limit(limit)
 
-        if where is not None:
-            conditions = []
-            for k, v in where.items():
-                if k != "$or":
-                    column = getattr(self.model_class, k)
-                    if isinstance(v, dict):
-                        gt = v.get("$gt")
-                        lt = v.get("$lt")
-                        _or = v.get("$or")
-                        nen = v.get("$ne")
-                        if gt is not None and lt is not None:
-                            conditions.append(between(column, gt, lt))
-                        elif gt is not None:
-                            conditions.append(column > gt)
-                        elif lt is not None:
-                            conditions.append(column < lt)
-                        if _or is not None:
-                            conditions.append(or_(*[column == i for i in _or]))
-                        if nen is not None:
-                            conditions.append(column != nen)
-                    else:
-                        conditions.append(column == v)
-                else:
-                    _or = v
-                    or_conditions = []
-                    for or_condition in _or:
-                        for k, v in or_condition.items():
-                            column = getattr(self.model_class, k)
-                            or_conditions.append(column == v)
-                    conditions.append(or_(*or_conditions))
+        # if where is not None:
+        #     conditions = []
+        #     for k, v in where.items():
+        #         if k != "$or":
+        #             column = getattr(self.model_class, k)
+        #             if isinstance(v, dict):
+        #                 gt = v.get("$gt")
+        #                 lt = v.get("$lt")
+        #                 _or = v.get("$or")
+        #                 nen = v.get("$ne")
+        #                 if gt is not None and lt is not None:
+        #                     conditions.append(between(column, gt, lt))
+        #                 elif gt is not None:
+        #                     conditions.append(column > gt)
+        #                 elif lt is not None:
+        #                     conditions.append(column < lt)
+        #                 if _or is not None:
+        #                     conditions.append(or_(*[column == i for i in _or]))
+        #                 if nen is not None:
+        #                     conditions.append(column != nen)
+        #             else:
+        #                 conditions.append(column == v)
+        #         else:
+        #             _or = v
+        #             or_conditions = []
+        #             for or_condition in _or:
+        #                 for k, v in or_condition.items():
+        #                     column = getattr(self.model_class, k)
+        #                     or_conditions.append(column == v)
+        #             conditions.append(or_(*or_conditions))
 
-            # Kết hợp các điều kiện bằng `and_`
-            query = query.where(and_(*conditions))
+        #     # Kết hợp các điều kiện bằng `and_`
+        query = query.where(destruct_where(self.model_class, where))
 
         if order_by is not None:
             column, direction = order_by
@@ -330,10 +330,6 @@ class Model(Base):
     def as_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
-    @property
-    def as_dict(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
-
     @staticmethod
     def set_before_insert(mapper, connection, target):
         """Set timestamps before inserting a new record."""
@@ -349,3 +345,162 @@ class Model(Base):
 # Attach event listeners
 event.listen(Model, "before_insert", Model.set_before_insert)
 event.listen(Model, "before_update", Model.update_timestamps)
+
+
+def destruct_where(model_class: Model, where: Dict[str, Any]) -> Union[Any, None]:
+    """_summary_
+
+    Args:
+        model_class (_type_): is has type of ModelType
+        where (dict): this is a dict: code like mongodb query
+
+    Returns:
+        _type_: _description_
+    """
+    if where is not {}:
+        return process_condition(model_class, where)
+    return None
+
+
+def process_condition(model_class: Model, condition):
+    """_summary_
+
+    Args:
+        model_class (_type_): _description_
+        condition (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    if not isinstance(condition, dict):
+        return condition
+
+    conditions = []
+    for key, value in condition.items():
+        if key == "$or":
+            or_conditions: Any = [process_condition(
+                model_class, cond) for cond in value]
+            conditions.append(or_(*or_conditions))
+        elif key == "$and":
+            and_conditions: Any = [process_condition(
+                model_class, cond) for cond in value]
+            conditions.append(and_(*and_conditions))
+        elif key.startswith("$"):
+            conditions.append(process_operator(model_class, key, value))
+        else:
+            column = getattr(model_class, key)
+            if isinstance(value, dict):
+                conditions.append(process_column_operators(column, value))
+            else:
+                conditions.append(column == value)
+
+    return and_(*conditions) if len(conditions) > 1 else conditions[0] if conditions else True
+
+
+def process_column_operators(column, operators):
+    """_summary_
+
+    Args:
+        column (_type_): _description_
+        operators (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    conditions = []
+    for op, value in operators.items():
+        if op == "$eq":
+            conditions.append(column == value)
+        elif op == "$ne":
+            conditions.append(column != value)
+        elif op == "$gt":
+            conditions.append(column > value)
+        elif op == "$gte":
+            conditions.append(column >= value)
+        elif op == "$lt":
+            conditions.append(column < value)
+        elif op == "$lte":
+            conditions.append(column <= value)
+        elif op == "$in":
+            conditions.append(column.in_(value))
+        elif op == "$nin":
+            conditions.append(~column.in_(value))
+        elif op == "$between":
+            conditions.append(between(column, *value))
+        elif op == "$like":
+            conditions.append(column.like(value))
+        elif op == "$ilike":
+            conditions.append(column.ilike(value))
+        elif op == "$regex":
+            conditions.append(column.op("~")(value))
+        elif op == "$iregex":
+            conditions.append(column.op("~*")(value))
+        elif op == "$exists":
+            conditions.append(column is not None if value else column is None)
+        elif op == "$type":
+            conditions.append(column.type == value)
+        elif op == "$not":
+            conditions.append(not_(process_column_operators(column, value)))
+        elif op == "$all":
+            for item in value:
+                conditions.append(column.contains(item))
+        elif op == "$size":
+            conditions.append(func.array_length(column, 1) == value)
+        elif op == "$elemMatch":
+            # This is a simplified version and may not work for all cases
+            elem_conditions = process_column_operators(column.any(), value)
+            conditions.append(column.any(elem_conditions))
+    return and_(*conditions)
+
+
+def process_operator(model_class, operator, value):
+    """_summary_
+
+    Args:
+        model_class (_type_): _description_
+        operator (_type_): _description_
+        value (_type_): _description_
+
+    Raises:
+        NotImplementedError: _description_
+        NotImplementedError: _description_
+        ValueError: _description_
+
+    Returns:
+        _type_: _description_
+    """
+    if operator == "$expr":
+        # Simplified expression handling
+        return text(value)
+    elif operator == "$jsonSchema":
+        # This would require more complex handling
+        raise NotImplementedError("$jsonSchema is not implemented")
+    elif operator == "$mod":
+        column, divisor, remainder = value
+        return func.mod(getattr(model_class, column), divisor) == remainder
+    elif operator == "$text":
+        # Simplified text search
+        return func.to_tsvector('english', getattr(model_class, value['$search'])).match(value['$search'])
+    elif operator == "$where":
+        # This would require more complex handling and might be a security risk
+        raise NotImplementedError(
+            "$where is not implemented for security reasons")
+    else:
+        raise ValueError(f"Unsupported operator: {operator}")
+
+
+def process_orderby(model_class: Model, orderby: Dict[str, str]):
+    if not orderby:
+        return []
+    expressions = []
+    for key, value in orderby.items():
+        column = getattr(model_class, key, None)  # type: ignore
+        if column is None:
+            raise ValueError(f"Invalid column name: {key}")
+        if value.lower() == "asc":
+            expressions.append(asc(column))
+        elif value.lower() == "desc":
+            expressions.append(desc(column))
+        else:
+            raise ValueError(f"Invalid order direction: {value}")
+    return expressions
