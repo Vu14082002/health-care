@@ -1,9 +1,34 @@
 version: '3'
 services:
+    web:
+        container_name: health_care
+        image: sherlockvufullsnack/health_care-api:latest
+        ports:
+            - '5005:5005'
+        depends_on:
+            - redis
+            - postgresql-master
+        networks:
+            - app-network
+        environment:
+            - ENV=${ENV}
+            - POSTGRES_URL_MASTER=${POSTGRES_URL_MASTER}
+            - POSTGRES_URL_SLAVE=${POSTGRES_URL_SLAVE}
+            - BROKER_URL=${BROKER_URL}
+            - REDIS_URL=${REDIS_URL}
+            - PORT=${PORT}
+            - ACCESS_TOKEN=${ACCESS_TOKEN}
+            - REFRESH_TOKEN=${REFRESH_TOKEN}
+            - ALGORITHM=${ALGORITHM}
+            - PREFIX_URL=${PREFIX_URL}
+            - ACCOUNT_SID=${ACCOUNT_SID}
+            - AUTH_TOKEN=${AUTH_TOKEN}
+        volumes:
+            - .:/app
     redis:
         container_name: redis-lung
         image: redis:alpine
-        restart: no
+        restart: always
         ports:
             - '6379:6379'
         command: redis-server --loglevel warning
@@ -15,7 +40,7 @@ services:
     redis-commander:
         container_name: redis-commander-lung
         image: ghcr.io/joeferner/redis-commander:latest
-        restart: no
+        restart: always
         ports:
             - '8081:8081'
         environment:
@@ -67,7 +92,7 @@ services:
     adminer:
         container_name: adminer-lung
         image: adminer
-        restart: no
+        restart: always
         ports:
             - '9999:8080'
         networks:

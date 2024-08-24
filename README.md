@@ -12,8 +12,8 @@
 -   Create migrate file: `alembic revision --autogenerate -m "<message>"`
 -   Update to database: `alembic upgrade head`
 
-# lung-heatlh-care
+# heatlh-care
 
 deploy
-docker build -t sherlockvufullsnack/lung-health_care-api:latest .
-docker push sherlockvufullsnack/lung-health_care-api:latest
+docker build -t sherlockvufullsnack/health_care-api:latest .
+docker push sherlockvufullsnack/health_care-api:latest
