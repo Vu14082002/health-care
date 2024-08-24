@@ -7,15 +7,26 @@ from src.enum import ErrorCode
 from src.factory import Factory
 from src.helper.doctor_helper import DoctorHelper
 from src.schema import RequestRegisterPatientSchema
-from src.schema.doctor_schema import (RequestDetailDoctorSchema,
-                                      RequestGetAllDoctorsSchema)
-from src.schema.register import RequestRegisterDoctorSchema
+from src.schema.doctor_schema import (RequestGetAllDoctorsSchema,
+                                      RequestGetDoctorByIdSchema)
 
 
-class GetAllDoctorApi(HTTPEndpoint):
+class DoctorGelAllApi(HTTPEndpoint):
     async def get(self, query_params: RequestGetAllDoctorsSchema, auth: JsonWebToken):
+        '''
+        get all doctor with pagination and filter
+
+        Args:
+            query_params (RequestGetAllDoctorsSchema): _description_
+            auth (JsonWebToken): _description_
+
+        Raises:
+            InternalServer: _description_
+
+        Returns:
+            _type_: _description_
+        '''
         try:
-            print(auth)
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             current_page = query_params.current_page if query_params.current_page else 0
             page_size = query_params.page_size if query_params.page_size else 10
@@ -34,19 +45,9 @@ class GetAllDoctorApi(HTTPEndpoint):
             raise InternalServer(msg="Internal server error",
                                  error_code=ErrorCode.SERVER_ERROR.name) from e
 
-    async def put(self, path_params: RequestRegisterDoctorSchema, auth: JsonWebToken):
-        try:
-            print(auth)
-            {"Xin chao cau"}
 
-        except Exception as e:
-            log.error(f"Error: {e}")
-            raise InternalServer(msg="Internal server error",
-                                 error_code=ErrorCode.SERVER_ERROR.name) from e
-
-
-class GetDetailtDoctorById(HTTPEndpoint):
-    async def get(self, path_params: RequestDetailDoctorSchema, auth: JsonWebToken):
+class DoctorDetailbyIdApi(HTTPEndpoint):
+    async def get(self, path_params: RequestGetDoctorByIdSchema, auth: JsonWebToken):  # type: ignore
         try:
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             reponse = await doctor_helper.get_doctor_by_id(path_params.doctor_id)

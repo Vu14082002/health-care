@@ -2,7 +2,6 @@ from typing import Literal, Optional
 from uuid import UUID
 
 from click import File
-from numpy import add
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from src.models.user import Role

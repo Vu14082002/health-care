@@ -1,7 +1,6 @@
 import logging as log
 from typing import Any, Dict, List, Optional, Sequence, Union
 
-from numpy import where
 from sqlalchemy import exists, insert, select
 
 from src.core.database.postgresql import PostgresRepository, Transactional

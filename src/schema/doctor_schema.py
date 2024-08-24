@@ -5,14 +5,6 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class RequestGetAllDoctorsSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
-    key_word: str | None = None
-    phone_number: str | None = None
-    current_page: Optional[int] = Field(default=1)
-    page_size: Optional[int] = Field(default=10)
-
-
 class DoctorSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
     id: int
@@ -32,9 +24,22 @@ class DoctorSchema(BaseModel):
     nation: str
 
 
+class RequestGetAllDoctorsSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
+    key_word: str | None = None
+    phone_number: str | None = None
+    current_page: Optional[int] = Field(default=1)
+    page_size: Optional[int] = Field(default=10)
+
+
 class ReponseGetAllDoctorsSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
     items: list[DoctorSchema]
     current_page: int
     page_size: int
     total_page: int
+
+
+class RequestDetailDoctorSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
+    doctor_id: int

@@ -1,7 +1,10 @@
 
 
+import logging as log
 import math
 from typing import Any, Dict, List
+
+from sqlalchemy.orm.exc import NoResultFound
 
 from src.models.doctor_model import DoctorModel
 from src.repositories.doctor_repository import DoctorRepository
@@ -32,8 +35,12 @@ class DoctorHelper:
 
     async def get_doctor_by_id(self, doctor_id: int) -> DoctorModel | None:
         try:
-            doctor: DoctorModel | None = await self.doctor_repository.get_by_id(doctor_id)
+            doctor = await self.doctor_repository.get_by("id", doctor_id, unique=True)
             return doctor
+        except NoResultFound as e:
+            log.error(f"Doctor with id {doctor_id} not found")
+            log.debug(e)
+            return None
         except Exception as e:
             raise e
 
