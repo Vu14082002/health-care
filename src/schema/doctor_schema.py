@@ -1,8 +1,11 @@
 
 
-from typing import Optional
+from typing import Annotated, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import (BaseModel, ConfigDict, Field, field_validator,
+                      model_validator)
+from starlette.datastructures import UploadFile
+from typing_extensions import Any, Literal
 
 
 class DoctorSchema(BaseModel):
@@ -43,3 +46,28 @@ class ReponseGetAllDoctorsSchema(BaseModel):
 class RequestDetailDoctorSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
     doctor_id: int
+
+
+class RequestUpdatePathParamsSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
+    doctor_id: int
+
+
+class RequestUpdateDoctorSchema(BaseModel):
+    model_config = ConfigDict(
+        from_attributes=True, use_enum_values=True, arbitrary_types_allowed=True, str_strip_whitespace=True, extra="allow")
+    first_name: str | None = None
+    last_name: str | None = None
+    phone_number: str | None = None
+    date_of_birth: str | None = None
+    gender: Literal["male", "female", "other"] | None = None
+    specialization: str | None = None
+    experience_years: int | None = None
+    insurance_number: str | None = None
+    certifications: str | None = None
+    hopital_address_work: str | None = None
+    address: str | None = None
+    nation: str | None = None
+    description: str | None = None
+    password_hash: str | None = Field(alias="password", default=None)
+    # avatar: UploadFile | None = None

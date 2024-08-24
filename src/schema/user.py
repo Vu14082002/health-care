@@ -30,24 +30,3 @@ class QueryResponseSchema(BaseModel):
     items: list[QueryResponseItemSchema]
     page_size: int = 10
     page: int = 1
-
-
-class TokenSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
-    id: int
-    first_name: str
-    last_name: str
-    date_of_birth: str | None
-    gender: str
-    phone_number: str
-    address: str | None
-    nation: str
-    avatar: str
-    occupation: str
-    insurance_number: str | None
-    emergancy_contact_number: str | None
-    role: str = ''
-
-    # @field_serializer('id')
-    # def serialize_dt(self, id: UUID, _info):
-    #     return str(id)

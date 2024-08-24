@@ -12,7 +12,6 @@ from src.models.patient_model import PatientModel
 from src.models.user import Role, UserModel
 from src.repositories import UserRepository
 from src.schema.register import RequestAdminRegisterSchema, RequestLoginSchema
-from src.schema.user import TokenSchema
 
 redis = RedisBackend()
 
@@ -41,7 +40,7 @@ class UserHelper:
 
         token = None
         if role_name == Role.ADMIN.value:
-            return self._gen_token(_user.as_dict)
+            token = self._gen_token(_user.as_dict)
         if role_name == Role.DOCTOR.value:
             data_token = _user.doctor.as_dict
             data_token["role"] = role_name

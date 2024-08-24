@@ -1,7 +1,7 @@
 
 from src.apis.auth import (AdminRegisterApi, DoctorPatientRegisterApi,
                            LoginApi, PatientRegisterApi)
-from src.apis.docker_api import GetAllDoctorApi, GetDetailtDoctorById
+from src.apis.docter_api import GetAllDoctorApi, GetDetailtDoctorById
 from src.apis.health_check import HealthCheck
 from src.core.route import RouteSwagger
 
@@ -25,5 +25,11 @@ routes = [
         GetDetailtDoctorById,
         methods=["GET"],
         tags=["DOCTOR,PATIENT,ADMIN"]
+    ),
+    RouteSwagger(
+        "/doctor/{doctor_id}",
+        GetDetailtDoctorById,
+        methods=["PUT"],
+        tags=["DOCTOR,ADMIN"]
     ),
 ]

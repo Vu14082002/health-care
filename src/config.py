@@ -36,6 +36,10 @@ class Config(BaseSettings):
     API_KEY: str = ''
     ACCOUNT_SID: str = ''
     AUTH_TOKEN: str = ''
+    S3_BUCKET: str
+    S3_KEY: str
+    S3_SECRET: str
+    REGION: str
 
 
 config = Config()

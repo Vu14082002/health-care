@@ -2,6 +2,7 @@
 
 import logging as log
 import math
+import time
 from typing import Any, Dict, List
 
 from sqlalchemy.orm.exc import NoResultFound
@@ -49,4 +50,19 @@ class DoctorHelper:
             doctor = await self.doctor_repository.insert(data)
             return doctor
         except Exception as e:
+            raise e
+
+    async def update_doctor(self, doctor_id: int, data: dict[str, Any]):
+        try:
+
+            doctor_model = await self.doctor_repository.get_by("id", doctor_id, unique=True)
+            data = {k: v for k, v in data.items() if v is not None}
+            doctor = await self.doctor_repository.update(doctor_model, data)
+            return doctor
+        except NoResultFound as e:
+            log.error(f"Doctor with id {doctor_id} not found")
+            log.debug(e)
+            return None
+        except Exception as e:
+            log.error(f"Error: {e}")
             raise e
