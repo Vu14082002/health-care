@@ -34,9 +34,9 @@ class DoctorHelper:
         except Exception as e:
             raise e
 
-    async def get_doctor_by_id(self, doctor_id: int) -> DoctorModel | None:
+    async def get_doctor_by_id(self, doctor_id: int):
         try:
-            doctor = await self.doctor_repository.get_by("id", doctor_id, unique=True)
+            doctor = await self.doctor_repository.get_doctor_with_ratings(doctor_id=doctor_id)
             return doctor
         except NoResultFound as e:
             log.error(f"Doctor with id {doctor_id} not found")

@@ -1,7 +1,7 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import exists, select
+from sqlalchemy import Result, Row, exists, func, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from src.core.database.postgresql import PostgresRepository
@@ -9,6 +9,7 @@ from src.core.exception import BadRequest
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
 from src.models.doctor_model import DoctorModel
+from src.models.rating_model import RatingModel
 from src.models.user_model import Role, UserModel
 from src.repositories.global_func import destruct_where, process_orderby
 from src.schema.register import RequestRegisterDoctorSchema
@@ -91,4 +92,35 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             return await self._count(query)
         except SQLAlchemyError as e:
             logging.error(f"Error in count_record: {e}")
+            raise
+
+    async def get_doctor_with_ratings(self, doctor_id: int) -> Optional[Dict[str, Any]]:
+        try:
+            query = (
+                select(
+                    self.model_class,
+                    func.avg(RatingModel.rating).label('avg_rating'),
+                    func.array_agg(RatingModel.comment).label('comments')
+                )
+                .outerjoin(RatingModel)
+                .where(self.model_class.id == doctor_id)
+                .group_by(self.model_class.id)
+            )
+
+            result: Result[Tuple[DoctorModel, Any, Any]] = await self.session.execute(query)
+            row: Row[Tuple[DoctorModel, Any, Any]] | None = result.first()
+
+            if row is None:
+                return None
+
+            doctor, avg_rating, comments = row
+            doctor_dict = doctor.as_dict
+            doctor_dict['avg_rating'] = float(
+                avg_rating) if avg_rating is not None else 0
+            doctor_dict['comments'] = [
+                comment for comment in comments if comment is not None]
+
+            return doctor_dict
+        except SQLAlchemyError as e:
+            logging.error(f"Error in get_doctor_with_ratings: {e}")
             raise

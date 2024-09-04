@@ -48,7 +48,7 @@ class GetDetailtDoctorById(HTTPEndpoint):
         try:
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             reponse = await doctor_helper.get_doctor_by_id(path_params.doctor_id)
-            return reponse.as_dict if reponse else {"message": "Doctor not found"}
+            return reponse if reponse else {"message": "Doctor not found"}
         except Exception as e:
             log.error(f"Error: {e}")
             raise InternalServer(msg="Internal server error",
