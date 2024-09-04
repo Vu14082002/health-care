@@ -8,7 +8,7 @@ from src.core.exception import BadRequest
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
 from src.models.doctor_model import DoctorModel
-from src.models.user import Role, UserModel
+from src.models.user_model import Role, UserModel
 from src.repositories.global_func import destruct_where, process_orderby
 from src.schema.register import RequestRegisterDoctorSchema
 
@@ -48,10 +48,25 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
 
             exists_query = select(exists().where(where))
 
-            patient_exists = await self.session.scalar(exists_query)
-            if patient_exists:
+            docker_exsit = await self.session.scalar(exists_query)
+            if docker_exsit:
                 raise BadRequest(msg="User have been registered",
                                  error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name)
+
+            # check insert_number
+            where = destruct_where(DoctorModel, {
+                "license_number": data.license_number})
+            if where is None:
+                raise BadRequest(
+                    error_code=ErrorCode.INVALID_PARAMETER.name, msg="Invalid parameter")
+
+            exists_query = select(exists().where(where))
+
+            docker_exsit = await self.session.scalar(exists_query)
+
+            if docker_exsit:
+                raise BadRequest(msg="insurance number have been registered",
+                                 error_code=ErrorCode.LICENSE_NUMBER_HAVE_BEEN_REGISTERED.name)
             password_hash = PasswordHandler.hash(data.password_hash)
             user_model = UserModel()
             user_model.phone_number = data.phone_number

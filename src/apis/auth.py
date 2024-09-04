@@ -9,7 +9,8 @@ from src.factory import Factory
 from src.helper.doctor_helper import DoctorHelper
 from src.helper.patient_helper import PatientHelper
 from src.helper.user_repository import UserHelper
-from src.models.user import UserModel
+from src.models.doctor_model import DoctorModel
+from src.models.user_model import UserModel
 from src.schema.register import (ReponseAdinSchema, ReponseDoctorSchema,
                                  RequestAdminRegisterSchema,
                                  RequestLoginSchema,
@@ -36,7 +37,7 @@ class PatientRegisterApi(HTTPEndpoint):
 class DoctorPatientRegisterApi(HTTPEndpoint):
     async def post(self, form_data: RequestRegisterDoctorSchema):
         docker_helper = await Factory().get_doctor_helper()
-        reulst = await docker_helper.create_doctor(form_data)
+        reulst: DoctorModel = await docker_helper.create_doctor(form_data)
         reponse = ReponseDoctorSchema(**reulst.as_dict)
         return reponse.model_dump(mode="json")
 

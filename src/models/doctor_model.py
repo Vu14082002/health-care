@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, Date, ForeignKey, Integer, String, Text
+from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
@@ -10,9 +10,12 @@ default_avatar = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQS0iv-Hz
 if TYPE_CHECKING:
     from src.models.appointment_model import AppointmentModel
     from src.models.dermatology_medical import DermatologyMedicalRecords
+    from src.models.examination_record_model import ExaminationRecordModel
+    from src.models.medical_test_model import MedicalTestModel
+    from src.models.prescription_model import PrescriptionModel
     from src.models.rating_model import RatingModel
-    from src.models.user import UserModel
-    from src.models.working_schedule_model import WorkingScheduleModel
+    from src.models.user_model import UserModel
+    from src.models.work_schedule_model import WorkScheduleModel
 
 
 class DoctorModel(Model):
@@ -24,15 +27,20 @@ class DoctorModel(Model):
     first_name: Mapped[str] = mapped_column(String, nullable=False)
 
     last_name: Mapped[str] = mapped_column(String, nullable=False)
-    phone_number: Mapped[str] = mapped_column(String, nullable=False)
+
+    phone_number: Mapped[str] = mapped_column(
+        String, nullable=False, unique=True)
+
     date_of_birth: Mapped[str] = mapped_column(String, nullable=False)
 
     gender: Mapped[str] = mapped_column(
         String, nullable=False, default="other")
 
-    specialization: Mapped[str] = mapped_column(String, nullable=False)
+    specialization: Mapped[str] = mapped_column(
+        String, nullable=False, default="Dermatology")
 
-    experience_years: Mapped[int] = mapped_column(Integer, nullable=False)
+    experience_years: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0)
 
     insurance_number: Mapped[str | None] = mapped_column(String, nullable=True)
 
@@ -40,19 +48,22 @@ class DoctorModel(Model):
 
     hopital_address_work: Mapped[str | None] = mapped_column(
         String, nullable=True)
+
     address: Mapped[str] = mapped_column(String, nullable=False)
+
     avatar: Mapped[str] = mapped_column(
         Text, nullable=True, default=default_avatar)
 
     description: Mapped[str] = mapped_column(Text, nullable=True)
 
-    nation: Mapped[str] = mapped_column(String, nullable=False)
+    nation: Mapped[str] = mapped_column(
+        String, nullable=False, default="Vietnam")
 
-    working_schedules: Mapped["WorkingScheduleModel"] = relationship(
-        "WorkingScheduleModel", back_populates="doctor"
+    working_schedules: Mapped[list["WorkScheduleModel"]] = relationship(
+        "WorkScheduleModel", back_populates="doctor"
     )
 
-    appointments: Mapped["AppointmentModel"] = relationship(
+    appointments: Mapped[list["AppointmentModel"]] = relationship(
         "AppointmentModel", back_populates="doctor"
     )
 
@@ -66,6 +77,19 @@ class DoctorModel(Model):
     dermatology_records: Mapped["DermatologyMedicalRecords"] = relationship(
         "DermatologyMedicalRecords", back_populates="doctor"
     )
+
+    examination_record: Mapped[list["ExaminationRecordModel"]] = relationship(
+        back_populates="doctor")
+
+    license_number: Mapped[str] = mapped_column(
+        String, nullable=False, unique=True)
+
+    education: Mapped[str] = mapped_column(Text, nullable=True)
+
+    prescriptions: Mapped[list["PrescriptionModel"]] = relationship(
+        "PrescriptionModel", back_populates="doctor")
+    medical_tests: Mapped[list["MedicalTestModel"]] = relationship(
+        "MedicalTestModel", back_populates="doctor")
 
     def __repr__(self):
         return f"<Doctor(id={self.id}, name='{self.first_name} {self.last_name}', specialization='{self.specialization}', experience_years={self.experience_years})>"

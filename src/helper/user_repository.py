@@ -9,7 +9,7 @@ from src.core.security.password import PasswordHandler
 from src.enum import (CACHE_ACCESS_TOKEN, CACHE_REFRESH_TOKEN,
                       KEY_CACHE_LOGOUT, ErrorCode)
 from src.models.patient_model import PatientModel
-from src.models.user import Role, UserModel
+from src.models.user_model import Role, UserModel
 from src.repositories import UserRepository
 from src.schema.register import RequestAdminRegisterSchema, RequestLoginSchema
 

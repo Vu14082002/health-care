@@ -2,7 +2,7 @@ import enum
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
@@ -21,8 +21,9 @@ class AppointmentModelStatus(enum.Enum):
 
 
 class AppointmentModelTypeStatus(enum.Enum):
-    HOME = "home"
+    ONLINE = "online"
     CLINIC = "clinic"
+    HOME = "home"
 
 
 class AppointmentModel(Model):
@@ -43,10 +44,14 @@ class AppointmentModel(Model):
     appointment_date_end: Mapped[datetime] = mapped_column(
         DateTime, nullable=False)
 
-    status: Mapped[str] = mapped_column(
-        String(50), nullable=False, default=AppointmentModelStatus.PENDING.value)
-    type_status: Mapped[str] = mapped_column(
+    appointment_status: Mapped[str] = mapped_column(
+        String(50), nullable=False, default=AppointmentModelStatus.APPROVED.value)
+
+    medical_examination_status: Mapped[str] = mapped_column(
         String(50), nullable=False, default=AppointmentModelTypeStatus.CLINIC.value)
+
+    link_appointment: Mapped[str] = mapped_column(
+        Text, nullable=True, default=None)
 
     patient: Mapped["PatientModel"] = relationship(
         "PatientModel", back_populates="appointments")
@@ -56,3 +61,8 @@ class AppointmentModel(Model):
 
     payment: Mapped["PaymentModel"] = relationship(
         "PaymentModel", back_populates="appointment")
+
+    pre_examination_notes: Mapped[str] = mapped_column(Text, nullable=True)
+
+    consultation_fee: Mapped[float] = mapped_column(
+        Float, nullable=False)

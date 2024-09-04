@@ -10,7 +10,7 @@ from src.core.exception import BadRequest
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
 from src.models.patient_model import PatientModel
-from src.models.user import Role, UserModel
+from src.models.user_model import Role, UserModel
 from src.repositories.global_func import destruct_where
 from src.schema.register import RequestAdminRegisterSchema
 

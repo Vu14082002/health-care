@@ -4,7 +4,7 @@ from uuid import UUID
 from click import File
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
-from src.models.user import Role
+from src.models.user_model import Role
 
 
 class RequestRegisterPatientSchema(BaseModel):
@@ -37,6 +37,7 @@ class RequestRegisterDoctorSchema(BaseModel):
     hopital_address_work: str | None = None
     address: str
     nation: str
+    license_number: str
     password_hash: str = Field(alias="password")
 
     class Config:
@@ -56,7 +57,7 @@ class ReponseDoctorSchema(BaseModel):
     last_name: str
     phone_number: str
     date_of_birth: str
-    gender: str = Field(default="other")
+    gender: Literal["male", "female", "other"]
     specialization: str
     experience_years: int
     insurance_number: Optional[str] = None
@@ -66,6 +67,8 @@ class ReponseDoctorSchema(BaseModel):
     avatar: str
     description: Optional[str] = None
     nation: str
+    license_number: str
+    education: Optional[str] = None
 
 
 class ResponsePatientSchema(BaseModel):

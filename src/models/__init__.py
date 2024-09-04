@@ -12,13 +12,17 @@ from src.core.database.postgresql.repository import Base
 from src.models.appointment_model import AppointmentModel
 from src.models.dermatology_medical import DermatologyMedicalRecords
 from src.models.doctor_model import DoctorModel
-from src.models.inventory_model import InventoryModel
+from src.models.examination_record_model import ExaminationRecordModel
+from src.models.medical_history_model import MedicalHistoryModel
 from src.models.medical_model import MedicalModel
+from src.models.medical_test_model import MedicalTestModel
+from src.models.notification_model import NotificationModel
 from src.models.patient_model import PatientModel
 from src.models.payment_model import PaymentModel
+from src.models.prescription_model import PrescriptionModel
 from src.models.rating_model import RatingModel
-from src.models.user import UserModel
-from src.models.working_schedule_model import WorkingScheduleModel
+from src.models.user_model import UserModel
+from src.models.work_schedule_model import WorkScheduleModel
 
 
 async def manage_database():
@@ -35,15 +39,6 @@ async def create_tables():
         try:
             def check_tables_and_data(connection):
                 Base.metadata.create_all(connection)
-                # current_dir = os.getcwd()
-                # sql_file_path = os.path.join(current_dir, 'init.sql')
-                # with open(sql_file_path, encoding='utf-8', mode='r') as f:
-                #     sql_script = f.read()
-                #     statements = sql_script.split(';')
-                #     for statement in statements:
-                #         if statement.strip():
-                #             connection.execute(text(statement))
-                # connection.commit()
                 return True
             result = await conn.run_sync(check_tables_and_data)
             if result is False:
@@ -54,6 +49,6 @@ async def create_tables():
         finally:
             await engine.dispose()
 
-if config.ENV == 'DB':
+if config.ENV == 'DEV':
     asyncio.run(manage_database())
     asyncio.run(create_tables())

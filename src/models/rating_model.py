@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, ForeignKey, Integer, String, Text
+from sqlalchemy import Column, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
@@ -22,7 +22,7 @@ class RatingModel(Model):
     patient_id: Mapped[int] = mapped_column(
         Integer, ForeignKey('patient.id'), nullable=False)
 
-    rating: Mapped[int] = mapped_column(Integer, nullable=False)
+    rating: Mapped[float] = mapped_column(Float, nullable=False)
 
     comment: Mapped[str] = mapped_column(Text, nullable=True)
 
