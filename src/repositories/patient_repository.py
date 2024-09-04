@@ -32,7 +32,7 @@ class PatientRepository(PostgresRepository[PatientModel]):
             )
             if patient_exists:
                 raise BadRequest(msg="Patient with this email has already been registered",
-                                 error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name)
+                                 error_code=ErrorCode.EMAIL_HAVE_BEEN_REGISTERED.name)
 
             # Create user and patient models
             password_hash = PasswordHandler.hash(data.password_hash)
