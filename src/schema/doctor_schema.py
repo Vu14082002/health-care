@@ -1,12 +1,10 @@
-
-
 from typing import Annotated, Optional
 
 from pydantic import (BaseModel, ConfigDict, Field, field_validator,
                       model_validator)
 from starlette.datastructures import UploadFile
 from typing_extensions import Any, Literal
-
+from datetime import date, time
 
 class DoctorSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
@@ -75,3 +73,34 @@ class RequestUpdateDoctorSchema(BaseModel):
 
 class RequestDockerWorkDateInNextWeek(BaseModel):
     pass
+
+
+class DoctorWorkTimeSlot(BaseModel):
+    work_date: date
+    start_time: time
+    end_time: time
+
+    @field_validator('work_date')
+    def validate_work_date(cls, v):
+        if v < date.today():
+            raise ValueError("Work date cannot be in the past")
+        return v
+
+    @model_validator(mode='after')
+    def validate_time_slot(self):
+        if (datetime.combine(date.today(), self.end_time) - 
+            datetime.combine(date.today(), self.start_time)).total_seconds() / 3600 < 3:
+            raise ValueError("Time slot must be at least 3 hours")
+        return self
+
+class RequestDoctorWorkScheduleNextWeek(BaseModel):
+    doctor_id: int
+    work_schedule: list[DoctorWorkTimeSlot]
+
+    @field_validator('work_schedule')
+    def validate_work_schedule(cls, v):
+        if len(v) == 0:
+            raise ValueError("Work schedule cannot be empty")
+        if len(v) > 7:
+            raise ValueError("Work schedule cannot exceed 7 days")
+        return v
