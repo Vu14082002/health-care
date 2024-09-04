@@ -1,7 +1,8 @@
 import email
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
@@ -43,8 +44,7 @@ class DoctorModel(Model):
     experience_years: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0)
 
-
-    certifications: Mapped[str | None] = mapped_column(Text, nullable=True)
+    certifications: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     hopital_address_work: Mapped[str | None] = mapped_column(
         String, nullable=True)

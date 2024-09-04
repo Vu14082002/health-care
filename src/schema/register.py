@@ -31,7 +31,7 @@ class RequestRegisterDoctorSchema(BaseModel):
     gender: Literal["male", "female", "other"] | None = "other"
     specialization: str
     experience_years: int
-    certifications: str | None = None
+    certifications: dict | None = None
     hopital_address_work: str | None = None
     address: str
     license_number: str
@@ -58,7 +58,7 @@ class ReponseDoctorSchema(BaseModel):
     gender: Literal["male", "female", "other"]
     specialization: str
     experience_years: int
-    certifications: Optional[str] = None
+    certifications: Optional[dict] = None
     hospital_address_work: Optional[str] = None
     address: str
     avatar: str

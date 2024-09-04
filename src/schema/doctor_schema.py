@@ -1,5 +1,6 @@
-from datetime import date, time, datetime, timedelta
-from typing import Annotated, Optional, List
+from datetime import date, datetime, time, timedelta
+from typing import Annotated, List, Optional
+
 from pydantic import (BaseModel, ConfigDict, Field, field_validator,
                       model_validator, validator)
 from starlette.datastructures import UploadFile
@@ -16,7 +17,7 @@ class DoctorSchema(BaseModel):
     gender: str = Field(default="other")
     specialization: str
     experience_years: int
-    certifications: Optional[str] = None
+    certifications: Optional[dict] = None
     hospital_address_work: Optional[str] = None
     address: str
     avatar: str
@@ -59,7 +60,7 @@ class RequestUpdateDoctorSchema(BaseModel):
     gender: Literal["male", "female", "other"] | None = None
     specialization: str | None = None
     experience_years: int | None = None
-    certifications: str | None = None
+    certifications: dict | None = None
     hopital_address_work: str | None = None
     address: str | None = None
     description: str | None = None
