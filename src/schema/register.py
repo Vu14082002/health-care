@@ -10,6 +10,7 @@ from src.models.user_model import Role
 class RequestRegisterPatientSchema(BaseModel):
     first_name: str
     last_name: str
+    email: str
     date_of_birth: str
     gender: Literal["male", "female", "other"] | None = "other"
     phone_number: str

@@ -39,6 +39,8 @@ class PatientModel(Model):
     gender: Mapped[str] = mapped_column(
         String, nullable=False, default="other")
 
+    email: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+
     phone_number: Mapped[str] = mapped_column(
         String, nullable=False, unique=True)
 

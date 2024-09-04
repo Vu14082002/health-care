@@ -1,3 +1,4 @@
+import email
 from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, Integer, String, Text
@@ -66,6 +67,7 @@ class DoctorModel(Model):
     appointments: Mapped[list["AppointmentModel"]] = relationship(
         "AppointmentModel", back_populates="doctor"
     )
+    email: Mapped[str] = mapped_column(String, nullable=True, unique=True)
 
     ratings: Mapped["RatingModel"] = relationship(
         "RatingModel", back_populates="doctor"

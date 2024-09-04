@@ -18,34 +18,37 @@ class PatientRepository(PostgresRepository[PatientModel]):
 
     async def insert_patient(self, data: RequestRegisterPatientSchema) -> PatientModel:
         try:
-            where = destruct_where(UserModel, {
-                "phone_number": data.phone_number})
-            if where is None:
-                raise BadRequest(
-                    ErrorCode.INVALID_PARAMETER.name, msg="Invalid parameter")
-
-            exists_query = select(exists().where(where))
-
-            patient_exists = await self.session.scalar(exists_query)
-            if patient_exists:
-                raise BadRequest(msg="User have been registered",
+            # Check if user exists by phone number
+            user_exists = await self.session.scalar(
+                select(exists().where(UserModel.phone_number == data.phone_number))
+            )
+            if user_exists:
+                raise BadRequest(msg="User has already been registered",
                                  error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name)
 
+            # Check if patient exists by email
+            patient_exists = await self.session.scalar(
+                select(exists().where(PatientModel.email == data.email))
+            )
+            if patient_exists:
+                raise BadRequest(msg="Patient with this email has already been registered",
+                                 error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name)
+
+            # Create user and patient models
             password_hash = PasswordHandler.hash(data.password_hash)
-            user_model = UserModel()
-            user_model.phone_number = data.phone_number
-            user_model.password_hash = password_hash
-            user_model.role = Role.PATIENT.value
+            user_model = UserModel(
+                phone_number=data.phone_number,
+                password_hash=password_hash,
+                role=Role.PATIENT.value
+            )
             patient_data = data.model_dump(exclude={"password_hash"})
-            patient_model = PatientModel(**patient_data)
-            patient_model.user = user_model
+            patient_model = PatientModel(**patient_data, user=user_model)
 
             self.session.add(patient_model)
             await self.session.commit()
             return patient_model
+
         except BadRequest as e:
-            raise e
-        except InternalServer as e:
             raise e
         except Exception as e:
             logging.error(f"Failed to create patient: {e}")
