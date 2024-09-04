@@ -1,8 +1,4 @@
 import logging as log
-from math import atan
-from os import error
-from re import A
-from time import pthread_getcpuclockid
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -13,12 +9,11 @@ from src.core.security import JsonWebToken
 from src.enum import ErrorCode
 from src.factory import Factory
 from src.helper.doctor_helper import DoctorHelper
-from src.schema import RequestRegisterPatientSchema
 from src.schema.doctor_schema import (RequestDetailDoctorSchema,
+                                      RequestDoctorWorkScheduleNextWeek,
                                       RequestGetAllDoctorsSchema,
                                       RequestUpdateDoctorSchema,
                                       RequestUpdatePathParamsSchema)
-from src.schema.register import RequestRegisterDoctorSchema
 
 
 class GetAllDoctorApi(HTTPEndpoint):
@@ -73,4 +68,19 @@ class GetDetailtDoctorById(HTTPEndpoint):
 
 
 class CreateDoctorWorkingTimeApi(HTTPEndpoint):
-    pass
+    async def post(self, form_data: RequestDoctorWorkScheduleNextWeek, auth: JsonWebToken):
+        try:
+            if auth.get("role", "") != "DOCTOR":
+                raise Forbidden(msg="Forbidden",
+                                error_code=ErrorCode.FORBIDDEN.name,
+                                errors={"message": "Only doctors can access this endpoint"})
+
+            doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
+            response = await doctor_helper.create_doctor_work_schedule(doctor_id=auth.get("id"), data=form_data)
+            return response
+        except Forbidden as e:
+            raise
+        except Exception as e:
+            log.error(f"Error creating doctor work schedule: {e}")
+            raise InternalServer(msg="Internal server error",
+                                 error_code=ErrorCode.SERVER_ERROR.name) from e

@@ -46,7 +46,6 @@ class PatientModel(Model):
 
     address: Mapped[str] = mapped_column(String, nullable=False)
 
-    nation: Mapped[str] = mapped_column(String, nullable=True)
 
     avatar: Mapped[str] = mapped_column(
         Text, nullable=True, default=default_avatar)
@@ -56,7 +55,6 @@ class PatientModel(Model):
     emergancy_contact_number: Mapped[str | None] = mapped_column(
         String, nullable=True)
 
-    insurance_number: Mapped[str | None] = mapped_column(String, nullable=True)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
 

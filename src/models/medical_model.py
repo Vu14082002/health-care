@@ -33,7 +33,6 @@ class MedicalModel(Model):
 
     insurance_provider: Mapped[str | None] = mapped_column(
         String, nullable=True)
-    insurance_number: Mapped[str | None] = mapped_column(String, nullable=True)
 
     current_medication: Mapped[str | None] = mapped_column(
         Text, nullable=True, default="")

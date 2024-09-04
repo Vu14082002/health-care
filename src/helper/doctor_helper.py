@@ -1,5 +1,3 @@
-
-
 import logging as log
 import math
 import time
@@ -8,8 +6,10 @@ from typing import Any, Dict, List
 from sqlalchemy.orm.exc import NoResultFound
 
 from src.models.doctor_model import DoctorModel
+from src.models.work_schedule_model import WorkScheduleModel
 from src.repositories.doctor_repository import DoctorRepository
-from src.schema.doctor_schema import DoctorSchema, ReponseGetAllDoctorsSchema
+from src.schema.doctor_schema import (DoctorSchema, ReponseGetAllDoctorsSchema,
+                                      RequestDoctorWorkScheduleNextWeek)
 from src.schema.register import RequestRegisterDoctorSchema
 
 
@@ -61,4 +61,12 @@ class DoctorHelper:
             return None
         except Exception as e:
             log.error(f"Error: {e}")
+            raise e
+
+    async def create_doctor_work_schedule(self, doctor_id: int, data: RequestDoctorWorkScheduleNextWeek):
+        try:
+            reponse = await self.doctor_repository.add_workingschedule(doctor_id, data)
+            return reponse
+        except Exception as e:
+            await self.doctor_repository.session.rollback()
             raise e

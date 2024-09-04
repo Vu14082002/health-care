@@ -15,9 +15,7 @@ class RequestRegisterPatientSchema(BaseModel):
     gender: Literal["male", "female", "other"] | None = "other"
     phone_number: str
     address: str
-    nation: str
     occupation: str
-    insurance_number: str | None = None
     emergancy_contact_number: str | None = None
     password_hash: str = Field(alias="password")
 
@@ -33,11 +31,9 @@ class RequestRegisterDoctorSchema(BaseModel):
     gender: Literal["male", "female", "other"] | None = "other"
     specialization: str
     experience_years: int
-    insurance_number: str | None = None
     certifications: str | None = None
     hopital_address_work: str | None = None
     address: str
-    nation: str
     license_number: str
     password_hash: str = Field(alias="password")
     email: str | None = None
@@ -62,13 +58,11 @@ class ReponseDoctorSchema(BaseModel):
     gender: Literal["male", "female", "other"]
     specialization: str
     experience_years: int
-    insurance_number: Optional[str] = None
     certifications: Optional[str] = None
     hospital_address_work: Optional[str] = None
     address: str
     avatar: str
     description: Optional[str] = None
-    nation: str
     license_number: str
     education: Optional[str] = None
 
@@ -82,10 +76,8 @@ class ResponsePatientSchema(BaseModel):
     gender: str
     phone_number: str
     address: str
-    nation: str
     avatar: str
     occupation: str
-    insurance_number: str | None = None
     emergancy_contact_number: str | None = None
     created_at: int = -1
     updated_at: int = -1

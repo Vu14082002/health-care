@@ -37,7 +37,7 @@ routes = [
         tags=["DOCTOR,ADMIN"]
     ),
     RouteSwagger(
-        "/doctor/{doctor_id}/working-time",
+        "/doctor/working-time",
         CreateDoctorWorkingTimeApi,
         methods=["POST"],
         tags=["DOCTOR"]

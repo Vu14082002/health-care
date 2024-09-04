@@ -1,7 +1,9 @@
 import logging
+from datetime import date, datetime, time
 from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import Result, Row, and_, case, exists, func, select, desc, asc
+from sqlalchemy import (Result, Row, and_, asc, case, delete, desc, exists,
+                        func, select)
 from sqlalchemy.exc import SQLAlchemyError
 
 from src.core.database.postgresql import PostgresRepository
@@ -11,7 +13,9 @@ from src.enum import ErrorCode
 from src.models.doctor_model import DoctorModel
 from src.models.rating_model import RatingModel
 from src.models.user_model import Role, UserModel
+from src.models.work_schedule_model import WorkScheduleModel
 from src.repositories.global_func import destruct_where, process_orderby
+from src.schema.doctor_schema import RequestDoctorWorkScheduleNextWeek
 from src.schema.register import RequestRegisterDoctorSchema
 
 
@@ -175,3 +179,75 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         except SQLAlchemyError as e:
             logging.error(f"Error in get_doctor_with_ratings: {e}")
             raise
+
+    async def add_workingschedule(self, doctor_id: int, data: RequestDoctorWorkScheduleNextWeek) -> Dict[str, str]:
+        try:
+            new_schedules = []
+            for daily_schedule in data.work_schedule:
+                # Delete existing schedules for this date
+                await self.session.execute(
+                    delete(WorkScheduleModel).where(
+                        and_(
+                            WorkScheduleModel.doctor_id == doctor_id,
+                            WorkScheduleModel.work_date == daily_schedule.work_date
+                        )
+                    )
+                )
+                # Create new schedules
+                for time_slot in daily_schedule.time_slots:
+                    new_schedule = WorkScheduleModel(
+                        doctor_id=doctor_id,
+                        work_date=daily_schedule.work_date,
+                        start_time=time_slot.start_time,
+                        end_time=time_slot.end_time
+                    )
+                    new_schedules.append(new_schedule)
+
+            self.session.add_all(new_schedules)
+            await self.session.commit()
+            return {"message": "Work schedule updated successfully"}
+        except SQLAlchemyError as e:
+            logging.error(f"Error in add_workingschedule: {e}")
+            await self.session.rollback()
+            raise BadRequest(msg="Failed to update work schedule",
+                             error_code=ErrorCode.SERVER_ERROR.name) from e
+
+    async def add_workingschedule(self, doctor_id: int, data: RequestDoctorWorkScheduleNextWeek) -> Dict[str, str]:
+        try:
+            new_schedules = []
+            for daily_schedule in data.work_schedule:
+                _ = await self.session.execute(
+                    delete(WorkScheduleModel).where(
+                        and_(
+                            WorkScheduleModel.doctor_id == doctor_id,
+                            WorkScheduleModel.work_date == daily_schedule.work_date
+                        )
+                    )
+                )
+                #  remove duplicate time slots
+                unique_time_slots = []
+                for time_slot in daily_schedule.time_slots:
+                    if not any(
+                        ts.start_time == time_slot.start_time and ts.end_time == time_slot.end_time
+                        for ts in unique_time_slots
+                    ):
+                        unique_time_slots.append(time_slot)
+
+                # create new schedules
+                for time_slot in unique_time_slots:
+                    new_schedule = WorkScheduleModel(
+                        doctor_id=doctor_id,
+                        work_date=daily_schedule.work_date,
+                        start_time=time_slot.start_time,
+                        end_time=time_slot.end_time
+                    )
+                    new_schedules.append(new_schedule)
+
+            self.session.add_all(new_schedules)
+            await self.session.commit()
+            return {"message": "Work schedule updated successfully"}
+        except SQLAlchemyError as e:
+            logging.error(f"Error in add_workingschedule: {e}")
+            await self.session.rollback()
+            raise BadRequest(msg="Failed to update work schedule",
+                             error_code=ErrorCode.SERVER_ERROR.name) from e

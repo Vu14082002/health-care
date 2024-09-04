@@ -1,10 +1,10 @@
-from typing import Annotated, Optional
-
+from datetime import date, time, datetime, timedelta
+from typing import Annotated, Optional, List
 from pydantic import (BaseModel, ConfigDict, Field, field_validator,
-                      model_validator)
+                      model_validator, validator)
 from starlette.datastructures import UploadFile
 from typing_extensions import Any, Literal
-from datetime import date, time
+
 
 class DoctorSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
@@ -16,13 +16,11 @@ class DoctorSchema(BaseModel):
     gender: str = Field(default="other")
     specialization: str
     experience_years: int
-    insurance_number: Optional[str] = None
     certifications: Optional[str] = None
     hospital_address_work: Optional[str] = None
     address: str
     avatar: str
     description: Optional[str] = None
-    nation: str
 
 
 class RequestGetAllDoctorsSchema(BaseModel):
@@ -61,43 +59,44 @@ class RequestUpdateDoctorSchema(BaseModel):
     gender: Literal["male", "female", "other"] | None = None
     specialization: str | None = None
     experience_years: int | None = None
-    insurance_number: str | None = None
     certifications: str | None = None
     hopital_address_work: str | None = None
     address: str | None = None
-    nation: str | None = None
     description: str | None = None
     password_hash: str | None = Field(alias="password", default=None)
     # avatar: UploadFile | None = None
 
 
-class RequestDockerWorkDateInNextWeek(BaseModel):
-    pass
-
-
-class DoctorWorkTimeSlot(BaseModel):
-    work_date: date
+class TimeSlot(BaseModel):
     start_time: time
     end_time: time
 
-    @field_validator('work_date')
-    def validate_work_date(cls, v):
-        if v < date.today():
-            raise ValueError("Work date cannot be in the past")
+    @validator('end_time')
+    def validate_time_slot(cls, v, values):
+        start = values.get('start_time')
+        if start and v:
+            if v <= start:
+                raise ValueError("End time must be after start time")
+            if (datetime.combine(date.today(), v) - datetime.combine(date.today(), start)).total_seconds() / 3600 < 3:
+                raise ValueError("Time slot must be at least 3 hours")
         return v
 
-    @model_validator(mode='after')
-    def validate_time_slot(self):
-        if (datetime.combine(date.today(), self.end_time) - 
-            datetime.combine(date.today(), self.start_time)).total_seconds() / 3600 < 3:
-            raise ValueError("Time slot must be at least 3 hours")
-        return self
+
+class DailySchedule(BaseModel):
+    work_date: date
+    time_slots: List[TimeSlot]
+# FIXME eanble check past
+    # @validator('work_date')
+    # def validate_work_date(cls, v):
+    #     if v < date.today():
+    #         raise ValueError("Work date cannot be in the past")
+    #     return v
+
 
 class RequestDoctorWorkScheduleNextWeek(BaseModel):
-    doctor_id: int
-    work_schedule: list[DoctorWorkTimeSlot]
+    work_schedule: List[DailySchedule]
 
-    @field_validator('work_schedule')
+    @validator('work_schedule')
     def validate_work_schedule(cls, v):
         if len(v) == 0:
             raise ValueError("Work schedule cannot be empty")

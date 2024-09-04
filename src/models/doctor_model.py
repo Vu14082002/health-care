@@ -43,7 +43,6 @@ class DoctorModel(Model):
     experience_years: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0)
 
-    insurance_number: Mapped[str | None] = mapped_column(String, nullable=True)
 
     certifications: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -56,9 +55,6 @@ class DoctorModel(Model):
         Text, nullable=True, default=default_avatar)
 
     description: Mapped[str] = mapped_column(Text, nullable=True)
-
-    nation: Mapped[str] = mapped_column(
-        String, nullable=False, default="Vietnam")
 
     working_schedules: Mapped[list["WorkScheduleModel"]] = relationship(
         "WorkScheduleModel", back_populates="doctor"
