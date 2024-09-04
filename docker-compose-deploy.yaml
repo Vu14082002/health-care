@@ -2,12 +2,14 @@ version: '3'
 services:
     web:
         container_name: health_care
-        image: sherlockvufullsnack/health_care-api:latest
+        build:
+            context: .
+            dockerfile: Dockerfile
         ports:
             - '5005:5005'
         depends_on:
             - redis
-            - postgresql-master
+            - postgres
         networks:
             - app-network
         environment:
@@ -23,10 +25,14 @@ services:
             - PREFIX_URL=${PREFIX_URL}
             - ACCOUNT_SID=${ACCOUNT_SID}
             - AUTH_TOKEN=${AUTH_TOKEN}
+            - S3_BUCKET=${S3_BUCKET}
+            - S3_KEY=${S3_KEY}
+            - S3_SECRET=${S3_SECRET}
+            - REGION=${REGION}
         volumes:
             - .:/app
     redis:
-        container_name: redis-lung
+        container_name: redis_health_care
         image: redis:alpine
         restart: always
         ports:
@@ -38,7 +44,7 @@ services:
             - app-network
 
     redis-commander:
-        container_name: redis-commander-lung
+        container_name: redis_commander_health_care
         image: ghcr.io/joeferner/redis-commander:latest
         restart: always
         ports:
@@ -48,47 +54,18 @@ services:
         networks:
             - app-network
 
-    postgresql-master:
-        container_name: postgresql-master-lung-container
-        image: 'docker.io/bitnami/postgresql:11-debian-10'
+    postgres:
+        container_name: postgres_health_care
+        image: postgres:13.15
+        restart: always
         ports:
-            - '5400:5432'
-        volumes:
-            - 'postgresql_master_data:/bitnami/postgresql'
+            - '5432:5432'
         environment:
-            - POSTGRESQL_PGAUDIT_LOG=READ,WRITE
-            - POSTGRESQL_LOG_HOSTNAME=true
-            - POSTGRESQL_REPLICATION_MODE=master
-            - POSTGRESQL_REPLICATION_USER=repl_user
-            - POSTGRESQL_REPLICATION_PASSWORD=repl_password
-            - POSTGRESQL_USERNAME=admin
-            - POSTGRESQL_PASSWORD=admin
-            - POSTGRESQL_DATABASE=health_care
-            - ALLOW_EMPTY_PASSWORD=no
+            - POSTGRES_USER=admin
+            - POSTGRES_PASSWORD=admin
+            - POSTGRES_DB=health_care
         networks:
             - app-network
-
-    postgresql-slave:
-        container_name: postgresql-slave-lung-container
-        image: 'docker.io/bitnami/postgresql:11-debian-10'
-        ports:
-            - '5401:5432'
-        depends_on:
-            - postgresql-master
-        environment:
-            - POSTGRESQL_USERNAME=postgres
-            - POSTGRESQL_PASSWORD=postgres
-            - POSTGRESQL_DATABASE=health_care
-            - POSTGRESQL_MASTER_HOST=postgresql-master
-            - POSTGRESQL_PGAUDIT_LOG=READ
-            - POSTGRESQL_LOG_HOSTNAME=true
-            - POSTGRESQL_REPLICATION_MODE=slave
-            - POSTGRESQL_REPLICATION_USER=repl_user
-            - POSTGRESQL_REPLICATION_PASSWORD=repl_password
-            - POSTGRESQL_MASTER_PORT_NUMBER=5432
-        networks:
-            - app-network
-
     adminer:
         container_name: adminer-lung
         image: adminer
