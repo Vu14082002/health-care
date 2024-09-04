@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Union
 
 import ujson
+from starlette.requests import Request
 
 from src.core import HTTPEndpoint
 from src.core.exception import BadRequest, InternalServer
@@ -55,3 +56,15 @@ class LoginApi(HTTPEndpoint):
         user_helper: UserHelper = await Factory().get_user_helper()
         reponse_json = await user_helper.login(form_data.phone_number, form_data.password)
         return reponse_json
+
+
+class LogoutApi(HTTPEndpoint):
+    async def post(self, request: Request):
+        if request.headers.get("Authorization"):
+            token = request.headers.get("Authorization").split(" ")[1]
+            user_helper: UserHelper = await Factory().get_user_helper()
+            reponse_json = await user_helper.logout(token)
+            return reponse_json
+        else:
+            raise BadRequest(msg="Bad request",
+                             error_code=ErrorCode.BAD_REQUEST.name)

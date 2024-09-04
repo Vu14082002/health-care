@@ -1,6 +1,6 @@
 
 from src.apis.auth import (AdminRegisterApi, DoctorPatientRegisterApi,
-                           LoginApi, PatientRegisterApi)
+                           LoginApi, LogoutApi, PatientRegisterApi)
 from src.apis.docter_api import GetAllDoctorApi, GetDetailtDoctorById
 from src.apis.health_check import HealthCheck
 from src.core.route import RouteSwagger
@@ -16,6 +16,9 @@ routes = [
                  tags=["ADMIN"]),
     RouteSwagger("/auth/login", LoginApi,
                  methods=["POST"], tags=["ADMIN,PATIENT,DOCTOR"]),
+    RouteSwagger("/auth/logout", LogoutApi,
+                 methods=["POST"], tags=["ADMIN,PATIENT,DOCTOR"]),
+
 
     # Doctor api
     RouteSwagger("/doctor", GetAllDoctorApi,

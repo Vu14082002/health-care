@@ -40,6 +40,7 @@ class RequestRegisterDoctorSchema(BaseModel):
     nation: str
     license_number: str
     password_hash: str = Field(alias="password")
+    email: str | None = None
 
     class Config:
         from_attributes = True
