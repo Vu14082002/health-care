@@ -21,16 +21,12 @@ class DoctorHelper:
         try:
             skip = (current_page - 1) * page_size
             limit = page_size
-            _doctors: list[DoctorModel] = await self.doctor_repository.get_all(skip, limit, join_, where, order_by)
+            _doctors = await self.doctor_repository.get_all(skip, limit, join_, where, order_by)
 
             count_record = await self.doctor_repository.count_record(where)
 
             total_page = math.ceil(count_record / limit)
-
-            items = [DoctorSchema(**doctor.as_dict) for doctor in _doctors]
-            result = ReponseGetAllDoctorsSchema(
-                items=items, current_page=current_page, page_size=page_size, total_page=total_page)
-            return result
+            return {"data": _doctors, "total_page": total_page, "current_page": current_page, "page_size": page_size}
         except Exception as e:
             raise e
 

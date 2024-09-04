@@ -36,7 +36,7 @@ class GetAllDoctorApi(HTTPEndpoint):
             if query_params.phone_number:
                 where["phone_number"] = query_params.phone_number
             response_data = await doctor_helper.get_all_doctor(current_page=current_page, page_size=page_size, where=where)
-            return {**response_data.model_dump()}
+            return response_data
         except Exception as e:
             log.error(f"Error: {e}")
             raise InternalServer(msg="Internal server error",
@@ -70,3 +70,7 @@ class GetDetailtDoctorById(HTTPEndpoint):
             log.error(f"Error: {e}")
             raise InternalServer(msg="Internal server error",
                                  error_code=ErrorCode.SERVER_ERROR.name) from e
+
+
+class CreateDoctorWorkingTimeApi(HTTPEndpoint):
+    pass

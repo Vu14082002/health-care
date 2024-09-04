@@ -71,3 +71,7 @@ class RequestUpdateDoctorSchema(BaseModel):
     description: str | None = None
     password_hash: str | None = Field(alias="password", default=None)
     # avatar: UploadFile | None = None
+
+
+class RequestDockerWorkDateInNextWeek(BaseModel):
+    pass

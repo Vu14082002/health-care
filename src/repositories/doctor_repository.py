@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import Result, Row, exists, func, select
+from sqlalchemy import Result, Row, and_, case, exists, func, select, desc, asc
 from sqlalchemy.exc import SQLAlchemyError
 
 from src.core.database.postgresql import PostgresRepository
@@ -18,20 +18,71 @@ from src.schema.register import RequestRegisterDoctorSchema
 class DoctorRepository(PostgresRepository[DoctorModel]):
 
     async def get_all(self, skip: int = 0, limit: int = 10, join_: Optional[set[str]] = None,
-                      where: Optional[Dict[str, Any]] = None, order_by: Optional[Dict[str, str]] = None) -> List[DoctorModel]:
+                      where: Optional[Dict[str, Any]] = None, order_by: Optional[Dict[str, str]] = None,
+                      min_avg_rating: Optional[float] = None, min_rating_count: Optional[int] = None) -> List[Dict[str, Any]]:
         try:
             condition = destruct_where(self.model_class, where or {})
-            order_expressions = process_orderby(
-                self.model_class, order_by or {"created_at": "desc"})
 
-            query = select(self.model_class)
+            subquery = (
+                select(
+                    RatingModel.doctor_id,
+                    func.avg(RatingModel.rating).label('avg_rating'),
+                    func.count(RatingModel.id).label('rating_count')
+                )
+                .group_by(RatingModel.doctor_id)
+                .subquery()
+            )
+
+            query = (
+                select(
+                    self.model_class,
+                    case(
+                        (subquery.c.avg_rating != None, subquery.c.avg_rating),
+                        else_=0.0
+                    ).label('avg_rating'),
+                    case(
+                        (subquery.c.rating_count != None, subquery.c.rating_count),
+                        else_=0
+                    ).label('rating_count')
+                )
+                .outerjoin(subquery, self.model_class.id == subquery.c.doctor_id)
+            )
+
             if condition is not None:
                 query = query.where(condition)
-            query = query.order_by(
-                *order_expressions).offset(skip).limit(limit)
+
+            if min_avg_rating is not None:
+                query = query.where(subquery.c.avg_rating >= min_avg_rating)
+
+            if min_rating_count is not None:
+                query = query.where(
+                    subquery.c.rating_count >= min_rating_count)
+
+            # Handle sorting
+            if order_by and "avg_rating" in order_by:
+                direction = desc if order_by["avg_rating"].lower(
+                ) == "desc" else asc
+                query = query.order_by(direction(subquery.c.avg_rating))
+            else:
+                # Default sorting by avg_rating desc
+                query = query.order_by(desc(subquery.c.avg_rating))
+
+            # Apply any other sorting criteria
+            other_order_expressions = process_orderby(
+                self.model_class, {k: v for k, v in (order_by or {}).items() if k != "avg_rating"})
+            if other_order_expressions:
+                query = query.order_by(*other_order_expressions)
+
+            query = query.offset(skip).limit(limit)
 
             result = await self.session.execute(query)
-            return list(result.scalars().all())
+            doctors = result.all()
+
+            return [
+                {**doctor[0].as_dict, 'avg_rating': doctor[1],
+                    'rating_count': doctor[2]}
+                for doctor in doctors
+            ]
         except SQLAlchemyError as e:
             logging.error(f"Error in get_all: {e}")
             raise

@@ -1,7 +1,8 @@
 
 from src.apis.auth import (AdminRegisterApi, DoctorPatientRegisterApi,
                            LoginApi, LogoutApi, PatientRegisterApi)
-from src.apis.docter_api import GetAllDoctorApi, GetDetailtDoctorById
+from src.apis.docter_api import (CreateDoctorWorkingTimeApi, GetAllDoctorApi,
+                                 GetDetailtDoctorById)
 from src.apis.health_check import HealthCheck
 from src.core.route import RouteSwagger
 
@@ -34,5 +35,11 @@ routes = [
         GetDetailtDoctorById,
         methods=["PUT"],
         tags=["DOCTOR,ADMIN"]
+    ),
+    RouteSwagger(
+        "/doctor/{doctor_id}/working-time",
+        CreateDoctorWorkingTimeApi,
+        methods=["POST"],
+        tags=["DOCTOR"]
     ),
 ]
