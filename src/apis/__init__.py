@@ -17,6 +17,8 @@ routes = [
 
     RouteSwagger("/auth/doctor/verify/other/{doctor_id}", DoctorOtherVerifyApi,
                  methods=["PUT"], tags=["ADMIN"]),
+    RouteSwagger("/doctor/verify/other", DoctorOtherVerifyApi,
+                 methods=["GET"], tags=["ADMIN"]),
 
     RouteSwagger("/auth/patient/register", PatientRegisterApi,
                  methods=["POST"], tags=["PATIENT"]),

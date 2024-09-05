@@ -1,3 +1,4 @@
+from inspect import Signature
 from typing import Any, Dict, List, Union
 
 import ujson
@@ -17,6 +18,7 @@ from src.models.patient_model import PatientModel
 from src.models.user_model import UserModel
 from src.schema.register import (ReponseAdminSchema,
                                  RequestAdminRegisterSchema,
+                                 RequestGetAllDoctorsNotVerifySchema,
                                  RequestLoginSchema,
                                  RequestRegisterDoctorBothSchema,
                                  RequestRegisterDoctorOfflineSchema,
@@ -50,6 +52,31 @@ class DoctorOtherRegisterApi(HTTPEndpoint):
 
 
 class DoctorOtherVerifyApi(HTTPEndpoint):
+
+    async def get(self, query_params: RequestGetAllDoctorsNotVerifySchema, auth: JsonWebToken):
+        try:
+            if auth.get("role", "") != "ADMIN":
+                raise BadRequest(msg="Unauthorized access",
+                                 error_code=ErrorCode.UNAUTHORIZED.name, errors={"message": "only admin can access"})
+
+            doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
+            current_page = query_params.current_page if query_params.current_page else 0
+            page_size = query_params.page_size if query_params.page_size else 10
+            where = {"verify_status": 0}
+            if query_params.key_word:
+                where["$or"] = [
+                    {"first_name": {"$regex": query_params.key_word}},
+                    {"last_name": {"$regex": query_params.key_word}}
+                ]
+            if query_params.phone_number:
+                where["phone_number"] = query_params.phone_number
+            response_data = await doctor_helper.get_all_doctor(current_page=current_page, page_size=page_size, where=where)
+            return response_data
+        except Exception as e:
+            log.error(f"Error: {e}")
+            raise InternalServer(msg="Internal server error",
+                                 error_code=ErrorCode.SERVER_ERROR.name) from e
+
     async def put(self, path_params: RequestVerifyDoctorSchema, auth: JsonWebToken):
         try:
             if auth.get("role", "") != "ADMIN":

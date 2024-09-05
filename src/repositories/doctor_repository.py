@@ -37,15 +37,14 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 .group_by(RatingModel.doctor_id)
                 .subquery()
             )
-
             latest_price_subquery = (
                 select(
+                    DoctorExaminationPriceModel.id,
                     DoctorExaminationPriceModel.doctor_id,
-                    DoctorExaminationPriceModel.offline_price,
                     DoctorExaminationPriceModel.online_price,
+                    DoctorExaminationPriceModel.offline_price,
                     DoctorExaminationPriceModel.ot_price_fee,
-                    DoctorExaminationPriceModel.is_active,
-                    DoctorExaminationPriceModel.effective_date
+                    DoctorExaminationPriceModel.created_at,
                 )
                 .distinct(DoctorExaminationPriceModel.doctor_id)
                 .order_by(
@@ -101,18 +100,17 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
 
             result = await self.session.execute(query)
             doctors = result.all()
-
             return [
                 {
                     **doctor[0].as_dict,
                     'avg_rating': doctor[1],
                     'rating_count': doctor[2],
                     'latest_examination_price': {
-                        'offline_price': doctor[3].offline_price,
-                        'online_price': doctor[3].online_price,
-                        'ot_price_fee': doctor[3].ot_price_fee,
-                        'is_active': doctor[3].is_active,
-                        'effective_date': doctor[3].effective_date
+                        'id': doctor[3],
+                        'online_price': doctor[5],
+                        'offline_price': doctor[6],
+                        'ot_price_fee': doctor[7],
+                        'created_at': doctor[8]
                     } if doctor[3] else None
                 }
                 for doctor in doctors
