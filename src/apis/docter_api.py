@@ -22,7 +22,7 @@ class GetAllDoctorApi(HTTPEndpoint):
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             current_page = query_params.current_page if query_params.current_page else 0
             page_size = query_params.page_size if query_params.page_size else 10
-            where = {}
+            where = {"verify_status": {"$ne": 0}}
             if query_params.key_word:
                 where["$or"] = [
                     {"first_name": {"$regex": query_params.key_word}},

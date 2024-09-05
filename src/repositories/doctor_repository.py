@@ -221,9 +221,12 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 )
                 .outerjoin(RatingModel)
                 .outerjoin(DoctorExaminationPriceModel)
-                .where(self.model_class.id == doctor_id)
+                .where(and_(
+                    self.model_class.id == doctor_id,
+                    self.model_class.verify_status != 0
+                ))
                 .group_by(self.model_class.id, DoctorExaminationPriceModel.id)
-                .order_by(desc(DoctorExaminationPriceModel.effective_date))
+                .order_by(desc(DoctorExaminationPriceModel.created_at))
                 .limit(1)
             )
 
@@ -247,7 +250,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                     'online_price': latest_price.online_price,
                     'ot_price_fee': latest_price.ot_price_fee,
                     'is_active': latest_price.is_active,
-                    'effective_date': latest_price.effective_date
+                    'created_at': latest_price.created_at
                 }
             else:
                 doctor_dict['latest_examination_price'] = None
