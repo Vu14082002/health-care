@@ -13,12 +13,11 @@ class PatientHelper:
     def __init__(self, patient_repository: PatientRepository) -> None:
         self.patient_repository: PatientRepository = patient_repository
 
-    async def create_patient(self, data: RequestRegisterPatientSchema) -> ResponsePatientSchema:
+    async def create_patient(self, data: RequestRegisterPatientSchema):
         try:
             result = await self.patient_repository.insert_patient(data)
-            data_response = ResponsePatientSchema(
-                **result.as_dict)
-            return data_response
+            # data_response = ResponsePatientSchema.model_validate(result)
+            return result
         except BadRequest as e:
             raise e
         except InternalServer as e:

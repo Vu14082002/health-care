@@ -2,7 +2,7 @@ from datetime import date, datetime, time
 from math import e
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, Date, ForeignKey, Integer, Time
+from sqlalchemy import Date, ForeignKey, Integer, Time
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model

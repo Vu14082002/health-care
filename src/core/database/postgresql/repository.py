@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from datetime import datetime, timezone
+import json
+from datetime import date, datetime, timezone
 from functools import reduce
 from operator import and_
 from typing import Any, Dict, Generic, List, Type, TypeVar, Union
@@ -328,7 +329,16 @@ class Model(Base):
 
     @property
     def as_dict(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        def json_serializable(obj):
+            if isinstance(obj, (date, datetime)):
+                return obj.isoformat()
+            return obj
+
+        result = {}
+        for c in self.__table__.columns:
+            value = getattr(self, c.name)
+            result[c.name] = json_serializable(value)
+        return result
 
     @staticmethod
     def set_before_insert(mapper, connection, target):

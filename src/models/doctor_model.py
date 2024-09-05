@@ -1,9 +1,11 @@
-import email
-from typing import TYPE_CHECKING
+import enum
+from datetime import date, datetime, time
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import JSON, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Date, ForeignKey, Integer, String, Text, Time
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm.properties import MappedColumn
 
 from src.core.database.postgresql import Model
 
@@ -19,6 +21,14 @@ if TYPE_CHECKING:
     from src.models.user_model import UserModel
     from src.models.work_schedule_model import WorkScheduleModel
 
+# FIXME: working date online or offline
+
+
+class TypeOfDisease(enum.Enum):
+    ONLINE = "online"
+    OFFLINE = "offline"
+    BOTH = "both"
+
 
 class DoctorModel(Model):
     __tablename__ = "doctor"
@@ -33,18 +43,26 @@ class DoctorModel(Model):
     phone_number: Mapped[str] = mapped_column(
         String, nullable=False, unique=True)
 
-    date_of_birth: Mapped[str] = mapped_column(String, nullable=False)
+    date_of_birth: Mapped[date] = mapped_column(Date, nullable=False)
 
     gender: Mapped[str] = mapped_column(
         String, nullable=False, default="other")
 
     specialization: Mapped[str] = mapped_column(
-        String, nullable=False, default="Dermatology")
+        String, nullable=False, default="dermatology")
 
-    experience_years: Mapped[int] = mapped_column(
+    certification: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    verify_status: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0)
 
-    certifications: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    is_local_person: Mapped[bool | None] = mapped_column(
+        Boolean, nullable=True)
+
+    diploma: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=True)
+
+    type_of_disease: Mapped[str] = mapped_column(
+        String, nullable=False)  # type: ignore
 
     hopital_address_work: Mapped[str | None] = mapped_column(
         String, nullable=True)
@@ -56,14 +74,11 @@ class DoctorModel(Model):
 
     description: Mapped[str] = mapped_column(Text, nullable=True)
 
-    working_schedules: Mapped[list["WorkScheduleModel"]] = relationship(
-        "WorkScheduleModel", back_populates="doctor"
-    )
+    email: Mapped[str] = mapped_column(String, nullable=True, unique=True)
 
     appointments: Mapped[list["AppointmentModel"]] = relationship(
         "AppointmentModel", back_populates="doctor"
     )
-    email: Mapped[str] = mapped_column(String, nullable=True, unique=True)
 
     ratings: Mapped["RatingModel"] = relationship(
         "RatingModel", back_populates="doctor"
@@ -84,10 +99,21 @@ class DoctorModel(Model):
 
     education: Mapped[str] = mapped_column(Text, nullable=True)
 
+    account_number: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    bank_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    beneficiary_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    branch_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # relationship
     prescriptions: Mapped[list["PrescriptionModel"]] = relationship(
         "PrescriptionModel", back_populates="doctor")
+
     medical_tests: Mapped[list["MedicalTestModel"]] = relationship(
         "MedicalTestModel", back_populates="doctor")
 
-    def __repr__(self):
-        return f"<Doctor(id={self.id}, name='{self.first_name} {self.last_name}', specialization='{self.specialization}', experience_years={self.experience_years})>"
+    working_schedules: Mapped[list["WorkScheduleModel"]] = relationship(
+        "WorkScheduleModel", back_populates="doctor"
+    )

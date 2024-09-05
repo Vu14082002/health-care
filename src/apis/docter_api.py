@@ -68,6 +68,10 @@ class GetDetailtDoctorById(HTTPEndpoint):
 
 
 class CreateDoctorWorkingTimeApi(HTTPEndpoint):
+
+    # async def get(self, form_data, auth: JsonWebToken):
+    #     pass
+
     async def post(self, form_data: RequestDoctorWorkScheduleNextWeek, auth: JsonWebToken):
         try:
             if auth.get("role", "") != "DOCTOR":

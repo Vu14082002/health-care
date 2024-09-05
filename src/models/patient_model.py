@@ -1,8 +1,9 @@
+from datetime import date
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-from sqlalchemy import (UUID, Column, Float, ForeignKey, Integer, String, Text,
-                        event)
+from sqlalchemy import (UUID, Column, Date, Float, ForeignKey, Integer, String,
+                        Text, event)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
@@ -34,7 +35,7 @@ class PatientModel(Model):
 
     last_name: Mapped[str] = mapped_column(String, nullable=False)
 
-    date_of_birth: Mapped[str] = mapped_column(String, nullable=False)
+    date_of_birth: Mapped[date] = mapped_column(Date, nullable=False)
 
     gender: Mapped[str] = mapped_column(
         String, nullable=False, default="other")
@@ -46,7 +47,6 @@ class PatientModel(Model):
 
     address: Mapped[str] = mapped_column(String, nullable=False)
 
-
     avatar: Mapped[str] = mapped_column(
         Text, nullable=True, default=default_avatar)
 
@@ -54,7 +54,6 @@ class PatientModel(Model):
 
     emergancy_contact_number: Mapped[str | None] = mapped_column(
         String, nullable=True)
-
 
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
 
@@ -67,6 +66,14 @@ class PatientModel(Model):
     height: Mapped[float] = mapped_column(Float, nullable=True)
 
     weight: Mapped[float] = mapped_column(Float, nullable=True)
+
+    account_number: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    bank_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    beneficiary_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    branch_name: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     user: Mapped["UserModel"] = relationship(
         "UserModel", uselist=False, back_populates="patient")

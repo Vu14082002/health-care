@@ -91,10 +91,10 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             logging.error(f"Error in get_all: {e}")
             raise
 
-    async def insert(self, data: RequestRegisterDoctorSchema) -> DoctorModel:
+    async def insert(self, data: dict[str, Any], *args: Any, **kwargs: Any) -> DoctorModel:
         try:
-            await self._check_existing_user(data.phone_number)
-            await self._check_existing_doctor(data.email, data.license_number)
+            await self._check_existing_user(data.get("phone_number", ""))
+            await self._check_existing_doctor(data.get("email", ""), data.get("license_number", ""))
 
             user_model = self._create_user_model(data)
             doctor_model = self._create_doctor_model(data, user_model)
@@ -102,13 +102,20 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             self.session.add(doctor_model)
             await self.session.commit()
             return doctor_model
-        except BadRequest:
+        except BadRequest as e:
+            logging.error(f"BadRequest error in insert: {e}")
+            await self.session.rollback()
             raise
-        except Exception as e:
-            logging.error(f"Error in insert: {e}")
+        except SQLAlchemyError as e:
+            logging.error(f"SQLAlchemy error in insert: {e}")
             await self.session.rollback()
             raise BadRequest(error_code=ErrorCode.SERVER_ERROR.name,
-                             msg="Failed to register doctor")
+                             msg="Failed to register doctor: Database error")
+        except Exception as e:
+            logging.error(f"Unexpected error in insert: {e}")
+            await self.session.rollback()
+            raise BadRequest(error_code=ErrorCode.SERVER_ERROR.name,
+                             msg="Failed to register doctor: Unexpected error")
 
     async def _check_existing_user(self, phone_number: str) -> None:
         user_exists = await self.session.scalar(
@@ -127,18 +134,19 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             raise BadRequest(msg="Doctor with this email or license number has already been registered",
                              error_code=ErrorCode.EMAIL_OR_LICENSE_NUMBER_HAVE_BEEN_REGISTERED.name)
 
-    def _create_user_model(self, data: RequestRegisterDoctorSchema) -> UserModel:
+    def _create_user_model(self, data: dict[str, Any]) -> UserModel:
         return UserModel(
-            phone_number=data.phone_number,
-            password_hash=PasswordHandler.hash(data.password_hash),
+            phone_number=data.get("phone_number", ""),
+            password_hash=PasswordHandler.hash(data.get("password_hash", "")),
             role=Role.DOCTOR.value
         )
 
-    def _create_doctor_model(self, data: RequestRegisterDoctorSchema, user_model: UserModel) -> DoctorModel:
-        doctor_data = data.model_dump(exclude={"password_hash"})
+    def _create_doctor_model(self, data: dict[str, Any], user_model: UserModel) -> DoctorModel:
+        doctor_data_schema = RequestRegisterDoctorSchema(**data)
+        doctor_data = doctor_data_schema.model_dump(exclude={"password_hash"})
         return DoctorModel(**doctor_data, user=user_model)
 
-    async def count_record(self, where: Optional[Dict[str, Any]] = None) -> int:
+    async def count_record(self, where: Optional[Dict[str, Any]] = None):
         try:
             where_condition = destruct_where(self.model_class, where or {})
             query = select(self.model_class)

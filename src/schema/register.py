@@ -1,9 +1,12 @@
+from datetime import date
 from typing import Literal, Optional
 from uuid import UUID
 
 from click import File
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
+from src.lib.postgres import Base
+from src.models.doctor_model import TypeOfDisease
 from src.models.user_model import Role
 
 
@@ -11,54 +14,79 @@ class RequestRegisterPatientSchema(BaseModel):
     first_name: str
     last_name: str
     email: str
-    date_of_birth: str
+    date_of_birth: date
     gender: Literal["male", "female", "other"] | None = "other"
     phone_number: str
     address: str
     occupation: str
     emergancy_contact_number: str | None = None
     password_hash: str = Field(alias="password")
+    account_number: str | None = None
+    bank_name: str | None = None
+    beneficiary_name: str | None = None
+    branch_name: str | None = None
 
     class Config:
         from_attributes = True
+
+
+class ResponsePatientSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    first_name: str
+    last_name: str
+    date_of_birth: date
+    gender: str
+    email: str
+    phone_number: str
+    address: str
+    avatar: str
+    occupation: str
+    emergancy_contact_number: str | None = None
+    blood_type: str | None = None
+    allergies: str | None = None
+    chronic_conditions: str | None = None
+
+
+class Diploma(BaseModel):
+    data: list[str] | None = None
 
 
 class RequestRegisterDoctorSchema(BaseModel):
     first_name: str
     last_name: str
-    phone_number: str
+    phone_number: date
     date_of_birth: str
     gender: Literal["male", "female", "other"] | None = "other"
     specialization: str
-    experience_years: int
-    certifications: dict | None = None
+    certification: str | None = None
+    diploma: Diploma | None = None
     hopital_address_work: str | None = None
     address: str
-    license_number: str
-    password_hash: str = Field(alias="password")
+    description: str | None = None
     email: str | None = None
+    license_number: str
+    education: str | None = None
+    account_number: str | None = None
+    bank_name: str | None = None
+    beneficiary_name: str | None = None
+    branch_name: str | None = None
+    password_hash: str = Field(alias="password")
 
     class Config:
         from_attributes = True
 
 
-class RequestAdminRegisterSchema(BaseModel):
-    phone_number: str
-    password_hash: str = Field(alias="password")
-
-
 class ReponseDoctorSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
-
     id: int
     first_name: str
     last_name: str
     phone_number: str
-    date_of_birth: str
+    date_of_birth: date
     gender: Literal["male", "female", "other"]
     specialization: str
-    experience_years: int
-    certifications: Optional[dict] = None
+    certification: Optional[dict] = None
     hospital_address_work: Optional[str] = None
     address: str
     avatar: str
@@ -67,24 +95,33 @@ class ReponseDoctorSchema(BaseModel):
     education: Optional[str] = None
 
 
-class ResponsePatientSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: int
-    first_name: str
-    last_name: str
-    date_of_birth: str
-    gender: str
+class RequestRegisterDoctorOnlineSchema(RequestRegisterDoctorSchema):
+    is_local_person: bool = Field(default=False, exclude=True)
+    type_of_disease: Literal["online"] = Field(
+        default=TypeOfDisease.ONLINE.value, exclude=True)
+    verify_status: int = Field(default=0, exclude=True)
+
+
+class RequestRegisterDoctorOfflineSchema(RequestRegisterDoctorSchema):
+    is_local_person: bool = Field(default=True, exclude=True)
+    type_of_disease: Literal["offline"] = Field(
+        default=TypeOfDisease.OFFLINE.value, exclude=True)
+    verify_status: int = Field(default=2, exclude=True)
+
+
+class RequestRegisterDoctorBothSchema(RequestRegisterDoctorSchema):
+    is_local_person: bool = Field(default=False, exclude=True)
+    type_of_disease: Literal["both"] = Field(
+        default=TypeOfDisease.BOTH, exclude=True)
+    verify_status: int = Field(default=2, exclude=True)
+
+
+class RequestAdminRegisterSchema(BaseModel):
     phone_number: str
-    address: str
-    avatar: str
-    occupation: str
-    emergancy_contact_number: str | None = None
-    created_at: int = -1
-    updated_at: int = -1
-    is_deleted: bool = False
+    password_hash: str = Field(alias="password")
 
 
-class ReponseAdinSchema(BaseModel):
+class ReponseAdminSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     phone_number: str

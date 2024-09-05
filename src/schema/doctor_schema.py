@@ -16,8 +16,7 @@ class DoctorSchema(BaseModel):
     date_of_birth: str
     gender: str = Field(default="other")
     specialization: str
-    experience_years: int
-    certifications: Optional[dict] = None
+    certification: Optional[dict] = None
     hospital_address_work: Optional[str] = None
     address: str
     avatar: str
@@ -59,8 +58,7 @@ class RequestUpdateDoctorSchema(BaseModel):
     date_of_birth: str | None = None
     gender: Literal["male", "female", "other"] | None = None
     specialization: str | None = None
-    experience_years: int | None = None
-    certifications: dict | None = None
+    certification: dict | None = None
     hopital_address_work: str | None = None
     address: str | None = None
     description: str | None = None
