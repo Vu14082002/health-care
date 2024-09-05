@@ -21,7 +21,8 @@ from src.schema.register import (ReponseAdminSchema,
                                  RequestRegisterDoctorBothSchema,
                                  RequestRegisterDoctorOfflineSchema,
                                  RequestRegisterDoctorOnlineSchema,
-                                 RequestRegisterPatientSchema)
+                                 RequestRegisterPatientSchema,
+                                 RequestVerifyDoctorSchema)
 
 
 class PatientRegisterApi(HTTPEndpoint):
@@ -46,6 +47,25 @@ class DoctorOtherRegisterApi(HTTPEndpoint):
         doctor_helper = await Factory().get_doctor_helper()
         result: DoctorModel = await doctor_helper.create_doctor(form_data.model_dump())
         return result.as_dict  # type: ignore
+
+
+class DoctorOtherVerifyApi(HTTPEndpoint):
+    async def put(self, path_params: RequestVerifyDoctorSchema, auth: JsonWebToken):
+        try:
+            if auth.get("role", "") != "ADMIN":
+                raise BadRequest(msg="Unauthorized access",
+                                 error_code=ErrorCode.UNAUTHORIZED.name, errors={"message": "only admin can access"})
+
+            doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
+            result = await doctor_helper.verify_doctor(path_params.doctor_id)
+            if result:
+                return {"message": "Doctor verified successfully"}
+            else:
+                raise BadRequest(msg="Doctor not found or already verified",
+                                 error_code=ErrorCode.BAD_REQUEST.name)
+        except Exception as e:
+            raise InternalServer(error_code=ErrorCode.SERVER_ERROR.name, errors={
+                                 "message": "Error when verify doctor"}) from e
 
 
 class DoctorOnlineRegisterApi(HTTPEndpoint):

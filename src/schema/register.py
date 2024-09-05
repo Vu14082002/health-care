@@ -74,6 +74,10 @@ class RequestRegisterDoctorSchema(BaseModel):
     password_hash: str = Field(alias="password")
 
 
+class RequestVerifyDoctorSchema(BaseModel):
+    doctor_id: int
+
+
 class RequestRegisterDoctorOnlineSchema(RequestRegisterDoctorSchema):
     is_local_person: bool = Field(default=True)
     type_of_disease: Literal["online"] = Field(

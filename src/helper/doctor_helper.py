@@ -70,3 +70,16 @@ class DoctorHelper:
         except Exception as e:
             await self.doctor_repository.session.rollback()
             raise e
+
+    async def verify_doctor(self, doctor_id: int) -> bool:
+        try:
+            doctor = await self.doctor_repository.get_by("id", doctor_id, unique=True)
+            if doctor and doctor.verify_status == 0:
+                updated_doctor = await self.doctor_repository.update_one(doctor, {"verify_status": 1})
+                return updated_doctor is not None
+            return False
+        except NoResultFound:
+            return False
+        except Exception as e:
+            log.error(f"Error verifying doctor: {e}")
+            raise

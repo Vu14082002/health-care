@@ -329,3 +329,15 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             await self.session.rollback()
             raise BadRequest(msg="Failed to update work schedule",
                              error_code=ErrorCode.SERVER_ERROR.name) from e
+
+    async def update_one(self, model: DoctorModel, data: dict[str, Any]) -> Optional[DoctorModel]:
+        try:
+            for key, value in data.items():
+                setattr(model, key, value)
+            await self.session.commit()
+            await self.session.refresh(model)
+            return model
+        except SQLAlchemyError as e:
+            logging.error(f"Error in update: {e}")
+            await self.session.rollback()
+            raise

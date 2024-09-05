@@ -1,7 +1,7 @@
 from src.apis.auth import (AdminRegisterApi, DoctorBothRegisterApi,
                            DoctorOfflineRegisterApi, DoctorOnlineRegisterApi,
-                           DoctorOtherRegisterApi, LoginApi, LogoutApi,
-                           PatientRegisterApi)
+                           DoctorOtherRegisterApi, DoctorOtherVerifyApi,
+                           LoginApi, LogoutApi, PatientRegisterApi)
 from src.apis.docter_api import (DoctorWorkingTimeApi, GetAllDoctorApi,
                                  GetDetailtDoctorById)
 from src.apis.health_check import HealthCheck
@@ -15,6 +15,9 @@ routes = [
     RouteSwagger("/auth/doctor/register/other", DoctorOtherRegisterApi,
                  methods=["POST"], tags=["USER"]),
 
+    RouteSwagger("/auth/doctor/verify/other/{doctor_id}", DoctorOtherVerifyApi,
+                 methods=["PUT"], tags=["ADMIN"]),
+
     RouteSwagger("/auth/patient/register", PatientRegisterApi,
                  methods=["POST"], tags=["PATIENT"]),
     # doctor register
@@ -27,14 +30,15 @@ routes = [
     RouteSwagger("/auth/doctor/register/both", DoctorBothRegisterApi,
                  methods=["POST"], tags=["ADMIN"]),
 
-
     RouteSwagger("/auth/admin/register", AdminRegisterApi,
                  tags=["ADMIN"]),
-
     RouteSwagger("/auth/login", LoginApi,
                  methods=["POST"], tags=["ADMIN,PATIENT,DOCTOR"]),
+
     RouteSwagger("/auth/logout", LogoutApi,
                  methods=["POST"], tags=["ADMIN,PATIENT,DOCTOR"]),
+
+
     # Doctor api
     RouteSwagger("/doctor", GetAllDoctorApi,
                  methods=["GET"], tags=["DOCTOR"]),
