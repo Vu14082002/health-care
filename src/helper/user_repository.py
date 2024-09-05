@@ -29,10 +29,11 @@ class UserHelper:
         return await self.user_repository.insert_user(user)
 
     async def login(self, phone_number: str, password: str) -> Dict[str, Any]:
-        user = await self._authenticate_user(phone_number, password)
-        token = self._generate_token_for_role(user)
+        user: UserModel = await self._authenticate_user(phone_number, password)
+        user_all = self._scalar_user(user)
+        token = self._gen_token(user_all)
         await redis.set(token["access_token"], phone_number, CACHE_ACCESS_TOKEN)
-        return {"token": token}
+        return {"token": token, "user": user_all}
 
     async def _authenticate_user(self, phone_number: str, password: str) -> UserModel:
         user = await self.user_repository.get_one({"phone_number": phone_number})
@@ -44,7 +45,11 @@ class UserHelper:
                                error_code=ErrorCode.UNAUTHORIZED.name)
         return user
 
-    def _generate_token_for_role(self, user: UserModel) -> Dict[str, str]:
+    # def _generate_token_for_role(self, user: UserModel) -> Dict[str, str]:
+    #     self._scalar_user(user)
+    #     return self._gen_token(payload)
+
+    def _scalar_user(self, user: UserModel) -> Dict[str, str]:
         role_name = user.role
         if role_name == Role.ADMIN.value:
             payload = user.as_dict
@@ -54,8 +59,7 @@ class UserHelper:
             payload = {**user.patient.as_dict, "role": role_name}
         else:
             raise ValueError(f"Unsupported role: {role_name}")
-
-        return self._gen_token(payload)
+        return payload
 
     def _gen_token(self, payload: dict) -> Dict[str, str]:
         access_token = self.jwt.create_token(payload, exp=CACHE_ACCESS_TOKEN)

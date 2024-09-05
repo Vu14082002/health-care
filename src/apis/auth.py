@@ -6,12 +6,12 @@ from starlette.requests import Request
 
 from src.core import HTTPEndpoint
 from src.core.exception import BadRequest, InternalServer
+from src.core.security.authentication import JsonWebToken
 from src.enum import ErrorCode
 from src.factory import Factory
 from src.helper.doctor_helper import DoctorHelper
 from src.helper.patient_helper import PatientHelper
 from src.helper.user_repository import UserHelper
-from src.lib.authentication import JsonWebToken
 from src.models.doctor_model import DoctorModel, TypeOfDisease
 from src.models.patient_model import PatientModel
 from src.models.user_model import UserModel
@@ -50,8 +50,8 @@ class DoctorOfflineRegisterApi(HTTPEndpoint):
     async def post(self, form_data: RequestRegisterDoctorOfflineSchema, auth: JsonWebToken):
         if auth.get("role", "") != "ADMIN":
             raise BadRequest(msg="Unauthorized access",
-                             error_code=ErrorCode.UNAUTHORIZED.name)
-        doctor_helper = await Factory().get_doctor_helper()
+                             error_code=ErrorCode.UNAUTHORIZED.name, errors={"message": "only admin can access"})
+        doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
         result: DoctorModel = await doctor_helper.create_doctor(form_data.model_dump())
         return result.as_dict  # type: ignore
 
@@ -60,7 +60,7 @@ class DoctorBothRegisterApi(HTTPEndpoint):
     async def post(self, form_data: RequestRegisterDoctorBothSchema, auth: JsonWebToken):
         if auth.get("role", "") != "ADMIN":
             raise BadRequest(msg="Unauthorized access",
-                             error_code=ErrorCode.UNAUTHORIZED.name)
+                             error_code=ErrorCode.UNAUTHORIZED.name, errors={"message": "only admin can access"})
         doctor_helper = await Factory().get_doctor_helper()
         result: DoctorModel = await doctor_helper.create_doctor(form_data.model_dump())
         return result.as_dict

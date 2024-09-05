@@ -73,9 +73,6 @@ class RequestRegisterDoctorSchema(BaseModel):
     branch_name: str | None = None
     password_hash: str = Field(alias="password")
 
-    class Config:
-        from_attributes = True
-
 
 class RequestRegisterDoctorOnlineSchema(RequestRegisterDoctorSchema):
     is_local_person: bool = Field(default=False)
@@ -90,10 +87,10 @@ class RequestRegisterDoctorOnlineSchema(RequestRegisterDoctorSchema):
 
 
 class RequestRegisterDoctorOfflineSchema(RequestRegisterDoctorSchema):
-    is_local_person: bool = Field(default=True, exclude=True)
+    is_local_person: bool = Field(default=True)
     type_of_disease: Literal["offline"] = Field(
-        default=TypeOfDisease.OFFLINE.value, exclude=True)
-    verify_status: int = Field(default=2, exclude=True)
+        default=TypeOfDisease.OFFLINE.value)
+    verify_status: int = Field(default=2)
 
     class Config:
         json_schema_extra = {
@@ -102,10 +99,10 @@ class RequestRegisterDoctorOfflineSchema(RequestRegisterDoctorSchema):
 
 
 class RequestRegisterDoctorBothSchema(RequestRegisterDoctorSchema):
-    is_local_person: bool = Field(default=False, exclude=True)
+    is_local_person: bool = Field(default=False)
     type_of_disease: Literal["both"] = Field(
-        default=TypeOfDisease.BOTH, exclude=True)
-    verify_status: int = Field(default=2, exclude=True)
+        default=TypeOfDisease.BOTH.value)
+    verify_status: int = Field(default=2)
 
     class Config:
         json_schema_extra = {
