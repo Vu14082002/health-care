@@ -2,10 +2,11 @@ from datetime import date, datetime, time
 from math import e
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Date, ForeignKey, Integer, Time
+from sqlalchemy import Boolean, Date, Enum, ForeignKey, Integer, String, Time
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
+from src.models.doctor_model import TypeOfDisease
 
 if TYPE_CHECKING:
     from src.models.doctor_model import DoctorModel
@@ -33,6 +34,13 @@ class WorkScheduleModel(Model):
 
     end_time: Mapped[time] = mapped_column(
         Time, nullable=False)
+
+    examination_type: Mapped[str] = mapped_column(
+        String, nullable=False)
+
+    ordered: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
 
     doctor: Mapped["DoctorModel"] = relationship(
         "DoctorModel", back_populates="working_schedules")
