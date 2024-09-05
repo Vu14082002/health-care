@@ -142,9 +142,11 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         )
 
     def _create_doctor_model(self, data: dict[str, Any], user_model: UserModel) -> DoctorModel:
-        doctor_data_schema = RequestRegisterDoctorSchema(**data)
-        doctor_data = doctor_data_schema.model_dump(exclude={"password_hash"})
-        return DoctorModel(**doctor_data, user=user_model)
+        valid_fields = {field.name for field in DoctorModel.__table__.columns}
+        filtered_doctor_data = {k: v for k,
+                                v in data.items() if k in valid_fields}
+
+        return DoctorModel(**filtered_doctor_data, user=user_model)
 
     async def count_record(self, where: Optional[Dict[str, Any]] = None):
         try:

@@ -29,7 +29,7 @@ class PatientRegisterApi(HTTPEndpoint):
         try:
             patient_helper: PatientHelper = await Factory().get_patient_helper()
             response_data: PatientModel = await patient_helper.create_patient(data=form_data)
-            return response_data.as_dict
+            return response_data.as_dict  # type: ignore
         except BadRequest as e:
             raise e
         except InternalServer as e:
@@ -43,7 +43,7 @@ class DoctorOnlineRegisterApi(HTTPEndpoint):
     async def post(self, form_data: RequestRegisterDoctorOnlineSchema):
         doctor_helper = await Factory().get_doctor_helper()
         result: DoctorModel = await doctor_helper.create_doctor(form_data.model_dump())
-        return result.as_dict
+        return result.as_dict  # type: ignore
 
 
 class DoctorOfflineRegisterApi(HTTPEndpoint):
@@ -53,7 +53,7 @@ class DoctorOfflineRegisterApi(HTTPEndpoint):
                              error_code=ErrorCode.UNAUTHORIZED.name)
         doctor_helper = await Factory().get_doctor_helper()
         result: DoctorModel = await doctor_helper.create_doctor(form_data.model_dump())
-        return result.as_dict
+        return result.as_dict  # type: ignore
 
 
 class DoctorBothRegisterApi(HTTPEndpoint):

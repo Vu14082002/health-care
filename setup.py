@@ -5,7 +5,7 @@ from setuptools import setup
 
 HERE = path.dirname(__file__)
 
-long_description = "Atom resource"
+long_description = "Health-care resource"
 
 version = "0.0.1"
 
@@ -15,7 +15,7 @@ with open(path.join(HERE, 'requirements.txt'), 'r', encoding='utf-8') as f:
 setup(
     name="src",
     version=version,
-    description="""Atom resource""",
+    description="""Health-care resource""",
     long_description=long_description,
     long_description_content_type="text/markdown",
     license="MIT",

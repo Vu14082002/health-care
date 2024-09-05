@@ -1,4 +1,4 @@
-# LUNG HEALTH CARE API
+# HEALTH CARE API
 
 ## Run
 

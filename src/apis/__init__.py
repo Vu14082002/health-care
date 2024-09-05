@@ -16,7 +16,6 @@ routes = [
 
     # doctor register
     RouteSwagger("/auth/doctor/register/online", DoctorOnlineRegisterApi,
-
                  methods=["POST"], tags=["ADMIN"]),
 
     RouteSwagger("/auth/doctor/register/offline", DoctorOfflineRegisterApi,

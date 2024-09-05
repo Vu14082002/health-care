@@ -55,8 +55,8 @@ class Diploma(BaseModel):
 class RequestRegisterDoctorSchema(BaseModel):
     first_name: str
     last_name: str
-    phone_number: date
-    date_of_birth: str
+    phone_number: str
+    date_of_birth: date
     gender: Literal["male", "female", "other"] | None = "other"
     specialization: str
     certification: str | None = None
@@ -77,6 +77,42 @@ class RequestRegisterDoctorSchema(BaseModel):
         from_attributes = True
 
 
+class RequestRegisterDoctorOnlineSchema(RequestRegisterDoctorSchema):
+    is_local_person: bool = Field(default=False)
+    type_of_disease: Literal["online"] = Field(
+        default=TypeOfDisease.ONLINE.value)
+    verify_status: int = Field(default=0)
+
+    class Config:
+        json_schema_extra = {
+            "exclude": ["is_local_person", "type_of_disease", "verify_status"]
+        }
+
+
+class RequestRegisterDoctorOfflineSchema(RequestRegisterDoctorSchema):
+    is_local_person: bool = Field(default=True, exclude=True)
+    type_of_disease: Literal["offline"] = Field(
+        default=TypeOfDisease.OFFLINE.value, exclude=True)
+    verify_status: int = Field(default=2, exclude=True)
+
+    class Config:
+        json_schema_extra = {
+            "exclude": ["is_local_person", "type_of_disease", "verify_status"]
+        }
+
+
+class RequestRegisterDoctorBothSchema(RequestRegisterDoctorSchema):
+    is_local_person: bool = Field(default=False, exclude=True)
+    type_of_disease: Literal["both"] = Field(
+        default=TypeOfDisease.BOTH, exclude=True)
+    verify_status: int = Field(default=2, exclude=True)
+
+    class Config:
+        json_schema_extra = {
+            "exclude": ["is_local_person", "type_of_disease", "verify_status"]
+        }
+
+
 class ReponseDoctorSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
     id: int
@@ -86,34 +122,13 @@ class ReponseDoctorSchema(BaseModel):
     date_of_birth: date
     gender: Literal["male", "female", "other"]
     specialization: str
-    certification: Optional[dict] = None
+    certification: str | None = None
     hospital_address_work: Optional[str] = None
     address: str
     avatar: str
     description: Optional[str] = None
     license_number: str
     education: Optional[str] = None
-
-
-class RequestRegisterDoctorOnlineSchema(RequestRegisterDoctorSchema):
-    is_local_person: bool = Field(default=False, exclude=True)
-    type_of_disease: Literal["online"] = Field(
-        default=TypeOfDisease.ONLINE.value, exclude=True)
-    verify_status: int = Field(default=0, exclude=True)
-
-
-class RequestRegisterDoctorOfflineSchema(RequestRegisterDoctorSchema):
-    is_local_person: bool = Field(default=True, exclude=True)
-    type_of_disease: Literal["offline"] = Field(
-        default=TypeOfDisease.OFFLINE.value, exclude=True)
-    verify_status: int = Field(default=2, exclude=True)
-
-
-class RequestRegisterDoctorBothSchema(RequestRegisterDoctorSchema):
-    is_local_person: bool = Field(default=False, exclude=True)
-    type_of_disease: Literal["both"] = Field(
-        default=TypeOfDisease.BOTH, exclude=True)
-    verify_status: int = Field(default=2, exclude=True)
 
 
 class RequestAdminRegisterSchema(BaseModel):
