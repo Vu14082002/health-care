@@ -13,11 +13,12 @@ routes = [
 
     # auth
     RouteSwagger("/auth/doctor/register/other", DoctorOtherRegisterApi,
-                 methods=["POST"], tags=["USER"]),
+                 methods=["POST"], tags=["DOCTOR"]),
 
     RouteSwagger("/auth/doctor/verify/other/{doctor_id}", DoctorOtherVerifyApi,
                  methods=["PUT"], tags=["ADMIN"]),
-    RouteSwagger("/doctor/verify/other", DoctorOtherVerifyApi,
+
+    RouteSwagger("/auth/doctor/verify/other", DoctorOtherVerifyApi,
                  methods=["GET"], tags=["ADMIN"]),
 
     RouteSwagger("/auth/patient/register", PatientRegisterApi,
