@@ -39,8 +39,20 @@ class PatientRegisterApi(HTTPEndpoint):
                                  error_code=ErrorCode.SERVER_ERROR.name) from e
 
 
-class DoctorOnlineRegisterApi(HTTPEndpoint):
+class DoctorOtherRegisterApi(HTTPEndpoint):
     async def post(self, form_data: RequestRegisterDoctorOnlineSchema):
+        form_data.is_local_person = False
+        form_data.verify_status = 0
+        doctor_helper = await Factory().get_doctor_helper()
+        result: DoctorModel = await doctor_helper.create_doctor(form_data.model_dump())
+        return result.as_dict  # type: ignore
+
+
+class DoctorOnlineRegisterApi(HTTPEndpoint):
+    async def post(self, form_data: RequestRegisterDoctorOnlineSchema, auth: JsonWebToken):
+        if auth.get("role", "") != "ADMIN":
+            raise BadRequest(msg="Unauthorized access",
+                             error_code=ErrorCode.UNAUTHORIZED.name, errors={"message": "only admin can access"})
         doctor_helper = await Factory().get_doctor_helper()
         result: DoctorModel = await doctor_helper.create_doctor(form_data.model_dump())
         return result.as_dict  # type: ignore

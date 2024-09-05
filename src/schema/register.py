@@ -75,10 +75,11 @@ class RequestRegisterDoctorSchema(BaseModel):
 
 
 class RequestRegisterDoctorOnlineSchema(RequestRegisterDoctorSchema):
-    is_local_person: bool = Field(default=False)
+    is_local_person: bool = Field(default=True)
     type_of_disease: Literal["online"] = Field(
         default=TypeOfDisease.ONLINE.value)
-    verify_status: int = Field(default=0)
+    verify_status: int = Field(default=2)
+    online_price: float
 
     class Config:
         json_schema_extra = {
@@ -91,6 +92,7 @@ class RequestRegisterDoctorOfflineSchema(RequestRegisterDoctorSchema):
     type_of_disease: Literal["offline"] = Field(
         default=TypeOfDisease.OFFLINE.value)
     verify_status: int = Field(default=2)
+    offline_price: float
 
     class Config:
         json_schema_extra = {
@@ -99,10 +101,12 @@ class RequestRegisterDoctorOfflineSchema(RequestRegisterDoctorSchema):
 
 
 class RequestRegisterDoctorBothSchema(RequestRegisterDoctorSchema):
-    is_local_person: bool = Field(default=False)
+    is_local_person: bool = Field(default=True)
     type_of_disease: Literal["both"] = Field(
         default=TypeOfDisease.BOTH.value)
     verify_status: int = Field(default=2)
+    offline_price: float
+    online_price: float
 
     class Config:
         json_schema_extra = {

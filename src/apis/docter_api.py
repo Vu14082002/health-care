@@ -67,10 +67,10 @@ class GetDetailtDoctorById(HTTPEndpoint):
                                  error_code=ErrorCode.SERVER_ERROR.name) from e
 
 
-class CreateDoctorWorkingTimeApi(HTTPEndpoint):
+class DoctorWorkingTimeApi(HTTPEndpoint):
 
-    # async def get(self, form_data, auth: JsonWebToken):
-    #     pass
+    async def get(self, auth: JsonWebToken):
+        return {"message": "Get doctor working time"}
 
     async def post(self, form_data: RequestDoctorWorkScheduleNextWeek, auth: JsonWebToken):
         try:

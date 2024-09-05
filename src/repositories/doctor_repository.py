@@ -10,7 +10,8 @@ from src.core.database.postgresql import PostgresRepository
 from src.core.exception import BadRequest
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
-from src.models.doctor_model import DoctorModel
+from src.models.doctor_model import (DoctorExaminationPriceModel, DoctorModel,
+                                     TypeOfDisease)
 from src.models.rating_model import RatingModel
 from src.models.user_model import Role, UserModel
 from src.models.work_schedule_model import WorkScheduleModel
@@ -37,6 +38,23 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 .subquery()
             )
 
+            latest_price_subquery = (
+                select(
+                    DoctorExaminationPriceModel.doctor_id,
+                    DoctorExaminationPriceModel.offline_price,
+                    DoctorExaminationPriceModel.online_price,
+                    DoctorExaminationPriceModel.ot_price_fee,
+                    DoctorExaminationPriceModel.is_active,
+                    DoctorExaminationPriceModel.effective_date
+                )
+                .distinct(DoctorExaminationPriceModel.doctor_id)
+                .order_by(
+                    DoctorExaminationPriceModel.doctor_id,
+                    desc(DoctorExaminationPriceModel.created_at)
+                )
+                .subquery()
+            )
+
             query = (
                 select(
                     self.model_class,
@@ -47,9 +65,11 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                     case(
                         (subquery.c.rating_count != None, subquery.c.rating_count),
                         else_=0
-                    ).label('rating_count')
+                    ).label('rating_count'),
+                    latest_price_subquery
                 )
                 .outerjoin(subquery, self.model_class.id == subquery.c.doctor_id)
+                .outerjoin(latest_price_subquery, self.model_class.id == latest_price_subquery.c.doctor_id)
             )
 
             if condition is not None:
@@ -83,8 +103,18 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             doctors = result.all()
 
             return [
-                {**doctor[0].as_dict, 'avg_rating': doctor[1],
-                    'rating_count': doctor[2]}
+                {
+                    **doctor[0].as_dict,
+                    'avg_rating': doctor[1],
+                    'rating_count': doctor[2],
+                    'latest_examination_price': {
+                        'offline_price': doctor[3].offline_price,
+                        'online_price': doctor[3].online_price,
+                        'ot_price_fee': doctor[3].ot_price_fee,
+                        'is_active': doctor[3].is_active,
+                        'effective_date': doctor[3].effective_date
+                    } if doctor[3] else None
+                }
                 for doctor in doctors
             ]
         except SQLAlchemyError as e:
@@ -100,6 +130,13 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             doctor_model = self._create_doctor_model(data, user_model)
 
             self.session.add(doctor_model)
+            await self.session.flush()  # This will assign an ID to the doctor_model
+
+            # Create and add the examination price
+            examination_price = self._create_examination_price(
+                data, doctor_model.id)
+            self.session.add(examination_price)
+
             await self.session.commit()
             return doctor_model
         except BadRequest as e:
@@ -146,7 +183,23 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         filtered_doctor_data = {k: v for k,
                                 v in data.items() if k in valid_fields}
 
+        if "online_price" in data and "offline_price" not in data:
+            filtered_doctor_data["type_of_disease"] = TypeOfDisease.ONLINE.value
+        elif "offline_price" in data and "online_price" not in data:
+            filtered_doctor_data["type_of_disease"] = TypeOfDisease.OFFLINE.value
+        elif "online_price" in data and "offline_price" in data:
+            filtered_doctor_data["type_of_disease"] = TypeOfDisease.BOTH.value
+
         return DoctorModel(**filtered_doctor_data, user=user_model)
+
+    def _create_examination_price(self, data: dict[str, Any], doctor_id: int) -> DoctorExaminationPriceModel:
+        return DoctorExaminationPriceModel(
+            doctor_id=doctor_id,
+            offline_price=data.get("offline_price", 0.0),
+            online_price=data.get("online_price", 0.0),
+            ot_price_fee=data.get("ot_price_fee", 200.0),
+            is_active=True
+        )
 
     async def count_record(self, where: Optional[Dict[str, Any]] = None):
         try:
@@ -165,25 +218,41 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 select(
                     self.model_class,
                     func.avg(RatingModel.rating).label('avg_rating'),
-                    func.array_agg(RatingModel.comment).label('comments')
+                    func.array_agg(RatingModel.comment).label('comments'),
+                    DoctorExaminationPriceModel
                 )
                 .outerjoin(RatingModel)
+                .outerjoin(DoctorExaminationPriceModel)
                 .where(self.model_class.id == doctor_id)
-                .group_by(self.model_class.id)
+                .group_by(self.model_class.id, DoctorExaminationPriceModel.id)
+                .order_by(desc(DoctorExaminationPriceModel.effective_date))
+                .limit(1)
             )
 
-            result: Result[Tuple[DoctorModel, Any, Any]] = await self.session.execute(query)
-            row: Row[Tuple[DoctorModel, Any, Any]] | None = result.first()
+            result: Result[Tuple[DoctorModel, Any, Any, DoctorExaminationPriceModel]] = await self.session.execute(query)
+            row: Row[Tuple[DoctorModel, Any, Any,
+                           DoctorExaminationPriceModel]] | None = result.first()
 
             if row is None:
                 return None
 
-            doctor, avg_rating, comments = row
+            doctor, avg_rating, comments, latest_price = row
             doctor_dict = doctor.as_dict
             doctor_dict['avg_rating'] = float(
                 avg_rating) if avg_rating is not None else 0
             doctor_dict['comments'] = [
                 comment for comment in comments if comment is not None]
+
+            if latest_price:
+                doctor_dict['latest_examination_price'] = {
+                    'offline_price': latest_price.offline_price,
+                    'online_price': latest_price.online_price,
+                    'ot_price_fee': latest_price.ot_price_fee,
+                    'is_active': latest_price.is_active,
+                    'effective_date': latest_price.effective_date
+                }
+            else:
+                doctor_dict['latest_examination_price'] = None
 
             return doctor_dict
         except SQLAlchemyError as e:
@@ -194,7 +263,6 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         try:
             new_schedules = []
             for daily_schedule in data.work_schedule:
-                # Delete existing schedules for this date
                 await self.session.execute(
                     delete(WorkScheduleModel).where(
                         and_(

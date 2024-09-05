@@ -2,10 +2,12 @@ import enum
 from datetime import date, datetime, time
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Boolean, Date, ForeignKey, Integer, String, Text, Time
+from sqlalchemy import (Boolean, Date, DateTime, Float, ForeignKey, Integer,
+                        String, Text, Time)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm.properties import MappedColumn
+from sqlalchemy.sql import func
 
 from src.core.database.postgresql import Model
 
@@ -28,6 +30,29 @@ class TypeOfDisease(enum.Enum):
     ONLINE = "online"
     OFFLINE = "offline"
     BOTH = "both"
+
+
+class DoctorExaminationPriceModel(Model):
+    __tablename__ = "doctor_examination_price"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        autoincrement=True
+    )
+    doctor_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey('doctor.id'), nullable=False)
+    offline_price: Mapped[float] = mapped_column(
+        Float, nullable=False, default=0.0)
+    online_price: Mapped[float] = mapped_column(
+        Float, nullable=False, default=0.0)
+    ot_price_fee: Mapped[float] = mapped_column(
+        Float, nullable=False, default=200)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True)
+
+    doctor: Mapped["DoctorModel"] = relationship(
+        "DoctorModel", back_populates="examination_prices")
 
 
 class DoctorModel(Model):
@@ -117,3 +142,11 @@ class DoctorModel(Model):
     working_schedules: Mapped[list["WorkScheduleModel"]] = relationship(
         "WorkScheduleModel", back_populates="doctor"
     )
+
+    examination_prices: Mapped[list["DoctorExaminationPriceModel"]] = relationship(
+        "DoctorExaminationPriceModel", back_populates="doctor", order_by="desc(DoctorExaminationPriceModel.created_at)"
+    )
+
+    @property
+    def latest_examination_price(self) -> "DoctorExaminationPriceModel | None":
+        return self.examination_prices[0] if self.examination_prices else None

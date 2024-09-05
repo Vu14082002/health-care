@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime, timezone, timedelta
 import json
 from datetime import date, datetime, timezone
 from functools import reduce
@@ -316,14 +317,17 @@ class Model(Base):
     created_at = mapped_column(
         name="created_at",
         type_=Integer,
-        default=int(datetime.now(timezone.utc).timestamp())
+        default=int((datetime.now(timezone.utc) +
+                    timedelta(hours=7)).timestamp())
     )
 
     updated_at = mapped_column(
         name="updated_at",
         type_=Integer,
-        default=int(datetime.now(timezone.utc).timestamp()),
-        onupdate=int(datetime.now(timezone.utc).timestamp())
+        default=int((datetime.now(timezone.utc) +
+                    timedelta(hours=7)).timestamp()),
+        onupdate=int((datetime.now(timezone.utc) +
+                     timedelta(hours=7)).timestamp())
     )
     is_deleted = mapped_column(name="is_deleted", type_=Boolean, default=False)
 
@@ -343,13 +347,15 @@ class Model(Base):
     @staticmethod
     def set_before_insert(mapper, connection, target):
         """Set timestamps before inserting a new record."""
-        target.created_at = int(datetime.now(timezone.utc).timestamp())
-        target.updated_at = int(datetime.now(timezone.utc).timestamp())
+        utc_plus_7 = datetime.now(timezone.utc) + timedelta(hours=7)
+        target.created_at = int(utc_plus_7.timestamp())
+        target.updated_at = int(utc_plus_7.timestamp())
 
     @staticmethod
     def update_timestamps(mapper, connection, target):
         """Update timestamps before updating an existing record."""
-        target.updated_at = int(datetime.now(timezone.utc).timestamp())
+        utc_plus_7 = datetime.now(timezone.utc) + timedelta(hours=7)
+        target.updated_at = int(utc_plus_7.timestamp())
 
 
 # Attach event listeners
