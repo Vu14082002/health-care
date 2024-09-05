@@ -1,3 +1,4 @@
+import json
 from datetime import date, datetime, time, timedelta
 from typing import Annotated, List, Optional
 
@@ -70,14 +71,23 @@ class TimeSlot(BaseModel):
     start_time: time
     end_time: time
 
+    @validator('start_time', 'end_time', pre=True)
+    def parse_time(cls, value):
+        if isinstance(value, str):
+            try:
+                return time.fromisoformat(value.zfill(8))
+            except ValueError:
+                raise ValueError("Invalid time format. Use HH:MM:SS")
+        return value
+
     @validator('end_time')
     def validate_time_slot(cls, v, values):
         start = values.get('start_time')
         if start and v:
             if v <= start:
                 raise ValueError("End time must be after start time")
-            if (datetime.combine(date.today(), v) - datetime.combine(date.today(), start)).total_seconds() / 3600 < 3:
-                raise ValueError("Time slot must be at least 3 hours")
+            if v < (datetime.combine(date.min, start) + timedelta(minutes=30)).time():
+                raise ValueError("Time slot must be at least 30 minutes")
         return v
 
 
@@ -94,11 +104,29 @@ class DailySchedule(BaseModel):
 
 class RequestDoctorWorkScheduleNextWeek(BaseModel):
     work_schedule: List[DailySchedule]
+    examination_type: Literal["online", "offline"]
 
-    @validator('work_schedule')
-    def validate_work_schedule(cls, v):
-        if len(v) == 0:
-            raise ValueError("Work schedule cannot be empty")
-        if len(v) > 7:
-            raise ValueError("Work schedule cannot exceed 7 days")
-        return v
+    # @validator('work_schedule')
+    # def validate_work_schedule(cls, v):
+    #     if len(v) == 0:
+    #         raise ValueError("Work schedule cannot be empty")
+    #     if len(v) > 7:
+    #         raise ValueError("Work schedule cannot exceed 7 days")
+    #     return v
+
+
+class RequestGetUncenteredTimeSchema(BaseModel):
+    start_date: date
+    end_date: date
+
+    class Config:
+        json_encoders = {date: lambda v: v.isoformat()}
+
+
+class RequestGetWorkingSchedulesSchema(BaseModel):
+    start_date: date
+    end_date: date
+    examination_type: Optional[Literal["online", "offline"]] = None
+
+    class Config:
+        json_encoders = {date: lambda v: v.isoformat()}

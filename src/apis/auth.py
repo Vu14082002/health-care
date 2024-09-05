@@ -1,3 +1,4 @@
+import logging as log
 from inspect import Signature
 from typing import Any, Dict, List, Union
 
@@ -6,7 +7,7 @@ from pydantic import Json
 from starlette.requests import Request
 
 from src.core import HTTPEndpoint
-from src.core.exception import BadRequest, InternalServer
+from src.core.exception import BadRequest, Forbidden, InternalServer
 from src.core.security.authentication import JsonWebToken
 from src.enum import ErrorCode
 from src.factory import Factory
@@ -52,12 +53,11 @@ class DoctorOtherRegisterApi(HTTPEndpoint):
 
 
 class DoctorOtherVerifyApi(HTTPEndpoint):
-
     async def get(self, query_params: RequestGetAllDoctorsNotVerifySchema, auth: JsonWebToken):
         try:
             if auth.get("role", "") != "ADMIN":
-                raise BadRequest(msg="Unauthorized access",
-                                 error_code=ErrorCode.UNAUTHORIZED.name, errors={"message": "only admin can access"})
+                raise Forbidden(msg="Unauthorized access",
+                                error_code=ErrorCode.UNAUTHORIZED.name, errors={"message": "only admin can access"})
 
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             current_page = query_params.current_page if query_params.current_page else 0
@@ -72,6 +72,8 @@ class DoctorOtherVerifyApi(HTTPEndpoint):
                 where["phone_number"] = query_params.phone_number
             response_data = await doctor_helper.get_all_doctor(current_page=current_page, page_size=page_size, where=where)
             return response_data
+        except Forbidden as e:
+            raise e
         except Exception as e:
             log.error(f"Error: {e}")
             raise InternalServer(msg="Internal server error",
@@ -80,8 +82,8 @@ class DoctorOtherVerifyApi(HTTPEndpoint):
     async def put(self, path_params: RequestVerifyDoctorSchema, auth: JsonWebToken):
         try:
             if auth.get("role", "") != "ADMIN":
-                raise BadRequest(msg="Unauthorized access",
-                                 error_code=ErrorCode.UNAUTHORIZED.name, errors={"message": "only admin can access"})
+                raise Forbidden(msg="Unauthorized access",
+                                error_code=ErrorCode.UNAUTHORIZED.name, errors={"message": "only admin can access"})
 
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             result = await doctor_helper.verify_doctor(path_params.doctor_id)
@@ -90,6 +92,8 @@ class DoctorOtherVerifyApi(HTTPEndpoint):
             else:
                 raise BadRequest(msg="Doctor not found or already verified",
                                  error_code=ErrorCode.BAD_REQUEST.name)
+        except Forbidden as e:
+            raise e
         except Exception as e:
             raise InternalServer(error_code=ErrorCode.SERVER_ERROR.name, errors={
                                  "message": "Error when verify doctor"}) from e

@@ -61,7 +61,7 @@ class UserHelper:
             raise ValueError(f"Unsupported role: {role_name}")
         return payload
 
-    def _gen_token(self, payload: dict) -> Dict[str, str]:
+    def _gen_token(self, payload: dict[str, Any]) -> Dict[str, str]:
         access_token = self.jwt.create_token(payload, exp=CACHE_ACCESS_TOKEN)
         refresh_token = self.jwt.create_token(
             {"access_token": access_token.get("access_token", "")},
@@ -72,7 +72,7 @@ class UserHelper:
             "refresh_token": refresh_token.get("access_token", ""),
         }
 
-    async def logout(self, token: str, *args, **kwargs):
+    async def logout(self, token: str, *args: Any, **kwargs: dict[str, Any]):
         _decode = jwt.decode(jwt=token, key=config.ACCESS_TOKEN,
                              algorithms=[config.ALGORITHM])
         payload = _decode.get("payload", {})

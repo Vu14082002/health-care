@@ -1,11 +1,15 @@
+import logging
 import logging as log
 import math
 import time
-from typing import Any, Dict, List
+from datetime import date
+from typing import Any, Dict, List, Optional
 
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound
 
-from src.models.doctor_model import DoctorModel
+from src.core.exception import BadRequest
+from src.enum import ErrorCode
+from src.models.doctor_model import DoctorModel, TypeOfDisease
 from src.models.work_schedule_model import WorkScheduleModel
 from src.repositories.doctor_repository import DoctorRepository
 from src.schema.doctor_schema import (DoctorSchema, ReponseGetAllDoctorsSchema,
@@ -65,10 +69,9 @@ class DoctorHelper:
 
     async def create_doctor_work_schedule(self, doctor_id: int, data: RequestDoctorWorkScheduleNextWeek):
         try:
-            reponse = await self.doctor_repository.add_workingschedule(doctor_id, data)
-            return reponse
+            response = await self.doctor_repository.add_workingschedule(doctor_id, data)
+            return response
         except Exception as e:
-            await self.doctor_repository.session.rollback()
             raise e
 
     async def verify_doctor(self, doctor_id: int) -> bool:
@@ -82,4 +85,53 @@ class DoctorHelper:
             return False
         except Exception as e:
             log.error(f"Error verifying doctor: {e}")
+            raise
+
+    async def update_doctor_work_schedule(self, doctor_id: int, examination_type: TypeOfDisease, schedules: List[Dict[str, Any]]) -> Dict[str, Any]:
+        try:
+            # Get the doctor's current type_of_disease
+            doctor = await self.doctor_repository.get_by("id", doctor_id, unique=True)
+            if not doctor:
+                raise BadRequest(msg="Doctor not found",
+                                 error_code=ErrorCode.DOCTOR_NOT_FOUND.name, errors={"message": "Not found docto"})
+
+            if doctor.type_of_disease == TypeOfDisease.ONLINE.value and examination_type == TypeOfDisease.OFFLINE:
+                raise BadRequest(msg="Doctor is only available for online examinations",
+                                 error_code=ErrorCode.INVALID_EXAMINATION_TYPE.name)
+            elif doctor.type_of_disease == TypeOfDisease.OFFLINE.value and examination_type == TypeOfDisease.ONLINE:
+                raise BadRequest(msg="Doctor is only available for offline examinations",
+                                 error_code=ErrorCode.INVALID_EXAMINATION_TYPE.name)
+
+            # Get available slots for the other examination type
+            other_type = TypeOfDisease.OFFLINE if examination_type == TypeOfDisease.ONLINE else TypeOfDisease.ONLINE
+            start_date = min(schedule['work_date'] for schedule in schedules)
+            end_date = max(schedule['work_date'] for schedule in schedules)
+            available_slots = await self.doctor_repository.get_available_slots(doctor_id, other_type, start_date, end_date)
+
+            # Update the work schedule
+            result = await self.doctor_repository.update_work_schedule(doctor_id, examination_type, schedules)
+
+            return {
+                "message": result["message"],
+                "available_slots": available_slots
+            }
+        except BadRequest as e:
+            raise e
+        except Exception as e:
+            logging.error(f"Error in update_doctor_work_schedule: {e}")
+            raise BadRequest(msg="Failed to update work schedule",
+                             error_code=ErrorCode.SERVER_ERROR.name)
+
+    async def get_uncentered_time(self, doctor_id: int, start_date: date, end_date: date):
+        try:
+            return await self.doctor_repository.get_uncentered_time(doctor_id, start_date, end_date)
+        except Exception as e:
+            logging.error(f"Error in get_uncentered_time: {e}")
+            raise
+
+    async def get_working_schedules(self, doctor_id: int, start_date: date, end_date: date, examination_type: Optional[str] = None):
+        try:
+            return await self.doctor_repository.get_working_schedules(doctor_id, start_date, end_date, examination_type)
+        except Exception as e:
+            logging.error(f"Error in get_working_schedules: {e}")
             raise

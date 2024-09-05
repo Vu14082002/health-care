@@ -2,7 +2,8 @@ from src.apis.auth import (AdminRegisterApi, DoctorBothRegisterApi,
                            DoctorOfflineRegisterApi, DoctorOnlineRegisterApi,
                            DoctorOtherRegisterApi, DoctorOtherVerifyApi,
                            LoginApi, LogoutApi, PatientRegisterApi)
-from src.apis.docter_api import (DoctorWorkingTimeApi, GetAllDoctorApi,
+from src.apis.docter_api import (DoctorEmptyWorkingSchedulingTimeApi,
+                                 DoctorWorkingTimeApi, GetAllDoctorApi,
                                  GetDetailtDoctorById)
 from src.apis.health_check import HealthCheck
 from src.core.route import RouteSwagger
@@ -41,7 +42,6 @@ routes = [
     RouteSwagger("/auth/logout", LogoutApi,
                  methods=["POST"], tags=["ADMIN,PATIENT,DOCTOR"]),
 
-
     # Doctor api
     RouteSwagger("/doctor", GetAllDoctorApi,
                  methods=["GET"], tags=["DOCTOR"]),
@@ -68,5 +68,11 @@ routes = [
         DoctorWorkingTimeApi,
         methods=["GET"],
         tags=["ADMIN,PATIENT,DOCTOR"]
+    ),
+    RouteSwagger(
+        "/doctor/empty-working-hours",
+        DoctorEmptyWorkingSchedulingTimeApi,
+        methods=["GET"],
+        tags=["DOCTOR"]
     ),
 ]
