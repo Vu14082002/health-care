@@ -1,11 +1,6 @@
 import logging as log
-from os import error
-
-from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
-
 from src.core import HTTPEndpoint
-from src.core.exception import Forbidden, InternalServer
+from src.core.exception import BadRequest, Forbidden, InternalServer
 from src.core.security import JsonWebToken
 from src.enum import ErrorCode
 from src.factory import Factory
@@ -14,13 +9,13 @@ from src.schema.doctor_schema import (RequestDetailDoctorSchema,
                                       RequestDoctorWorkScheduleNextWeek,
                                       RequestGetAllDoctorsSchema,
                                       RequestGetUncenteredTimeSchema,
-                                      RequestGetWorkingSchedulesSchema,
+                                      RequestGetWorkingTimeSchema,
                                       RequestUpdateDoctorSchema,
                                       RequestUpdatePathParamsSchema)
 
 
 class GetAllDoctorApi(HTTPEndpoint):
-    async def get(self, query_params: RequestGetAllDoctorsSchema, auth: JsonWebToken):
+    async def get(self, query_params: RequestGetAllDoctorsSchema):
         try:
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             current_page = query_params.current_page if query_params.current_page else 0
@@ -72,60 +67,76 @@ class GetDetailtDoctorById(HTTPEndpoint):
 
 
 class DoctorWorkingTimeApi(HTTPEndpoint):
-    async def get(self,  query_params: RequestGetWorkingSchedulesSchema, auth: JsonWebToken,):
+    async def get(self, query_params: RequestGetWorkingTimeSchema, auth: JsonWebToken):
         try:
-            if auth.get("role", "") != "DOCTOR":
-                raise Forbidden(msg="Forbidden",
-                                error_code=ErrorCode.FORBIDDEN.name,
-                                errors={"message": "Only doctors can access this endpoint"})
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
-            response = await doctor_helper.get_working_schedules(doctor_id=auth.get("id"), start_date=query_params.start_date, end_date=query_params.end_date, examination_type=query_params.examination_type)
+            id = auth.get("id") if auth.get(
+                "role") == "DOCTOR" else query_params.doctor_id
+            if id is None:
+                raise BadRequest(msg="Forbidden",
+                                 error_code=ErrorCode.FORBIDDEN.name,
+                                 errors={"message": "Doctor id  is required"})
+            response = await doctor_helper.get_working_schedules(**query_params.model_dump())
             return response
         except Forbidden as e:
-            raise
+            raise e
+        except BadRequest as e:
+            raise e
         except Exception as e:
-            log.error(f"Error getting doctor working schedules: {e}")
+            log.error(f"Error getting doctor empty working  time: {e}")
             raise InternalServer(msg="Internal server error",
-                                 error_code=ErrorCode.SERVER_ERROR.name) from e
+                                 error_code=ErrorCode.SERVER_ERROR.name, errors={"message": f"Error getting doctor empty working  time: {e}"}) from e
 
     async def post(self, form_data: RequestDoctorWorkScheduleNextWeek, auth: JsonWebToken):
         try:
-            if auth.get("role", "") != "DOCTOR":
-                raise Forbidden(msg="Forbidden",
-                                error_code=ErrorCode.FORBIDDEN.name,
-                                errors={"message": "Only doctors can access this endpoint"})
-            if auth.get("verify_status") != 2 and form_data.examination_type == "offline":
-                raise Forbidden(msg="Forbidden",
-                                error_code=ErrorCode.FORBIDDEN.name,
-                                errors={"message": "Only doctors with verify_status = 2 can access this add offline working schedule"})
+            role = auth.get("role", "")
+            if role not in ["DOCTOR", "ADMIN"]:
+                raise Forbidden(
+                    "Only doctors or Admin can access this endpoint")
+
+            doctor_id = auth.get(
+                "id") if role == "DOCTOR" else form_data.doctor_id
+            if not doctor_id:
+                raise BadRequest("Doctor id is required")
+
+            if role == "DOCTOR":
+                verify_status = auth.get("verify_status")
+                if verify_status not in [1, 2]:
+                    raise Forbidden(
+                        "Only doctors with verify_status = 1 or 2 can add working schedule")
+                if verify_status != 2 and form_data.examination_type == "offline":
+                    raise Forbidden(
+                        "Only doctors with verify_status = 2 can add offline working schedule")
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
-            response = await doctor_helper.create_doctor_work_schedule(doctor_id=auth.get("id"), data=form_data)
-            return response
-        except Forbidden as e:
-            raise
+            return await doctor_helper.create_doctor_work_schedule(doctor_id=doctor_id, data=form_data)
+        except (Forbidden, BadRequest) as e:
+            raise e
         except Exception as e:
             log.error(f"Error creating doctor work schedule: {e}")
-            raise InternalServer(msg="Internal server error",
-                                 error_code=ErrorCode.SERVER_ERROR.name)
+            raise
 
 
 class DoctorEmptyWorkingSchedulingTimeApi(HTTPEndpoint):
-    # async def get(self, query_params: RequestGetUncenteredTimeSchema, auth: JsonWebToken):
-    async def get(self, auth: JsonWebToken):
-        data = auth
-    # try:
-    #     if auth.get("role", "") not in ["DOCTOR"]:
-    #         raise Forbidden(msg="Forbidden",
-    #                         error_code=ErrorCode.FORBIDDEN.name,
-    #                         errors={"message": "Only doctors can access this endpoint"})
-    #     doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
-    #     id = auth.get("id")
-    #     response = await doctor_helper.get_uncentered_time(doctor_id=id, start_date=query_params.start_date, end_date=query_params.end_date)
-    #     return response
-    # except Forbidden as e:
-    #     raise e
-    # except Exception as e:
-    #     log.error(f"Error getting doctor empty working  time: {e}")
-    #     raise InternalServer(msg="Internal server error",
-    #                          error_code=ErrorCode.SERVER_ERROR.name, errors={"message": f"Error getting doctor empty working  time: {e}"}) from e
-        return {"message": "Not implemented"}
+    async def get(self, query_params: RequestGetUncenteredTimeSchema, auth: JsonWebToken):
+        try:
+            if auth.get("role", "") not in ["DOCTOR", "ADMIN"]:
+                raise Forbidden(msg="Forbidden",
+                                error_code=ErrorCode.FORBIDDEN.name,
+                                errors={"message": "Only doctors or Admin can access this endpoint"})
+            doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
+            id = auth.get("id") if auth.get(
+                "role") == "DOCTOR" else query_params.doctor_id
+            if id is None:
+                raise BadRequest(msg="Forbidden",
+                                 error_code=ErrorCode.FORBIDDEN.name,
+                                 errors={"message": "Doctor id  is required"})
+            response = await doctor_helper.get_working_time(doctor_id=id, start_date=query_params.start_date, end_date=query_params.end_date)
+            return response
+        except Forbidden as e:
+            raise e
+        except BadRequest as e:
+            raise e
+        except Exception as e:
+            log.error(f"Error getting doctor empty working  time: {e}")
+            raise InternalServer(msg="Internal server error",
+                                 error_code=ErrorCode.SERVER_ERROR.name, errors={"message": f"Error getting doctor empty working  time: {e}"}) from e

@@ -103,6 +103,7 @@ class DailySchedule(BaseModel):
 
 
 class RequestDoctorWorkScheduleNextWeek(BaseModel):
+    doctor_id: Optional[int] = None
     work_schedule: List[DailySchedule]
     examination_type: Literal["online", "offline"]
 
@@ -115,7 +116,18 @@ class RequestDoctorWorkScheduleNextWeek(BaseModel):
     #     return v
 
 
+class RequestGetWorkingTimeSchema(BaseModel):
+    doctor_id: int | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    examination_type: Literal["online", "offline"] | None = None
+
+    class Config:
+        json_encoders = {date: lambda v: v.isoformat()}
+
+
 class RequestGetUncenteredTimeSchema(BaseModel):
+    doctor_id: int | None = None
     start_date: date
     end_date: date
 

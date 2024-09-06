@@ -16,11 +16,11 @@ routes = [
     RouteSwagger("/auth/doctor/register/other", DoctorOtherRegisterApi,
                  methods=["POST"], tags=["DOCTOR"]),
 
-    RouteSwagger("/auth/doctor/verify/other/{doctor_id}", DoctorOtherVerifyApi,
-                 methods=["PUT"], tags=["ADMIN"]),
+    # RouteSwagger("/auth/doctor/verify/other", DoctorOtherVerifyApi,
+    #              methods=["PUT"], tags=["ADMIN"]),
 
     RouteSwagger("/auth/doctor/verify/other", DoctorOtherVerifyApi,
-                 methods=["GET"], tags=["ADMIN"]),
+                 methods=["GET", "PUT"], tags=["ADMIN"]),
 
     RouteSwagger("/auth/patient/register", PatientRegisterApi,
                  methods=["POST"], tags=["PATIENT"]),
@@ -36,43 +36,48 @@ routes = [
 
     RouteSwagger("/auth/admin/register", AdminRegisterApi,
                  tags=["ADMIN"]),
+
     RouteSwagger("/auth/login", LoginApi,
-                 methods=["POST"], tags=["ADMIN,PATIENT,DOCTOR"]),
+                 methods=["POST"],  tags=["ADMIN", "PATIENT", "DOCTOR"]),
 
     RouteSwagger("/auth/logout", LogoutApi,
-                 methods=["POST"], tags=["ADMIN,PATIENT,DOCTOR"]),
+                 methods=["POST"],  tags=["ADMIN", "PATIENT", "DOCTOR"]),
 
     # Doctor api
+    # TODO: pass 1
     RouteSwagger("/doctor", GetAllDoctorApi,
-                 methods=["GET"], tags=["DOCTOR"]),
+                 methods=["GET"], tags=["DOCTOR", "PATIENT", "ADMIN", "USER"]),
     RouteSwagger(
-        "/doctor/{doctor_id}",
-        GetDetailtDoctorById,
+        "/doctor/working-time",
+        DoctorWorkingTimeApi,
         methods=["GET"],
-        tags=["DOCTOR,PATIENT,ADMIN"]
-    ),
-    RouteSwagger(
-        "/doctor/{doctor_id}",
-        GetDetailtDoctorById,
-        methods=["PUT"],
-        tags=["DOCTOR,ADMIN"]
+        tags=["ADMIN", "PATIENT", "DOCTOR"]
     ),
     RouteSwagger(
         "/doctor/working-time",
         DoctorWorkingTimeApi,
         methods=["POST"],
-        tags=["DOCTOR"]
+        tags=["DOCTOR", "ADMIN"]
     ),
-    RouteSwagger(
-        "/doctor/working-time",
-        DoctorWorkingTimeApi,
-        methods=["GET"],
-        tags=["ADMIN,PATIENT,DOCTOR"]
-    ),
+    # TODO: pass 1
     RouteSwagger(
         "/doctor/empty-working-hours",
         DoctorEmptyWorkingSchedulingTimeApi,
         methods=["GET"],
-        tags=["DOCTOR"]
+        tags=["DOCTOR", "ADMIN"]
     ),
+    RouteSwagger(
+        "/doctor",
+        GetDetailtDoctorById,
+        methods=["GET"],
+        tags=["PATIENT", "ADMIN", "DOCTOR"]
+    ),
+    RouteSwagger(
+        "/doctor",
+        GetDetailtDoctorById,
+        methods=["PUT"],
+        tags=["ADMIN", "DOCTOR"]
+    ),
+
+
 ]

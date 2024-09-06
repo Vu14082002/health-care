@@ -3,7 +3,7 @@ import logging as log
 import math
 import time
 from datetime import date
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from sqlalchemy.exc import NoResultFound
 
@@ -71,8 +71,10 @@ class DoctorHelper:
         try:
             response = await self.doctor_repository.add_workingschedule(doctor_id, data)
             return response
-        except Exception as e:
+        except BadRequest as e:
             raise e
+        except Exception as ex:
+            raise ex
 
     async def verify_doctor(self, doctor_id: int) -> bool:
         try:
@@ -129,7 +131,7 @@ class DoctorHelper:
             logging.error(f"Error in get_uncentered_time: {e}")
             raise
 
-    async def get_working_schedules(self, doctor_id: int, start_date: date, end_date: date, examination_type: Optional[str] = None):
+    async def get_working_schedules(self, doctor_id: int | None, start_date: date | None, end_date: date | None, examination_type: Literal["online", "offline"] | None):
         try:
             return await self.doctor_repository.get_working_schedules(doctor_id, start_date, end_date, examination_type)
         except Exception as e:

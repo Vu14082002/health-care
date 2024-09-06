@@ -1,7 +1,8 @@
 import logging
 from datetime import date, datetime, time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
+from regex import B
 from sqlalchemy import (Result, Row, and_, asc, case, delete, desc, exists,
                         func, or_, select)
 from sqlalchemy.exc import SQLAlchemyError
@@ -302,11 +303,13 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
 
             if conflicts:
                 await self.session.rollback()
-                return {"message": "Conflicts detected", "conflicts": conflicts}
-
+                raise BadRequest(error_code=ErrorCode.SCHEDULE_CONFLICT.name, errors={
+                                 "message": "Conflicts detected", "conflicts": conflicts})
             self.session.add_all(new_schedules)
             _ = await self.session.commit()
             return {"message": "Work schedule updated successfully"}
+        except BadRequest as e:
+            raise e
         except SQLAlchemyError as e:
             logging.error(f"Error in add_workingschedule: {e}")
             await self.session.rollback()
@@ -348,38 +351,40 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             logging.error(f"Error in get_uncentered_time: {e}")
             raise
 
-    async def get_working_schedules(self, doctor_id: int, start_date: date, end_date: date, examination_type: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def get_working_schedules(self, doctor_id: int | None, start_date: date | None, end_date: date | None, examination_type: Literal["online", "ofline"] | None) -> List[Dict[str, Any]]:
         try:
-            query = (
-                select(WorkScheduleModel)
-                .where(
-                    and_(
-                        WorkScheduleModel.doctor_id == doctor_id,
-                        WorkScheduleModel.work_date.between(
-                            start_date, end_date)
-                    )
-                )
-                .order_by(WorkScheduleModel.work_date, WorkScheduleModel.start_time)
-            )
-
+            query = select(WorkScheduleModel)
+            conditions = []
+            if doctor_id is not None:
+                conditions.append(WorkScheduleModel.doctor_id == doctor_id)
+            if start_date is not None and end_date is not None:
+                conditions.append(
+                    WorkScheduleModel.work_date.between(start_date, end_date))
             if examination_type:
-                query = query.where(
+                conditions.append(
                     WorkScheduleModel.examination_type == examination_type)
+            if conditions:
+                query = query.where(and_(*conditions))
+
+            query = query.order_by(
+                WorkScheduleModel.work_date, WorkScheduleModel.start_time)
 
             result = await self.session.execute(query)
             schedules = result.scalars().all()
-
             return [
                 {
-                    "work_date": schedule.work_date,
-                    "start_time": schedule.start_time,
-                    "end_time": schedule.end_time,
+                    "work_date": schedule.work_date.isoformat(),
+                    "start_time": schedule.start_time.isoformat(),
+                    "end_time": schedule.end_time.isoformat(),
                     "examination_type": schedule.examination_type
                 }
                 for schedule in schedules
             ]
         except SQLAlchemyError as e:
             logging.error(f"Error in get_working_schedules: {e}")
+            raise
+        except Exception as ex:
+            logging.error(f"Error in get_working_schedules: {ex}")
             raise
 
     async def update_one(self, model: DoctorModel, data: dict[str, Any]):
