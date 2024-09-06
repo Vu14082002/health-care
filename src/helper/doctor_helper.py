@@ -1,8 +1,7 @@
 import logging
 import logging as log
 import math
-import time
-from datetime import date
+from datetime import date, datetime, timedelta, time
 from typing import Any, Dict, List, Literal, Optional
 
 from sqlalchemy.exc import NoResultFound
@@ -80,56 +79,14 @@ class DoctorHelper:
         try:
             doctor = await self.doctor_repository.get_by("id", doctor_id, unique=True)
             if doctor and doctor.verify_status == 0:
-                updated_doctor = await self.doctor_repository.update_one(doctor, {"verify_status": 1})
-                return updated_doctor is not None
+                updated_doctor: DoctorModel = await self.doctor_repository.update_one(doctor, {"verify_status": 1})
+                return isinstance(updated_doctor, DoctorModel)
             return False
         except NoResultFound:
             return False
         except Exception as e:
             log.error(f"Error verifying doctor: {e}")
-            raise
-
-    async def update_doctor_work_schedule(self, doctor_id: int, examination_type: TypeOfDisease, schedules: List[Dict[str, Any]]) -> Dict[str, Any]:
-        try:
-            # Get the doctor's current type_of_disease
-            doctor = await self.doctor_repository.get_by("id", doctor_id, unique=True)
-            if not doctor:
-                raise BadRequest(msg="Doctor not found",
-                                 error_code=ErrorCode.DOCTOR_NOT_FOUND.name, errors={"message": "Not found docto"})
-
-            if doctor.type_of_disease == TypeOfDisease.ONLINE.value and examination_type == TypeOfDisease.OFFLINE:
-                raise BadRequest(msg="Doctor is only available for online examinations",
-                                 error_code=ErrorCode.INVALID_EXAMINATION_TYPE.name)
-            elif doctor.type_of_disease == TypeOfDisease.OFFLINE.value and examination_type == TypeOfDisease.ONLINE:
-                raise BadRequest(msg="Doctor is only available for offline examinations",
-                                 error_code=ErrorCode.INVALID_EXAMINATION_TYPE.name)
-
-            # Get available slots for the other examination type
-            other_type = TypeOfDisease.OFFLINE if examination_type == TypeOfDisease.ONLINE else TypeOfDisease.ONLINE
-            start_date = min(schedule['work_date'] for schedule in schedules)
-            end_date = max(schedule['work_date'] for schedule in schedules)
-            available_slots = await self.doctor_repository.get_available_slots(doctor_id, other_type, start_date, end_date)
-
-            # Update the work schedule
-            result = await self.doctor_repository.update_work_schedule(doctor_id, examination_type, schedules)
-
-            return {
-                "message": result["message"],
-                "available_slots": available_slots
-            }
-        except BadRequest as e:
             raise e
-        except Exception as e:
-            logging.error(f"Error in update_doctor_work_schedule: {e}")
-            raise BadRequest(msg="Failed to update work schedule",
-                             error_code=ErrorCode.SERVER_ERROR.name)
-
-    async def get_uncentered_time(self, doctor_id: int, start_date: date, end_date: date):
-        try:
-            return await self.doctor_repository.get_uncentered_time(doctor_id, start_date, end_date)
-        except Exception as e:
-            logging.error(f"Error in get_uncentered_time: {e}")
-            raise
 
     async def get_working_schedules(self, doctor_id: int | None, start_date: date | None, end_date: date | None, examination_type: Literal["online", "offline"] | None):
         try:
@@ -137,3 +94,47 @@ class DoctorHelper:
         except Exception as e:
             logging.error(f"Error in get_working_schedules: {e}")
             raise
+
+    async def get_empty_working_time(self, doctor_id: int, start_date: date, end_date: date) -> Dict[str, List[Dict[str, str]]]:
+        try:
+            occupied_slots = await self.doctor_repository.get_working_schedules_v2(doctor_id, start_date, end_date)
+            empty_slots = self._generate_empty_slots(
+                start_date, end_date, occupied_slots)
+            return empty_slots
+        except Exception as e:
+            logging.error(f"Error in get_empty_working_time: {e}")
+            raise
+
+    def _generate_empty_slots(self, start_date: date, end_date: date, occupied_slots: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, str]]]:
+        empty_slots = {}
+        current_date = start_date
+        while current_date <= end_date:
+            day_slots = []
+            start_time = datetime.combine(current_date, time(0, 0))
+            end_time = datetime.combine(current_date, time(23, 59))
+
+            while start_time < end_time:
+                slot_end = start_time + timedelta(minutes=30)
+                if not self._is_slot_occupied(start_time, slot_end, occupied_slots):
+                    day_slots.append({
+                        "start_time": start_time.strftime("%H:%M"),
+                        "end_time": slot_end.strftime("%H:%M")
+                    })
+                start_time = slot_end
+
+            if day_slots:
+                empty_slots[current_date.isoformat()] = day_slots
+            current_date += timedelta(days=1)
+
+        return empty_slots
+
+    def _is_slot_occupied(self, start_time: datetime, end_time: datetime, occupied_slots: List[Dict[str, Any]]) -> bool:
+        for slot in occupied_slots:
+            if slot['work_date'] == start_time.date():
+                occupied_start = datetime.combine(
+                    slot['work_date'], slot['start_time'])
+                occupied_end = datetime.combine(
+                    slot['work_date'], slot['end_time'])
+                if (occupied_start <= start_time < occupied_end) or (occupied_start < end_time <= occupied_end):
+                    return True
+        return False

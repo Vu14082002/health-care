@@ -124,19 +124,19 @@ class DoctorEmptyWorkingSchedulingTimeApi(HTTPEndpoint):
                                 error_code=ErrorCode.FORBIDDEN.name,
                                 errors={"message": "Only doctors or Admin can access this endpoint"})
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
-            id = auth.get("id") if auth.get(
+            doctor_id = auth.get("id") if auth.get(
                 "role") == "DOCTOR" else query_params.doctor_id
-            if id is None:
-                raise BadRequest(msg="Forbidden",
-                                 error_code=ErrorCode.FORBIDDEN.name,
-                                 errors={"message": "Doctor id  is required"})
-            response = await doctor_helper.get_working_time(doctor_id=id, start_date=query_params.start_date, end_date=query_params.end_date)
+            if doctor_id is None:
+                raise BadRequest(msg="Bad Request",
+                                 error_code=ErrorCode.BAD_REQUEST.name,
+                                 errors={"message": "Doctor id is required"})
+            response = await doctor_helper.get_empty_working_time(doctor_id=doctor_id, start_date=query_params.start_date, end_date=query_params.end_date)
             return response
         except Forbidden as e:
             raise e
         except BadRequest as e:
             raise e
         except Exception as e:
-            log.error(f"Error getting doctor empty working  time: {e}")
+            log.error(f"Error getting doctor empty working time: {e}")
             raise InternalServer(msg="Internal server error",
-                                 error_code=ErrorCode.SERVER_ERROR.name, errors={"message": f"Error getting doctor empty working  time: {e}"}) from e
+                                 error_code=ErrorCode.SERVER_ERROR.name, errors={"message": f"Error getting doctor empty working time: {e}"}) from e
