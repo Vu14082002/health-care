@@ -136,12 +136,6 @@ def openapi_schema(request):
 
 routes.append(Route("/schema", endpoint=openapi_schema,
               include_in_schema=False))
-# cors_middleware = CORSMiddleware(
-#     allow_origins=["*"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
 app = Application(
     routes=routes,
     lifespan=lifespan,

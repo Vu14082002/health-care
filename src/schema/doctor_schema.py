@@ -30,6 +30,7 @@ class RequestGetAllDoctorsSchema(BaseModel):
     phone_number: str | None = None
     current_page: Optional[int] = Field(default=1)
     page_size: Optional[int] = Field(default=10)
+    type_of_disease: Literal["online", "offline", "both"] | None = None
 
 
 class ReponseGetAllDoctorsSchema(BaseModel):

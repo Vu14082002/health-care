@@ -78,6 +78,6 @@ routes = [
         methods=["GET"],
         tags=["DOCTOR", "ADMIN"]
     ),
-
-
+    # TODO quan ly ho so benh an
+    # predict img
 ]
