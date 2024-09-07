@@ -43,7 +43,7 @@ class WorkScheduleModel(Model):
     )
 
     doctor: Mapped["DoctorModel"] = relationship(
-        "DoctorModel", back_populates="working_schedules")
+        "DoctorModel", back_populates="working_schedules", lazy="joined")
 
     def __repr__(self):
         return f"<WorkingSchedule(id={self.id}, doctor_id={self.doctor_id}, work_date={self.work_date}, start_time={self.start_time}, end_time={self.end_time})>"

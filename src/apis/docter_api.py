@@ -1,4 +1,5 @@
 import logging as log
+
 from src.core import HTTPEndpoint
 from src.core.exception import BadRequest, Forbidden, InternalServer
 from src.core.security import JsonWebToken
@@ -53,24 +54,6 @@ class GetDetailtDoctorById(HTTPEndpoint):
             raise InternalServer(msg="Internal server error",
                                  error_code=ErrorCode.SERVER_ERROR.name) from e
 
-    async def put(self, form_data: RequestUpdateDoctorSchema, path_params: RequestUpdatePathParamsSchema, auth: JsonWebToken):
-        # try:
-        #     role: str = auth["role"] if auth["role"] else ""  # type: ignore
-        #     id_login: str = auth["id"] if auth["id"] else ""  # type: ignore
-        #     if role != "ADMIN" or (id_login != path_params.doctor_id and role == "DOCTOR"):
-        #         raise Forbidden(msg="Forbidden",
-        #                         error_code=ErrorCode.FORBIDDEN.name, errors={"message": "You don't have permission to access"})
-        #     doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
-        #     reponse = await doctor_helper.update_doctor(path_params.doctor_id, form_data.model_dump())
-        #     return reponse.as_dict if reponse else {"message": f"Doctor with id: {path_params.doctor_id} not found"}
-        # except Forbidden as e:
-        #     raise e
-        # except Exception as e:
-        #     log.error(f"Error: {e}")
-        #     raise InternalServer(msg="Internal server error",
-        #                          error_code=ErrorCode.SERVER_ERROR.name) from e
-        return {"message": "Not implemented"}
-
 
 class DoctorWorkingTimeApi(HTTPEndpoint):
     async def get(self, query_params: RequestGetWorkingTimeSchema, auth: JsonWebToken):
@@ -93,6 +76,8 @@ class DoctorWorkingTimeApi(HTTPEndpoint):
             raise InternalServer(msg="Internal server error",
                                  error_code=ErrorCode.SERVER_ERROR.name, errors={"message": f"Error getting doctor empty working  time: {e}"}) from e
 
+
+class CreateDoctorWorkingTimeApi(HTTPEndpoint):
     async def post(self, form_data: RequestDoctorWorkScheduleNextWeek, auth: JsonWebToken):
         try:
             role = auth.get("role", "")

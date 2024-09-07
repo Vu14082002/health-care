@@ -22,8 +22,7 @@ class AppointmentModelStatus(enum.Enum):
 
 class AppointmentModelTypeStatus(enum.Enum):
     ONLINE = "online"
-    CLINIC = "clinic"
-    HOME = "home"
+    OFFLINE = "offline"
 
 
 class AppointmentModel(Model):
@@ -47,8 +46,8 @@ class AppointmentModel(Model):
     appointment_status: Mapped[str] = mapped_column(
         String(50), nullable=False, default=AppointmentModelStatus.APPROVED.value)
 
-    medical_examination_status: Mapped[str] = mapped_column(
-        String(50), nullable=False, default=AppointmentModelTypeStatus.CLINIC.value)
+    examination_type: Mapped[str] = mapped_column(
+        String(50), nullable=False)
 
     link_appointment: Mapped[str] = mapped_column(
         Text, nullable=True, default=None)
@@ -64,5 +63,5 @@ class AppointmentModel(Model):
 
     pre_examination_notes: Mapped[str] = mapped_column(Text, nullable=True)
 
-    consultation_fee: Mapped[float] = mapped_column(
+    total_amount: Mapped[float] = mapped_column(
         Float, nullable=False)

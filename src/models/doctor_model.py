@@ -47,7 +47,7 @@ class DoctorExaminationPriceModel(Model):
     online_price: Mapped[float] = mapped_column(
         Float, nullable=False, default=0.0)
     ot_price_fee: Mapped[float] = mapped_column(
-        Float, nullable=False, default=200)
+        Float, nullable=False, default=2)
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True)
 

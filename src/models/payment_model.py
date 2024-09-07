@@ -1,7 +1,7 @@
 import enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
@@ -31,7 +31,7 @@ class PaymentModel(Model):
     appointment_id: Mapped[int] = mapped_column(
         Integer, ForeignKey('appointment.id'), nullable=False)
 
-    amount: Mapped[Numeric] = mapped_column(Numeric(10, 2), nullable=False)
+    amount: Mapped[float] = mapped_column(Float, nullable=False)
 
     payment_time: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
 
