@@ -1,12 +1,11 @@
-
 import logging as log
-from datetime import datetime
+from datetime import date, datetime
+from typing import Any, Dict, List
 
 from attr import s
 from sqlalchemy import (Result, Row, and_, asc, case, delete, desc, exists,
                         func, or_, select)
 from sqlalchemy.orm import joinedload, selectinload
-from tomlkit import aot
 
 from src.core.database.postgresql import PostgresRepository
 from src.core.exception import BadRequest
@@ -44,11 +43,8 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             appointment.examination_type = work_schedule_model.examination_type
             appointment.pre_examination_notes = pre_examination_notes if pre_examination_notes else ""
             appointment.total_amount = fee_examprice
-            # set work schedule is ordered
             work_schedule_model.ordered = True
-            # add appointment and work schedule to session
             self.session.add(appointment)
-            # self.session.add(work_schedule_model)
             await self.session.flush()
             await self.session.commit()
             return {"message": "Create appointment successfully"}
@@ -131,3 +127,77 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         except Exception as e:
             raise e
     # end::create_appointment[]
+
+    async def find(self, **kwargs):
+        query = select(self.model_class)
+        appointment_status: str = kwargs.get('appointment_status')
+        from_date: date = kwargs.get('from_date')
+        to_date: date = kwargs.get('to_date')
+        examination_type: str = kwargs.get('examination_type')
+        doctor_name: str = kwargs.get('doctor_name')
+        patient_name: int = kwargs.get('patient_name')
+        current_page: int = kwargs.get('current_page', 1)
+        page_size: int = kwargs.get('page_size', 10)
+        doctor_id: int = kwargs.get('doctor_id')
+        patient_id: int = kwargs.get('patient_id')
+        if appointment_status:
+            query = query.filter(
+                self.model_class.appointment_status == appointment_status)
+        if from_date:
+            query = query.filter(
+                self.model_class.appointment_date_start >= from_date)
+        if to_date:
+            query = query.filter(
+                self.model_class.appointment_date_end <= to_date)
+        if examination_type:
+            query = query.filter(
+                self.model_class.examination_type == examination_type)
+        if doctor_id:
+            query = query.filter(
+                self.model_class.doctor_id == doctor_id
+            )
+        if patient_id:
+            query = query.filter(
+                self.model_class.patient_id == patient_id
+            )
+
+        if doctor_name:
+            name_parts = doctor_name.split()
+            conditions = [
+                or_(
+                    self.model_class.doctor.has(
+                        DoctorModel.first_name.ilike(f"%{part}%")),
+                    self.model_class.doctor.has(
+                        DoctorModel.last_name.ilike(f"%{part}%"))
+                ) for part in name_parts
+            ]
+            query = query.join(self.model_class.doctor).filter(
+                or_(*conditions)
+            )
+        if patient_name:
+            name_parts = patient_name.split()
+            conditions = [
+                or_(
+                    self.model_class.patient.name.ilike(f"%{part}%")
+                ) for part in name_parts
+            ]
+            query = query.join(self.model_class.patient).filter(
+                or_(*conditions)
+            )
+        query = query.options(
+            joinedload(self.model_class.doctor),
+            joinedload(self.model_class.patient)
+        )
+        total_count = await self.session.execute(select(func.count()).select_from(query))
+        query = query.offset((current_page - 1) * page_size).limit(page_size)
+
+        result = await self.session.execute(query)
+        data = result.scalars().all()
+        item = [item.as_dict for item in data]
+        total_pages = (total_count.scalar_one() + page_size - 1) // page_size
+        return {
+            "data": item,
+            "current_page": current_page,
+            "page_size": page_size,
+            "total_pages": total_pages
+        }

@@ -1,4 +1,4 @@
-from src.apis.appointment import AppointmentApi
+from src.apis.appointment import AppointmentApi, AppointmentApiGET
 from src.apis.auth import (AdminRegisterApi, DoctorBothRegisterApi,
                            DoctorOfflineRegisterApi, DoctorOnlineRegisterApi,
                            DoctorOtherRegisterApi, DoctorOtherVerifyApi,
@@ -80,7 +80,13 @@ routes = [
     RouteSwagger(
         "/appointment",
         AppointmentApi,
-        methods=["POST", "GET"],
+        methods=["POST"],
         tags=["PATIENT", "ADMIN"]
+    ),
+    RouteSwagger(
+        "/appointment",
+        AppointmentApiGET,
+        methods=["GET"],
+        tags=["PATIENT", "ADMIN", "DOCTOR"]
     ),
 ]
