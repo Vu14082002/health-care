@@ -1,7 +1,7 @@
 import logging
 from curses.ascii import isdigit
 from datetime import date, datetime, time
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple
 
 from regex import B
 from sqlalchemy import (Result, Row, and_, asc, case, delete, desc, exists,
@@ -21,10 +21,9 @@ from src.models.rating_model import RatingModel
 from src.models.user_model import Role, UserModel
 from src.models.work_schedule_model import WorkScheduleModel
 from src.repositories.global_func import destruct_where, process_orderby
+from src.repositories.global_helper_repository import redis_working
 from src.schema.doctor_schema import RequestDoctorWorkScheduleNextWeek
 from src.schema.register import RequestRegisterDoctorSchema
-
-redis_working = RedisBackend(config.REDIS_URL_WORKING_TIME)
 
 
 class DoctorRepository(PostgresRepository[DoctorModel]):

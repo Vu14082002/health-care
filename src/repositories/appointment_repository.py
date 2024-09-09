@@ -1,5 +1,6 @@
 import logging as log
 from datetime import date, datetime
+from sys import flags
 from typing import Any, Dict, List
 
 from attr import s
@@ -14,6 +15,7 @@ from src.models.appointment_model import AppointmentModel
 from src.models.doctor_model import DoctorExaminationPriceModel, DoctorModel
 from src.models.patient_model import PatientModel
 from src.models.work_schedule_model import WorkScheduleModel
+from src.repositories.global_helper_repository import redis_working
 
 
 class AppointmentRepository(PostgresRepository[AppointmentModel]):
@@ -38,8 +40,13 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                 work_schedule_model.work_date, work_schedule_model.end_time)
             appointment.patient = patient_model
             appointment.doctor = work_schedule_model.doctor
-            appointment.appointment_status = "approved" if work_schedule_model.examination_type.lower(
-            ) == "offline" else "pending"
+            if work_schedule_model.examination_type.lower() == "offline":
+                appointment.appointment_status = "approved"
+            else:
+                appointment.appointment_status = "pending"
+                await redis_working.set({"doctor_id": doctor_id, "patient_id": patient_id, "work_schedule_id": work_schedule_id},
+                                        work_schedule_id, 300)
+                return {"message": "Create appointment successfully"}
             appointment.examination_type = work_schedule_model.examination_type
             appointment.pre_examination_notes = pre_examination_notes if pre_examination_notes else ""
             appointment.total_amount = fee_examprice
@@ -47,6 +54,8 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             self.session.add(appointment)
             await self.session.flush()
             await self.session.commit()
+            await redis_working.set(work_schedule_model.as_dict,
+                                    work_schedule_id, 300)
             return {"message": "Create appointment successfully"}
         except (BadRequest) as e:
             raise e
