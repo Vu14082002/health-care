@@ -143,33 +143,6 @@ class DoctorLocalRegisterApi(HTTPEndpoint):
         return result.as_dict  # type: ignore
 
 
-# class DoctorOfflineRegisterApi(HTTPEndpoint):
-#     async def post(self, form_data: RequestRegisterDoctorOfflineSchema, auth: JsonWebToken):
-#         if auth.get("role", "") != "ADMIN":
-#             raise BadRequest(msg="Unauthorized access",
-#                              error_code=ErrorCode.UNAUTHORIZED.name, errors={"message": "only admin can access"})
-#         doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
-#         avatar = None
-#         if isinstance(form_data.avatar, UploadFile):
-#             upload_file: UploadFile = form_data.avatar  # type: ignore
-#             s3_service = S3Service()
-#             await upload_file.seek(0)
-#             avatar = await s3_service.upload_file_from_form(upload_file)
-#         form_data.avatar = avatar
-#         result: DoctorModel = await doctor_helper.create_doctor(form_data.model_dump())
-#         return result.as_dict  # type: ignore
-
-
-# class DoctorBothRegisterApi(HTTPEndpoint):
-#     async def post(self, form_data: RequestRegisterDoctorBothSchema, auth: JsonWebToken):
-#         if auth.get("role", "") != "ADMIN":
-#             raise BadRequest(msg="Unauthorized access",
-#                              error_code=ErrorCode.UNAUTHORIZED.name, errors={"message": "only admin can access"})
-#         doctor_helper = await Factory().get_doctor_helper()
-#         result: DoctorModel = await doctor_helper.create_doctor(form_data.model_dump())
-#         return result.as_dict
-
-
 class AdminRegisterApi(HTTPEndpoint):
     async def post(self, form_data: RequestAdminRegisterSchema):
         _user_helper: UserHelper = await Factory().get_user_helper()
