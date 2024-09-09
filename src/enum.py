@@ -25,6 +25,7 @@ class ErrorCode(Enum):
     INVALID_EXAMINATION_TYPE = "INVALID_EXAMINATION_TYPE"
     SCHEDULE_CONFLICT = "SCHEDULE_CONFLICT"
     ALLREADY_ORDERED = "ALLREADY_ORDERED"
+    msg_server_error = "Server is error, pls try again"
 
 
 CACHE_REFRESH_TOKEN = 60 * 60 * 5
@@ -36,3 +37,9 @@ class Role(Enum):
     ADMIN = "ADMIN"
     DOCTOR = "DOCTOR"
     PATIENT = "PATIENT"
+
+
+class TypeOfDisease(Enum):
+    ONLINE = "online"
+    OFFLINE = "offline"
+    BOTH = "both"

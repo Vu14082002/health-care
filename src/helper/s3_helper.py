@@ -18,7 +18,7 @@ class S3Service(object):
             "s3",
             aws_access_key_id=config.S3_KEY,
             aws_secret_access_key=config.S3_SECRET,
-            # endpoint_url=config.S3_ENDPOINT,
+            endpoint_url=config.S3_ENDPOINT,
             region_name=config.REGION,
             config=boto3.session.Config(
                 signature_version="s3v4", s3={"addressing_style": "path"}
@@ -31,7 +31,7 @@ class S3Service(object):
         month = "{:02d}".format(datetime.now(timezone.utc).month)
         day = "{:02d}".format(datetime.now(timezone.utc).day)
         year = datetime.now(timezone.utc).year
-        key = f"bank_upload/{year}/{month}/{day}/{str(uuid4())}{file.filename}"
+        key = f"user_upload/{year}/{month}/{day}/{str(uuid4())}{file.filename}"
         # Guess the MIME type
         content_type, _ = mimetypes.guess_type(file.filename)
         if not content_type:

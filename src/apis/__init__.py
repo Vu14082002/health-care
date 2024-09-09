@@ -1,7 +1,6 @@
 from src.apis.appointment import AppointmentApi, AppointmentApiGET
-from src.apis.auth import (AdminRegisterApi, DoctorBothRegisterApi,
-                           DoctorOfflineRegisterApi, DoctorOnlineRegisterApi,
-                           DoctorOtherRegisterApi, DoctorOtherVerifyApi,
+from src.apis.auth import (AdminRegisterApi, DoctorForeignRegisterApi,
+                           DoctorLocalRegisterApi, DoctorOtherVerifyApi,
                            LoginApi, LogoutApi, PatientRegisterApi)
 from src.apis.docter_api import (CreateDoctorWorkingTimeApi,
                                  DoctorEmptyWorkingSchedulingTimeApi,
@@ -18,17 +17,17 @@ routes = [
     RouteSwagger("/auth/patient/register", PatientRegisterApi,
                  methods=["POST"], tags=["PATIENT"]),
 
-    RouteSwagger("/auth/doctor/register/other", DoctorOtherRegisterApi,
+    RouteSwagger("/auth/doctor/register/foreign", DoctorForeignRegisterApi,
                  methods=["POST"], tags=["DOCTOR"]),
 
-    RouteSwagger("/auth/doctor/register/online", DoctorOnlineRegisterApi,
+    RouteSwagger("/auth/doctor/register/local", DoctorLocalRegisterApi,
                  methods=["POST"], tags=["ADMIN"]),
 
-    RouteSwagger("/auth/doctor/register/offline", DoctorOfflineRegisterApi,
-                 methods=["POST"], tags=["ADMIN"]),
+    # RouteSwagger("/auth/doctor/register/offline", DoctorOfflineRegisterApi,
+    #              methods=["POST"], tags=["ADMIN"]),
 
-    RouteSwagger("/auth/doctor/register/both", DoctorBothRegisterApi,
-                 methods=["POST"], tags=["ADMIN"]),
+    # RouteSwagger("/auth/doctor/register/both", DoctorBothRegisterApi,
+    #              methods=["POST"], tags=["ADMIN"]),
 
     RouteSwagger("/auth/admin/register", AdminRegisterApi,
                  tags=["ADMIN"]),
@@ -47,7 +46,7 @@ routes = [
     RouteSwagger("/doctor", GetAllDoctorApi,
                  methods=["GET"], tags=["DOCTOR", "PATIENT", "ADMIN", "USER"]),
     RouteSwagger(
-        "/doctor",
+        f"/doctor/{{doctor_id}}",
         GetDetailtDoctorById,
         methods=["GET"],
         tags=["PATIENT", "ADMIN", "DOCTOR"]

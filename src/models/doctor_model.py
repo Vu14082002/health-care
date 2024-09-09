@@ -7,29 +7,15 @@ from sqlalchemy import (Boolean, Date, DateTime, Float, ForeignKey, Integer,
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm.properties import MappedColumn
-from sqlalchemy.sql import func
 
 from src.core.database.postgresql import Model
+from src.enum import TypeOfDisease
 
 default_avatar = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQS0iv-HzCTjY2RQ7JLiYe23Rw2Osp-n9PqUg&s"
 
 if TYPE_CHECKING:
-    from src.models.appointment_model import AppointmentModel
-    from src.models.dermatology_medical import DermatologyMedicalRecords
-    from src.models.examination_record_model import ExaminationRecordModel
-    from src.models.medical_test_model import MedicalTestModel
-    from src.models.prescription_model import PrescriptionModel
-    from src.models.rating_model import RatingModel
-    from src.models.user_model import UserModel
-    from src.models.work_schedule_model import WorkScheduleModel
-
-# FIXME: working date online or offline
-
-
-class TypeOfDisease(enum.Enum):
-    ONLINE = "online"
-    OFFLINE = "offline"
-    BOTH = "both"
+    from . import (AppointmentModel, MedicalRecordModel, PrescriptionModel,
+                   RatingModel, UserModel, WorkScheduleModel)
 
 
 class DoctorExaminationPriceModel(Model):
@@ -46,8 +32,6 @@ class DoctorExaminationPriceModel(Model):
         Float, nullable=False, default=0.0)
     online_price: Mapped[float] = mapped_column(
         Float, nullable=False, default=0.0)
-    ot_price_fee: Mapped[float] = mapped_column(
-        Float, nullable=False, default=2)
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True)
 
@@ -112,17 +96,10 @@ class DoctorModel(Model):
     user: Mapped["UserModel"] = relationship(
         "UserModel", back_populates="doctor")
 
-    dermatology_records: Mapped["DermatologyMedicalRecords"] = relationship(
-        "DermatologyMedicalRecords", back_populates="doctor"
-    )
-
-    examination_record: Mapped[list["ExaminationRecordModel"]] = relationship(
-        back_populates="doctor")
-
     license_number: Mapped[str] = mapped_column(
         String, nullable=False, unique=True)
 
-    education: Mapped[str] = mapped_column(Text, nullable=True)
+    education: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=True)
 
     account_number: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -132,12 +109,7 @@ class DoctorModel(Model):
 
     branch_name: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    # relationship
-    prescriptions: Mapped[list["PrescriptionModel"]] = relationship(
-        "PrescriptionModel", back_populates="doctor")
-
-    medical_tests: Mapped[list["MedicalTestModel"]] = relationship(
-        "MedicalTestModel", back_populates="doctor")
+    medical_records: Mapped[list["MedicalRecordModel"]] = relationship()
 
     working_schedules: Mapped[list["WorkScheduleModel"]] = relationship(
         "WorkScheduleModel", back_populates="doctor"
@@ -145,6 +117,9 @@ class DoctorModel(Model):
 
     examination_prices: Mapped[list["DoctorExaminationPriceModel"]] = relationship(
         "DoctorExaminationPriceModel", back_populates="doctor", order_by="desc(DoctorExaminationPriceModel.created_at)"
+    )
+    prescriptions: Mapped[list["PrescriptionModel"]] = relationship(
+        "PrescriptionModel", back_populates="doctor"
     )
 
     @property

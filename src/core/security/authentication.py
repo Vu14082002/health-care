@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 
 import jwt
 from starlette.requests import Request
-
 from src.config import config
 from src.core.cache.redis_backend import RedisBackend
 from src.core.exception import Forbidden

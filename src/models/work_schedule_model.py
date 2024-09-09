@@ -2,16 +2,16 @@ from datetime import date, datetime, time
 from math import e
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Date, Enum, ForeignKey, Integer, String, Time
+from sqlalchemy import (Boolean, Date, Enum, Float, ForeignKey, Integer,
+                        String, Time, event)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.apis import appointment
 from src.core.database.postgresql import Model
-from src.models.doctor_model import TypeOfDisease
+from src.models.doctor_model import DoctorExaminationPriceModel, TypeOfDisease
 
 if TYPE_CHECKING:
-    from src.models.doctor_model import DoctorModel
-else:
-    DoctorModel = "DoctorModel"
+    from . import AppointmentModel, DoctorModel
 
 
 class WorkScheduleModel(Model):
@@ -42,16 +42,33 @@ class WorkScheduleModel(Model):
         Boolean, nullable=False, default=False
     )
 
+    medical_examination_fee: Mapped[float] = mapped_column(Float)
+
+    # relationship
     doctor: Mapped["DoctorModel"] = relationship(
         "DoctorModel", back_populates="working_schedules", lazy="joined")
 
-    def __repr__(self):
-        return f"<WorkingSchedule(id={self.id}, doctor_id={self.doctor_id}, work_date={self.work_date}, start_time={self.start_time}, end_time={self.end_time})>"
+    appointment: Mapped["AppointmentModel"] = relationship(
+        "AppointmentModel", back_populates="work_schedule", lazy="joined", uselist=False)
 
-    def validate_time_slot(self):
-        """Validate that the time slot is at least 3 hours."""
-        start_datetime = datetime.combine(date.today(), self.start_time)
-        end_datetime = datetime.combine(date.today(), self.end_time)
-        delta = (end_datetime - start_datetime).total_seconds() / 3600
-        if delta < 3:
-            raise ValueError("Time slot must be at least 3 hours.")
+    @staticmethod
+    def cal_medical_examination_fee(mapper, connection, target):
+        data_doctor = target.doctor
+        examination_prices_model = target.doctor.latest_examination_price
+        if not examination_prices_model:
+            return
+
+        if target.examination_type == TypeOfDisease.ONLINE.value:
+            base_price = examination_prices_model.online_price
+        else:
+            base_price = examination_prices_model.offline_price
+
+        if target.start_time < time(8, 0) or target.start_time > time(17, 0):
+            target.medical_examination_fee = base_price * 2
+        else:
+            target.medical_examination_fee = base_price
+
+
+# Add the event listener
+event.listen(WorkScheduleModel, 'before_insert',
+             WorkScheduleModel.cal_medical_examination_fee)

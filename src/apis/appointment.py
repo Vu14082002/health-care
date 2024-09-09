@@ -75,33 +75,3 @@ class AppointmentApi(HTTPEndpoint):
         except Exception as e:
             raise InternalServer(msg="Internal server error",
                                  error_code=ErrorCode.SERVER_ERROR.name) from e
-
-    # async def get(self, query_params: RequestGetAllAppointmentSchema, auth: JsonWebToken):
-        # try:
-        #     appointment_helper: AppointmentHelper = await Factory().get_appointment_helper()
-        #     user_role = auth.get("role", "")
-        #     user_id = auth.get("user_id")
-
-        #     if user_role not in [Role.ADMIN.value, Role.DOCTOR.value, Role.PATIENT.value]:
-        #         raise Forbidden(msg="Unauthorized access",
-        #                         error_code=ErrorCode.UNAUTHORIZED.name)
-
-        #     filter_params = query_params.model_dump()
-        #     appointments = {}
-        #     if user_role == Role.ADMIN.value:
-        #         appointments = await appointment_helper.get_all_appointments(**filter_params)
-        #     elif user_role == Role.DOCTOR.value:
-        #         # Doctor can only see their own appointments
-        #         filter_params["doctor_id"] = user_id
-        #         appointments = await appointment_helper.get_all_appointments(**filter_params)
-        #     elif user_role == Role.PATIENT.value:
-        #         filter_params["patient_id"] = user_id
-        #         appointments = await appointment_helper.get_all_appointments(**filter_params)
-        #     return appointments
-        # except Forbidden as e:
-        #     log.error(e)
-        #     raise e
-        # except Exception as e:
-        #     log.error(e)
-        #     raise InternalServer(msg="Internal server error",
-        #                          error_code=ErrorCode.SERVER_ERROR.name, errors={"message": "server is error, please try later"}) from e

@@ -40,6 +40,7 @@ class Config(BaseSettings):
     S3_KEY: str
     S3_SECRET: str
     REGION: str
+    S3_ENDPOINT: str
 
 
 config = Config()

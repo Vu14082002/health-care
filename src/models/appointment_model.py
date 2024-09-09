@@ -1,16 +1,14 @@
 import enum
-from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
 
 if TYPE_CHECKING:
-    from src.models.doctor_model import DoctorModel
-    from src.models.patient_model import PatientModel
-    from src.models.payment_model import PaymentModel
+    from . import (DoctorModel, MedicalRecordModel, PatientModel, PaymentModel,
+                   WorkScheduleModel)
 
 
 class AppointmentModelStatus(enum.Enum):
@@ -37,31 +35,29 @@ class AppointmentModel(Model):
     doctor_id: Mapped[int] = mapped_column(
         ForeignKey("doctor.id"), nullable=False)
 
-    appointment_date_start: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False)
-
-    appointment_date_end: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False)
+    work_schedule_id: Mapped[int] = mapped_column(
+        ForeignKey("work_schedule.id"), nullable=False)
 
     appointment_status: Mapped[str] = mapped_column(
-        String(50), nullable=False, default=AppointmentModelStatus.APPROVED.value)
-
-    examination_type: Mapped[str] = mapped_column(
         String(50), nullable=False)
 
     link_appointment: Mapped[str] = mapped_column(
         Text, nullable=True, default=None)
 
+    pre_examination_notes: Mapped[str |
+                                  None] = mapped_column(Text, nullable=True)
+
     patient: Mapped["PatientModel"] = relationship(
-        "PatientModel", back_populates="appointments")
+        "PatientModel", back_populates="appointments", lazy="joined")
 
     doctor: Mapped["DoctorModel"] = relationship(
-        "DoctorModel", back_populates="appointments")
+        "DoctorModel", back_populates="appointments", lazy="joined")
 
     payment: Mapped["PaymentModel"] = relationship(
-        "PaymentModel", back_populates="appointment")
+        "PaymentModel", back_populates="appointment", lazy="joined")
 
-    pre_examination_notes: Mapped[str] = mapped_column(Text, nullable=True)
+    medical_record: Mapped["MedicalRecordModel"] = relationship(
+        back_populates="appointment", uselist=False, lazy="joined")
 
-    total_amount: Mapped[float] = mapped_column(
-        Float, nullable=False)
+    work_schedule: Mapped["WorkScheduleModel"] = relationship(
+        "WorkScheduleModel", back_populates="appointment", lazy="joined")

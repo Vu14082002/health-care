@@ -6,6 +6,7 @@ from regex import B
 from sqlalchemy import (Result, Row, and_, asc, case, delete, desc, exists,
                         func, or_, select)
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import joinedload
 
 from src.core.database.postgresql import PostgresRepository
 from src.core.exception import BadRequest
@@ -44,7 +45,6 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                     DoctorExaminationPriceModel.doctor_id,
                     DoctorExaminationPriceModel.online_price,
                     DoctorExaminationPriceModel.offline_price,
-                    DoctorExaminationPriceModel.ot_price_fee,
                     DoctorExaminationPriceModel.created_at,
                 )
                 .distinct(DoctorExaminationPriceModel.doctor_id)
@@ -110,8 +110,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                         'id': doctor[3],
                         'online_price': doctor[5],
                         'offline_price': doctor[6],
-                        'ot_price_fee': doctor[7],
-                        'created_at': doctor[8]
+                        'created_at': doctor[7]
                     } if doctor[3] else None
                 }
                 for doctor in doctors
@@ -196,7 +195,6 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             doctor_id=doctor_id,
             offline_price=data.get("offline_price", 0.0),
             online_price=data.get("online_price", 0.0),
-            ot_price_fee=data.get("ot_price_fee", 200.0),
             is_active=True
         )
 
@@ -249,7 +247,6 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 doctor_dict['latest_examination_price'] = {
                     'offline_price': latest_price.offline_price,
                     'online_price': latest_price.online_price,
-                    'ot_price_fee': latest_price.ot_price_fee,
                     'is_active': latest_price.is_active,
                     'created_at': latest_price.created_at
                 }
@@ -292,12 +289,21 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                             "end_time": time_slot.end_time.isoformat()
                         })
                     else:
+                        query_doctor_model = select(DoctorModel).where(
+                            DoctorModel.id == doctor_id).options(joinedload(DoctorModel.examination_prices))
+                        doctor_model = await self.session.execute(query_doctor_model)
+                        doctor_model = doctor_model.unique().scalar_one_or_none()
+                        if doctor_model is None:
+                            await self.session.rollback()
+                            raise BadRequest(
+                                error_code=ErrorCode.DOCTOR_NOT_FOUND.name, msg="Doctor not found")
                         new_schedule = WorkScheduleModel(
                             doctor_id=doctor_id,
                             work_date=daily_schedule.work_date,
                             start_time=time_slot.start_time,
                             end_time=time_slot.end_time,
-                            examination_type=data.examination_type
+                            examination_type=data.examination_type,
+                            doctor_model=doctor_model
                         )
                         new_schedules.append(new_schedule)
 

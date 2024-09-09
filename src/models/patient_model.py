@@ -7,14 +7,11 @@ from sqlalchemy import (UUID, Column, Date, Float, ForeignKey, Integer, String,
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
+from src.models import medical_records_model
+from src.models.medical_records_model import MedicalRecordModel
 
 if TYPE_CHECKING:
     from src.models.appointment_model import AppointmentModel
-    from src.models.dermatology_medical import DermatologyMedicalRecords
-    from src.models.examination_record_model import ExaminationRecordModel
-    from src.models.medical_history_model import \
-        MedicalHistoryModel  # Add this line
-    from src.models.medical_test_model import MedicalTestModel
     from src.models.prescription_model import PrescriptionModel
     from src.models.rating_model import RatingModel
     from src.models.user_model import UserModel
@@ -81,21 +78,15 @@ class PatientModel(Model):
     appointments: Mapped[list["AppointmentModel"]] = relationship(
         "AppointmentModel", back_populates="patient")
 
-    dermatology_records: Mapped[list["DermatologyMedicalRecords"]] = relationship(
-        "DermatologyMedicalRecords", back_populates="patient")
     ratings: Mapped[list["RatingModel"]] = relationship(
         "RatingModel", back_populates="patient")
 
-    examination_record: Mapped[list["ExaminationRecordModel"]] = relationship(
-        "ExaminationRecordModel", back_populates="patient"
-    )
-
     prescriptions: Mapped[list["PrescriptionModel"]] = relationship(
         "PrescriptionModel", back_populates="patient")
-    medical_tests: Mapped[list["MedicalTestModel"]] = relationship(
-        "MedicalTestModel", back_populates="patient")
-    medical_history: Mapped["MedicalHistoryModel"] = relationship(
-        "MedicalHistoryModel", back_populates="patient", uselist=False)
+
+    medical_records: Mapped[list["MedicalRecordModel"]] = relationship(
+        back_populates="patient"
+    )
 
     def __repr__(self):
         return f"<Patient(id={self.id}, first_name='{self.first_name}', last_name='{self.last_name}')>"
