@@ -3,11 +3,11 @@ from src.apis.auth import (AdminRegisterApi, DoctorForeignRegisterApi,
                            DoctorLocalRegisterApi, DoctorOtherVerifyApi,
                            DoctorOtherVerifyApiPut, LoginApi, LogoutApi,
                            PatientRegisterApi)
-from src.apis.docter_api import (CreateDoctorWorkingTimeApi,
-                                 DoctorEmptyWorkingSchedulingTimeApi,
-                                 DoctorWorkingTimeApi, GetAllDoctorApi,
-                                 GetDetailtDoctorById)
+from src.apis.docter_api import GetAllDoctorApi, GetDetailtDoctorById
 from src.apis.health_check import HealthCheck
+from src.apis.working_time_api import (CreateDoctorWorkingTimeApi,
+                                       DoctorEmptyWorkingSchedulingTimeApi,
+                                       DoctorWorkingTimeApi)
 from src.core.route import RouteSwagger
 
 routes = [
@@ -40,7 +40,6 @@ routes = [
                  methods=["POST"],  tags=["ADMIN", "PATIENT", "DOCTOR"]),
 
     # Doctor api
-    # TODO: pass 1
     RouteSwagger("/doctor", GetAllDoctorApi,
                  methods=["GET"], tags=["DOCTOR", "PATIENT", "ADMIN", "USER"]),
     RouteSwagger(

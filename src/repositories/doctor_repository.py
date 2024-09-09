@@ -303,7 +303,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                             start_time=time_slot.start_time,
                             end_time=time_slot.end_time,
                             examination_type=data.examination_type,
-                            doctor_model=doctor_model
+                            doctor=doctor_model
                         )
                         new_schedules.append(new_schedule)
 
@@ -315,6 +315,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             _ = await self.session.commit()
             return {"message": "Work schedule updated successfully"}
         except BadRequest as e:
+            logging.error(f"Error in add_workingschedule: {e}")
             raise e
         except SQLAlchemyError as e:
             logging.error(f"Error in add_workingschedule: {e}")

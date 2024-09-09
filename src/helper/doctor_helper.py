@@ -71,8 +71,10 @@ class DoctorHelper:
             response = await self.doctor_repository.add_workingschedule(doctor_id, data)
             return response
         except BadRequest as e:
+            logging.error(f"Error in create_doctor_work_schedule: {e}")
             raise e
         except Exception as ex:
+            logging.error(f"Error in create_doctor_work_schedule: {e}")
             raise ex
 
     async def verify_doctor(self, doctor_id: int) -> bool:
