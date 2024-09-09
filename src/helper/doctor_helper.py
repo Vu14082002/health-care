@@ -1,7 +1,7 @@
 import logging
 import logging as log
 import math
-from datetime import date, datetime, timedelta, time
+from datetime import date, datetime, time, timedelta
 from typing import Any, Dict, List, Literal, Optional
 
 from sqlalchemy.exc import NoResultFound
@@ -82,7 +82,9 @@ class DoctorHelper:
                 updated_doctor: DoctorModel = await self.doctor_repository.update_one(doctor, {"verify_status": 1})
                 return isinstance(updated_doctor, DoctorModel)
             return False
-        except NoResultFound:
+        except NoResultFound as e:
+            logging.error(f"Doctor with id {doctor_id} not found")
+            logging.info(e)
             return False
         except Exception as e:
             log.error(f"Error verifying doctor: {e}")

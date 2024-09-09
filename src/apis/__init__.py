@@ -1,7 +1,8 @@
 from src.apis.appointment import AppointmentApi, AppointmentApiGET
 from src.apis.auth import (AdminRegisterApi, DoctorForeignRegisterApi,
                            DoctorLocalRegisterApi, DoctorOtherVerifyApi,
-                           LoginApi, LogoutApi, PatientRegisterApi)
+                           DoctorOtherVerifyApiPut, LoginApi, LogoutApi,
+                           PatientRegisterApi)
 from src.apis.docter_api import (CreateDoctorWorkingTimeApi,
                                  DoctorEmptyWorkingSchedulingTimeApi,
                                  DoctorWorkingTimeApi, GetAllDoctorApi,
@@ -23,17 +24,14 @@ routes = [
     RouteSwagger("/auth/doctor/register/local", DoctorLocalRegisterApi,
                  methods=["POST"], tags=["ADMIN"]),
 
-    # RouteSwagger("/auth/doctor/register/offline", DoctorOfflineRegisterApi,
-    #              methods=["POST"], tags=["ADMIN"]),
-
-    # RouteSwagger("/auth/doctor/register/both", DoctorBothRegisterApi,
-    #              methods=["POST"], tags=["ADMIN"]),
-
     RouteSwagger("/auth/admin/register", AdminRegisterApi,
                  tags=["ADMIN"]),
 
-    RouteSwagger("/auth/doctor/verify/other", DoctorOtherVerifyApi,
-                 methods=["GET", "PUT"], tags=["ADMIN"]),
+    RouteSwagger("/auth/doctor/verify/foreign", DoctorOtherVerifyApi,
+                 methods=["GET"], tags=["ADMIN"]),
+
+    RouteSwagger(f"/auth/doctor/verify/foreign/{{doctor_id}}", DoctorOtherVerifyApiPut,
+                 methods=["PUT"], tags=["ADMIN"]),
 
     RouteSwagger("/auth/login", LoginApi,
                  methods=["POST"],  tags=["ADMIN", "PATIENT", "DOCTOR"]),

@@ -2,8 +2,8 @@ import logging as log
 from inspect import Signature
 from typing import Any, Dict, List, Union
 
-import ujson
 from pydantic import Json
+from sqlalchemy.exc import NoResultFound
 from starlette.datastructures import UploadFile
 from starlette.requests import Request
 
@@ -102,9 +102,11 @@ class DoctorOtherVerifyApi(HTTPEndpoint):
             raise InternalServer(msg="Internal server error",
                                  error_code=ErrorCode.SERVER_ERROR.name) from e
 
+
+class DoctorOtherVerifyApiPut(HTTPEndpoint):
     async def put(self, path_params: RequestVerifyDoctorSchema, auth: JsonWebToken):
         try:
-            if auth.get("role", "") != "ADMIN":
+            if auth.get("role", "") != Role.ADMIN.name:
                 raise Forbidden(msg="Unauthorized access",
                                 error_code=ErrorCode.UNAUTHORIZED.name, errors={"message": "only admin can access"})
 
@@ -114,8 +116,10 @@ class DoctorOtherVerifyApi(HTTPEndpoint):
                 return {"message": "Doctor verified successfully"}
             else:
                 raise BadRequest(msg="Doctor not found or already verified",
-                                 error_code=ErrorCode.BAD_REQUEST.name)
-        except Forbidden as e:
+                                 error_code=ErrorCode.NOT_FOUND.name, errors={
+                                     "message": "Doctor not found or already verified"
+                                 })
+        except (Forbidden, BadRequest, NoResultFound) as e:
             raise e
         except Exception as e:
             raise InternalServer(error_code=ErrorCode.SERVER_ERROR.name, errors={
