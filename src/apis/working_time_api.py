@@ -16,7 +16,7 @@ class DoctorWorkingTimeApi(HTTPEndpoint):
     async def get(self, query_params: RequestGetWorkingTimeSchema, auth: JsonWebToken):
         try:
             if auth.get("role") == Role.PATIENT.name:
-                query_params.ordered = True
+                query_params.ordered = False
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             id = auth.get("id") if auth.get(
                 "role") == "DOCTOR" else query_params.doctor_id
