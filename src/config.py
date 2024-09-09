@@ -11,6 +11,7 @@ class Config(BaseSettings):
     ENV: str = "STAG"
     SENTRY_DSN: Optional[str] = None
     REDIS_URL: str
+    REDIS_URL_WORKING_TIME: str
     BROKER_URL: str = Field(alias="broker_url")
     CELERY_ROUTES: dict = Field(
         default={

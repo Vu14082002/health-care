@@ -1,4 +1,5 @@
 import logging
+from curses.ascii import isdigit
 from datetime import date, datetime, time
 from typing import Any, Dict, List, Literal, Optional, Tuple
 
@@ -8,6 +9,8 @@ from sqlalchemy import (Result, Row, and_, asc, case, delete, desc, exists,
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 
+from src.config import config
+from src.core.cache.redis_backend import RedisBackend
 from src.core.database.postgresql import PostgresRepository
 from src.core.exception import BadRequest
 from src.core.security.password import PasswordHandler
@@ -20,6 +23,8 @@ from src.models.work_schedule_model import WorkScheduleModel
 from src.repositories.global_func import destruct_where, process_orderby
 from src.schema.doctor_schema import RequestDoctorWorkScheduleNextWeek
 from src.schema.register import RequestRegisterDoctorSchema
+
+redis_working = RedisBackend(config.REDIS_URL_WORKING_TIME)
 
 
 class DoctorRepository(PostgresRepository[DoctorModel]):
@@ -329,9 +334,15 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                              error_code=ErrorCode.SERVER_ERROR.name) from e
 
     async def get_working_schedules(self, doctor_id: int | None, start_date: date | None, end_date: date | None, examination_type: Literal["online", "ofline"] | None, ordered: bool | None) -> List[Dict[str, Any]]:
+
         try:
             query = select(WorkScheduleModel)
             conditions = []
+            key: List[str] = await redis_working.get_all_keys()
+            if key:
+                for k in key:
+                    if k.isdigit():
+                        conditions.append(WorkScheduleModel.id != int(k))
             if doctor_id is not None:
                 conditions.append(WorkScheduleModel.doctor_id == doctor_id)
             if start_date is not None and end_date is not None:

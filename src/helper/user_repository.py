@@ -14,7 +14,7 @@ from src.models.user_model import UserModel
 from src.repositories import UserRepository
 from src.schema.register import RequestAdminRegisterSchema, RequestLoginSchema
 
-redis = RedisBackend()
+redis = RedisBackend(config.REDIS_URL)
 
 
 class UserHelper:
