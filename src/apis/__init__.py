@@ -40,20 +40,7 @@ routes = [
                  methods=["POST"],  tags=["ADMIN", "PATIENT", "DOCTOR"]),
 
     # Doctor api
-    RouteSwagger("/doctor", GetAllDoctorApi,
-                 methods=["GET"], tags=["DOCTOR", "PATIENT", "ADMIN", "USER"]),
-    RouteSwagger(
-        f"/doctor/{{doctor_id}}",
-        GetDetailtDoctorById,
-        methods=["GET"],
-        tags=["PATIENT", "ADMIN", "DOCTOR"]
-    ),
-    # RouteSwagger(
-    #     "/doctor",
-    #     GetDetailtDoctorById,
-    #     methods=["PUT"],
-    #     tags=["ADMIN", "DOCTOR"]
-    # ),
+
     RouteSwagger(
         "/doctor/working-time",
         DoctorWorkingTimeApi,
@@ -71,6 +58,16 @@ routes = [
         DoctorEmptyWorkingSchedulingTimeApi,
         methods=["GET"],
         tags=["DOCTOR", "ADMIN"]
+    ),
+    RouteSwagger("/doctor", GetAllDoctorApi,
+                 methods=["GET"], tags=["DOCTOR", "PATIENT", "ADMIN", "USER"]),
+    RouteSwagger("/doctor/local", GetAllDoctorApi,
+                 methods=["GET"], tags=["ADMIN"]),
+    RouteSwagger(
+        "/doctor/{doctor_id}",
+        GetDetailtDoctorById,
+        methods=["GET"],
+        tags=["PATIENT", "ADMIN", "DOCTOR"]
     ),
     # appointment api
     RouteSwagger(

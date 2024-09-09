@@ -349,12 +349,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             result = await self.session.execute(query)
             schedules = result.scalars().all()
             return [
-                {
-                    "work_date": schedule.work_date.isoformat(),
-                    "start_time": schedule.start_time.isoformat(),
-                    "end_time": schedule.end_time.isoformat(),
-                    "examination_type": schedule.examination_type
-                }
+                schedule.as_dict
                 for schedule in schedules
             ]
         except SQLAlchemyError as e:

@@ -126,6 +126,12 @@ class RequestGetWorkingTimeSchema(BaseModel):
     class Config:
         json_encoders = {date: lambda v: v.isoformat()}
 
+    @validator("doctor_id", pre=True)
+    def refactor_doctor_id(cls, v):
+        if v is None:
+            return None
+        return int(v)
+
 
 class RequestGetUncenteredTimeSchema(BaseModel):
     doctor_id: int | None = None

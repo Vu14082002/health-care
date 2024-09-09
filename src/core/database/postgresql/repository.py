@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from datetime import datetime, timezone, timedelta
 import json
-from datetime import date, datetime, timezone
+import time
+from datetime import date, datetime, time, timedelta, timezone
 from functools import reduce
 from operator import and_
 from typing import Any, Dict, Generic, List, Type, TypeVar, Union
@@ -334,7 +334,7 @@ class Model(Base):
     @property
     def as_dict(self):
         def json_serializable(obj):
-            if isinstance(obj, (date, datetime)):
+            if isinstance(obj, (date, datetime, time)):
                 return obj.isoformat()
             return obj
 
