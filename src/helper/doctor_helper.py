@@ -92,9 +92,9 @@ class DoctorHelper:
             log.error(f"Error verifying doctor: {e}")
             raise e
 
-    async def get_working_schedules(self, doctor_id: int | None, start_date: date | None, end_date: date | None, examination_type: Literal["online", "offline"] | None):
+    async def get_working_schedules(self, doctor_id: int | None, start_date: date | None, end_date: date | None, examination_type: Literal["online", "offline"] | None, ordered: bool | None = None) -> List[Dict[str, Any]]:
         try:
-            return await self.doctor_repository.get_working_schedules(doctor_id, start_date, end_date, examination_type)
+            return await self.doctor_repository.get_working_schedules(doctor_id, start_date, end_date, examination_type, ordered=ordered)
         except Exception as e:
             logging.error(f"Error in get_working_schedules: {e}")
             raise

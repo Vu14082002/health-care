@@ -328,7 +328,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             raise BadRequest(msg="Failed to update work schedule",
                              error_code=ErrorCode.SERVER_ERROR.name) from e
 
-    async def get_working_schedules(self, doctor_id: int | None, start_date: date | None, end_date: date | None, examination_type: Literal["online", "ofline"] | None) -> List[Dict[str, Any]]:
+    async def get_working_schedules(self, doctor_id: int | None, start_date: date | None, end_date: date | None, examination_type: Literal["online", "ofline"] | None, ordered: bool | None) -> List[Dict[str, Any]]:
         try:
             query = select(WorkScheduleModel)
             conditions = []
@@ -340,6 +340,8 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             if examination_type:
                 conditions.append(
                     WorkScheduleModel.examination_type == examination_type)
+            if ordered is not None:
+                conditions.append(WorkScheduleModel.ordered == ordered)
             if conditions:
                 query = query.where(and_(*conditions))
 

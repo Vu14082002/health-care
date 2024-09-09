@@ -13,7 +13,7 @@ from src.core.route import RouteSwagger
 
 routes = [
 
-    RouteSwagger("/health_check", HealthCheck, methods=["GET"], tags=["User"]),
+    RouteSwagger("/health_check", HealthCheck, methods=["GET"], tags=["USER"]),
 
     # auth
     RouteSwagger("/auth/patient/register", PatientRegisterApi,
@@ -62,6 +62,7 @@ routes = [
     ),
     RouteSwagger("/doctor", GetAllDoctorApi,
                  methods=["GET"], tags=["DOCTOR", "PATIENT", "ADMIN", "USER"]),
+
     RouteSwagger("/doctor/local", GetAllDoctorLocalAPi,
                  methods=["GET"], tags=["ADMIN"]),
     RouteSwagger(
