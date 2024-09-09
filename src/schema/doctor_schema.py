@@ -122,6 +122,7 @@ class RequestGetWorkingTimeSchema(BaseModel):
     start_date: date | None = None
     end_date: date | None = None
     examination_type: Literal["online", "offline"] | None = None
+    ordered: bool | None = None
 
     class Config:
         json_encoders = {date: lambda v: v.isoformat()}
