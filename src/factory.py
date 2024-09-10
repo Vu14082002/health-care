@@ -1,12 +1,16 @@
 from functools import partial
 
+import src
+import src.helper
+import src.helper.medical_records_helper
 from src.core.database.postgresql import get_session
-from src.helper import DoctorHelper, PatientHelper, UserHelper
-from src.models import DoctorModel, PatientModel, UserModel
-from src.models.appointment_model import AppointmentModel
-from src.repositories import (DoctorRepository, PatientRepository,
-                              UserRepository, AppointmentRepository)
-from src.helper.appointment_helper import AppointmentHelper
+from src.helper import (AppointmentHelper, DoctorHelper, MedicalRecordsHelper,
+                        PatientHelper, UserHelper)
+from src.models import (AppointmentModel, DoctorModel, MedicalRecordModel,
+                        PatientModel, UserModel)
+from src.repositories import (AppointmentRepository, DoctorRepository,
+                              MedicalRecordsRepository, PatientRepository,
+                              UserRepository)
 
 
 class Factory:
@@ -16,6 +20,8 @@ class Factory:
     patient_repository = partial(PatientRepository, PatientModel)
     doctor_repository = partial(DoctorRepository, DoctorModel)
     appointment_repository = partial(AppointmentRepository, AppointmentModel)
+    medical_records_repository = partial(
+        MedicalRecordsRepository, MedicalRecordModel)
 
     async def get_patient_helper(self) -> PatientHelper:
         async with get_session() as session:
@@ -32,3 +38,7 @@ class Factory:
     async def get_appointment_helper(self) -> AppointmentHelper:
         async with get_session() as session:
             return AppointmentHelper(appointment_repository=self.appointment_repository(db_session=session))
+
+    async def get_medical_records_helper(self) -> MedicalRecordsHelper:
+        async with get_session() as session:
+            return MedicalRecordsHelper(medical_records_repository=self.medical_records_repository(db_session=session))

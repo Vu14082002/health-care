@@ -84,4 +84,7 @@ routes = [
         methods=["GET"],
         tags=["PATIENT", "ADMIN", "DOCTOR"]
     ),
+    # medical api
+
+
 ]
