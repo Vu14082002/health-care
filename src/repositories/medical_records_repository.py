@@ -18,7 +18,6 @@ class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
     @Transactional()
     async def create_medical_records(self, *, value: RequestCreateMedicalRecordsSchema):
         try:
-            # Check if the appointment exists and matches the doctor_id
             appointment = await self.session.execute(
                 select(AppointmentModel).where(
                     AppointmentModel.id == value.appointment_id,

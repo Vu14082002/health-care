@@ -1,7 +1,5 @@
 import json
 from datetime import date, datetime, time, timedelta
-from re import I
-from tkinter import N
 from typing import Annotated, List, Optional
 
 from pydantic import (BaseModel, ConfigDict, Field, field_validator,
