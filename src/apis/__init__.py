@@ -6,6 +6,8 @@ from src.apis.auth import (AdminRegisterApi, DoctorForeignRegisterApi,
 from src.apis.docter_api import (GetAllDoctorApi, GetAllDoctorLocalAPi,
                                  GetDetailtDoctorById)
 from src.apis.health_check import HealthCheck
+from src.apis.medical_records_api import (MedicalRecordsApiGET,
+                                          MedicalRecordsApiPOST)
 from src.apis.working_time_api import (CreateDoctorWorkingTimeApi,
                                        DoctorEmptyWorkingSchedulingTimeApi,
                                        DoctorWorkingTimeApi)
@@ -85,6 +87,18 @@ routes = [
         tags=["PATIENT", "ADMIN", "DOCTOR"]
     ),
     # medical api
+    RouteSwagger(
+        "/medical-record",
+        MedicalRecordsApiGET,
+        methods=["GET"],
+        tags=["PATIENT", "ADMIN", "DOCTOR"]
+    ),
+    RouteSwagger(
+        "/medical-record",
+        MedicalRecordsApiPOST,
+        methods=["POST"],
+        tags=["ADMIN", "DOCTOR"]
+    ),
 
 
 ]

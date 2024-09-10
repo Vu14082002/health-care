@@ -26,6 +26,7 @@ class ErrorCode(Enum):
     SCHEDULE_CONFLICT = "SCHEDULE_CONFLICT"
     ALLREADY_ORDERED = "ALLREADY_ORDERED"
     msg_server_error = "Server is error, pls try again"
+    INVALID_APPOINTMENT = "INVALID_APPOINTMENT"
 
 
 CACHE_REFRESH_TOKEN = 60 * 60 * 5

@@ -32,7 +32,7 @@ async def create_tables():
     engine = create_async_engine(config.POSTGRES_URL_MASTER, echo=True)
     async with engine.begin() as conn:
         try:
-            def check_tables_and_data(connection):
+            def check_tables_and_data(connection):  # type: ignore
                 Base.metadata.create_all(connection)
                 return True
             result = await conn.run_sync(check_tables_and_data)

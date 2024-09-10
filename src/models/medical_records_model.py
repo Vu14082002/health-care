@@ -1,8 +1,8 @@
-from re import I
+from datetime import date, datetime
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import DateTime, ForeignKey, Integer, Text
+from sqlalchemy import Date, ForeignKey, Integer, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -86,7 +86,7 @@ class MedicalRecordModel(Model):
     # ton thuong can ban
     basic_disease_damage: Mapped[str] = mapped_column(Text, nullable=True)
 
-    # cac xet nghiem lam san can lam
+    # cac xet nghiem lam san'  can' lam'
     clinical_tests: Mapped[str] = mapped_column(Text, nullable=True)
 
     #  tom tat benh
@@ -96,8 +96,8 @@ class MedicalRecordModel(Model):
     treatment_plan: Mapped[str] = mapped_column(Text, nullable=True)
 
     # ngat ket thuc dieu tri
-    end_date_treatment: Mapped[DateTime] = mapped_column(
-        DateTime, nullable=True)
+    end_date_treatment: Mapped[date] = mapped_column(
+        Date, nullable=False)
 
     # don thuoc
     prescription: Mapped[PrescriptionSchema] = mapped_column(

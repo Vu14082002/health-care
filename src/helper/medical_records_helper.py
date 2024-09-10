@@ -1,15 +1,14 @@
-import logging
 import logging as log
-import math
 from datetime import date, datetime, time, timedelta
 from typing import Any, Dict, List, Literal, Optional
 
 from sqlalchemy.exc import NoResultFound
 
-from src.core.exception import BadRequest
+from src.core.exception import BadRequest, InternalServer
 from src.enum import ErrorCode
 from src.repositories.medical_records_repository import \
     MedicalRecordsRepository
+from src.schema.medical_records_schema import RequestCreateMedicalRecordsSchema
 
 
 class MedicalRecordsHelper:
@@ -31,3 +30,14 @@ class MedicalRecordsHelper:
 
     async def get_medical_records_by_id(self, medical_records_id: int):
         pass
+
+    async def create_medical_records(self, *, value: RequestCreateMedicalRecordsSchema):
+        try:
+            result = await self.medical_records_repository.create_medical_records(value=value)
+            return result
+        except (BadRequest, InternalServer, NoResultFound) as e:
+            raise e
+        except Exception as e:
+            log.error(e)
+            raise InternalServer(msg="Internal server error",
+                                 error_code=ErrorCode.SERVER_ERROR.name, errors={"message": "server is error, please try later"}) from e
