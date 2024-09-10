@@ -1,25 +1,54 @@
-import enum
-from datetime import datetime
+from re import I
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from pydantic import BaseModel, ConfigDict
+from sqlalchemy import DateTime, ForeignKey, Integer, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.apis import appointment
 from src.core.database.postgresql import Model
 
 if TYPE_CHECKING:
     from src.models.appointment_model import AppointmentModel
     from src.models.doctor_model import DoctorModel
     from src.models.patient_model import PatientModel
-    from src.models.prescription_model import PrescriptionModel
 
 
-class MedicalModelStatus(enum.Enum):
-    PENDING = "pending"
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    COMPLETED = "completed"
+# class MedicalModelStatus(enum.Enum):
+#     PENDING = "pending"
+#     APPROVED = "approved"
+#     REJECTED = "rejected"
+#     COMPLETED = "completed"
+
+
+class DrugSchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    drug_name: str
+    quantity: int
+    user_manual: str
+
+
+class PrescriptionSchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    item: list[DrugSchema]
+
+
+# tien su benh
+class MedicalHistoryMine(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    allergy: str = ""
+    drug: bool = False
+    alcohol: bool = False
+    cigarette: bool = False
+    pipe_tobacco: bool = False
+
+
+class MedicalHistorySchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    mine: MedicalHistoryMine
+    family: str | None
+
+# lich su kham benh
 
 
 class MedicalRecordModel(Model):
@@ -37,22 +66,51 @@ class MedicalRecordModel(Model):
     appointment_id: Mapped[int] = mapped_column(
         ForeignKey("appointment.id"), nullable=False)
 
-    diagnosis: Mapped[str] = mapped_column(Text, nullable=False)
+    # ly do kham benh
+    reason: Mapped[str] = mapped_column(Text, nullable=True)
 
-    treatment_plan: Mapped[str] = mapped_column(Text, nullable=False)
+    # Vao ngay thu may cua benh: null True boi vi co the chi di kham suc khoe
+    quantity_day_medical: Mapped[int] = mapped_column(
+        Integer, nullable=True)
 
-    medications: Mapped[str] = mapped_column(Text, nullable=True)
+    # tien su benh
+    medical_history: Mapped[MedicalHistorySchema] = mapped_column(
+        Text, nullable=False)
 
-    follow_up_instructions: Mapped[str] = mapped_column(Text, nullable=True)
+    # qua trinh benh ly
+    pathological_process: Mapped[str] = mapped_column(Text, nullable=False)
 
-    additional_notes: Mapped[str] = mapped_column(Text, nullable=True)
+    #  chiu trung benh
+    disease_symptoms: Mapped[str] = mapped_column(Text, nullable=True)
 
-    # relation ship
+    # ton thuong can ban
+    basic_disease_damage: Mapped[str] = mapped_column(Text, nullable=True)
+
+    # cac xet nghiem lam san can lam
+    clinical_tests: Mapped[str] = mapped_column(Text, nullable=True)
+
+    #  tom tat benh
+    medical_summary: Mapped[str] = mapped_column(Text, nullable=True)
+
+    # ke hoach dieu tri
+    treatment_plan: Mapped[str] = mapped_column(Text, nullable=True)
+
+    # ngat ket thuc dieu tri
+    end_date_treatment: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=True)
+
+    # don thuoc
+    prescription: Mapped[PrescriptionSchema] = mapped_column(
+        JSONB, nullable=True)
+
+    # One to One
     appointment: Mapped["AppointmentModel"] = relationship(
-        "AppointmentModel", back_populates="medical_record")
+        "AppointmentModel", back_populates="medical_record", lazy="joined")
 
+    # Many to one
     patient: Mapped["PatientModel"] = relationship(
-        "PatientModel", back_populates="medical_records")
+        "PatientModel", back_populates="medical_records", lazy="joined")
 
+    # Many to one
     doctor: Mapped["DoctorModel"] = relationship(
-        "DoctorModel", back_populates="medical_records")
+        "DoctorModel", back_populates="medical_records", lazy="joined")

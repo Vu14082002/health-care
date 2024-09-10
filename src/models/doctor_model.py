@@ -14,8 +14,8 @@ from src.enum import TypeOfDisease
 default_avatar = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQS0iv-HzCTjY2RQ7JLiYe23Rw2Osp-n9PqUg&s"
 
 if TYPE_CHECKING:
-    from . import (AppointmentModel, MedicalRecordModel, PrescriptionModel,
-                   RatingModel, UserModel, WorkScheduleModel)
+    from . import (AppointmentModel, MedicalRecordModel, RatingModel,
+                   UserModel, WorkScheduleModel)
 
 
 class DoctorExaminationPriceModel(Model):
@@ -109,18 +109,15 @@ class DoctorModel(Model):
 
     branch_name: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    medical_records: Mapped[list["MedicalRecordModel"]] = relationship()
-
+    #  one to many
     working_schedules: Mapped[list["WorkScheduleModel"]] = relationship(
         "WorkScheduleModel", back_populates="doctor"
     )
-
+    # one to many
     examination_prices: Mapped[list["DoctorExaminationPriceModel"]] = relationship(
         "DoctorExaminationPriceModel", back_populates="doctor", order_by="desc(DoctorExaminationPriceModel.created_at)"
     )
-    prescriptions: Mapped[list["PrescriptionModel"]] = relationship(
-        "PrescriptionModel", back_populates="doctor"
-    )
+    medical_records: Mapped[list["MedicalRecordModel"]] = relationship()
 
     @property
     def latest_examination_price(self) -> "DoctorExaminationPriceModel | None":

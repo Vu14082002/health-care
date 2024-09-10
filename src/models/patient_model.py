@@ -12,7 +12,6 @@ from src.models.medical_records_model import MedicalRecordModel
 
 if TYPE_CHECKING:
     from src.models.appointment_model import AppointmentModel
-    from src.models.prescription_model import PrescriptionModel
     from src.models.rating_model import RatingModel
     from src.models.user_model import UserModel
 
@@ -81,11 +80,13 @@ class PatientModel(Model):
     ratings: Mapped[list["RatingModel"]] = relationship(
         "RatingModel", back_populates="patient")
 
-    prescriptions: Mapped[list["PrescriptionModel"]] = relationship(
-        "PrescriptionModel", back_populates="patient")
-
+    # one to many
     medical_records: Mapped[list["MedicalRecordModel"]] = relationship(
         back_populates="patient"
+    )
+    # one to many
+    medical_records: Mapped[list["MedicalRecordModel"]] = relationship(
+        "MedicalRecordModel", back_populates="patient"
     )
 
     def __repr__(self):
