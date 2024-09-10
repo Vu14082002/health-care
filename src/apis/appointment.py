@@ -60,14 +60,13 @@ class AppointmentApi(HTTPEndpoint):
                                 error_code=ErrorCode.UNAUTHORIZED.name,
                                 errors={"message": "Only patients or admins can create appointments"})
 
-            appointment_helper: AppointmentHelper = await Factory().get_appointment_helper()
-
             if user_role == "ADMIN" and not form_data.patient_id:
                 raise Forbidden(msg="Unauthorized access",
                                 error_code=ErrorCode.UNAUTHORIZED.name,
                                 errors={"message": "patient_id is required for admin"})
             patient_id = form_data.patient_id if user_role == "ADMIN" else auth.get(
                 "id")
+            appointment_helper: AppointmentHelper = await Factory().get_appointment_helper()
             response_data = await appointment_helper.create_appointment(patient_id, form_data.doctor_id, form_data.work_schedule_id, form_data.pre_examination_notes)
             return response_data
         except (BadRequest, Forbidden) as e:

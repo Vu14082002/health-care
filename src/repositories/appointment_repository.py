@@ -33,20 +33,24 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                 doctor_model, work_schedule_model)
             # validate appointment
             appointment = AppointmentModel()
-            appointment.appointment_date_start = datetime.combine(
-                work_schedule_model.work_date, work_schedule_model.start_time)
+            # appointment.work_schedule = datetime.combine(
+            #     work_schedule_model.work_date, work_schedule_model.start_time)
 
-            appointment.appointment_date_end = datetime.combine(
-                work_schedule_model.work_date, work_schedule_model.end_time)
-            appointment.patient = patient_model
-            appointment.doctor = work_schedule_model.doctor
+            # appointment.appointment_date_end = datetime.combine(
+            #     work_schedule_model.work_date, work_schedule_model.end_time)
             if work_schedule_model.examination_type.lower() == "offline":
                 appointment.appointment_status = "approved"
             else:
+                # FIXME:check logic for online appointment and offline if choose payment id bank
                 appointment.appointment_status = "pending"
                 await redis_working.set({"doctor_id": doctor_id, "patient_id": patient_id, "work_schedule_id": work_schedule_id},
                                         work_schedule_id, 300)
                 return {"message": "Create appointment successfully"}
+            appointment.patient = patient_model
+            appointment.doctor = work_schedule_model.doctor
+            appointment.work_schedule_id = work_schedule_id
+            appointment.doctor_id = doctor_id
+            appointment.patient_id = patient_id
             appointment.examination_type = work_schedule_model.examination_type
             appointment.pre_examination_notes = pre_examination_notes if pre_examination_notes else ""
             appointment.total_amount = fee_examprice
@@ -137,39 +141,40 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             raise e
     # end::create_appointment[]
 
-    async def find(self, **kwargs):
+    async def find(self, **kwargs):  # type: ignore
         query = select(self.model_class)
-        appointment_status: str = kwargs.get('appointment_status')
-        from_date: date = kwargs.get('from_date')
-        to_date: date = kwargs.get('to_date')
-        examination_type: str = kwargs.get('examination_type')
-        doctor_name: str = kwargs.get('doctor_name')
-        patient_name: int = kwargs.get('patient_name')
+        appointment_status: str = kwargs.get('appointment_status', None)
+        from_date: date = kwargs.get('from_date', None)
+        to_date: date = kwargs.get('to_date', None)
+        examination_type: str = kwargs.get('examination_type', None)
+        doctor_name: str = kwargs.get('doctor_name', None)
+        patient_name: int = kwargs.get('patient_name', None)
         current_page: int = kwargs.get('current_page', 1)
         page_size: int = kwargs.get('page_size', 10)
-        doctor_id: int = kwargs.get('doctor_id')
-        patient_id: int = kwargs.get('patient_id')
+        doctor_id: int = kwargs.get('doctor_id', None)
+        patient_id: int = kwargs.get('patient_id', None)
+
         if appointment_status:
             query = query.filter(
                 self.model_class.appointment_status == appointment_status)
-        if from_date:
-            query = query.filter(
-                self.model_class.appointment_date_start >= from_date)
-        if to_date:
-            query = query.filter(
-                self.model_class.appointment_date_end <= to_date)
+        if from_date and to_date is None:
+            query = query.join(WorkScheduleModel).filter(
+                WorkScheduleModel.work_date >= from_date)
+        if to_date and from_date is None:
+            query = query.join(WorkScheduleModel).filter(
+                WorkScheduleModel.work_date <= to_date)
+        if from_date and to_date:
+            query = query.join(WorkScheduleModel).filter(
+                and_(WorkScheduleModel.work_date >= from_date,
+                     WorkScheduleModel.work_date <= to_date)
+            )
         if examination_type:
-            query = query.filter(
-                self.model_class.examination_type == examination_type)
+            query = query.join(WorkScheduleModel).filter(
+                WorkScheduleModel.examination_type == examination_type)
         if doctor_id:
-            query = query.filter(
-                self.model_class.doctor_id == doctor_id
-            )
+            query = query.filter(self.model_class.doctor_id == doctor_id)
         if patient_id:
-            query = query.filter(
-                self.model_class.patient_id == patient_id
-            )
-
+            query = query.filter(self.model_class.patient_id == patient_id)
         if doctor_name:
             name_parts = doctor_name.split()
             conditions = [
@@ -193,10 +198,10 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             query = query.join(self.model_class.patient).filter(
                 or_(*conditions)
             )
-        query = query.options(
-            joinedload(self.model_class.doctor),
-            joinedload(self.model_class.patient)
-        )
+        # query = query.options(
+        #     joinedload(self.model_class.doctor),
+        #     joinedload(self.model_class.patient)
+        # )
         total_count = await self.session.execute(select(func.count()).select_from(query))
         query = query.offset((current_page - 1) * page_size).limit(page_size)
 
