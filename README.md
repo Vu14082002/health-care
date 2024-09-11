@@ -1,19 +1,74 @@
 # HEALTH CARE API
 
-## Run
+## Getting Started
 
--   Before run: you must create python environment: `python3 -m venv venv`
--   Then, you active env: `source ./venv/bin/active`
--   Install dependency package: `pip3 install -r requirements.txt --no-cache`
--   Finally, you can run: `python3 main.py`
+### Prerequisites
 
-## Migrate database
+-   Python 3.10
+-   OS: UBUNTU
+-   Docker (for deployment)
 
--   Create migrate file: `alembic revision --autogenerate -m "<message>"`
--   Update to database: `alembic upgrade head`
+### Installation
 
-# heatlh-care
+1. Create a Python virtual environment:
 
-deploy
-docker build -t sherlockvufullsnack/health_care-api:latest .
-docker push sherlockvufullsnack/health_care-api:latest
+    ```
+    python3 -m venv venv
+    ```
+
+2. Activate the virtual environment:
+
+    ```
+    source ./venv/bin/activate
+    ```
+
+3. Install dependencies:
+    ```
+    pip3 install -r requirements.txt --no-cache
+    ```
+
+### Running the Application
+
+To start the application, run:
+
+    ```
+    python3 main.py
+    ```
+
+## Database Migration
+
+To manage database migrations, use the following Alembic commands:
+
+1. Create a new migration:
+
+    ```
+    alembic revision --autogenerate -m "<descriptive_message>"
+    ```
+
+2. Apply migrations:
+    ```
+    alembic upgrade head
+    ```
+
+## API Documentation
+
+Access the API documentation at:
+
+    ```
+    http://localhost:5005/docs
+    ```
+
+## Deployment
+
+To deploy the application using Docker:
+
+1. Build the Docker image:
+
+    ```
+    docker build -t sherlockvufullsnack/health_care-api:latest .
+    ```
+
+2. Push the image to Docker Hub:
+    ```
+    docker push sherlockvufullsnack/health_care-api:latest
+    ```
