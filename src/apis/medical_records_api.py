@@ -1,7 +1,5 @@
 import logging as log
 
-from regex import R
-
 from src.core import HTTPEndpoint
 from src.core.exception import BadRequest, Forbidden, InternalServer
 from src.core.security.authentication import JsonWebToken
@@ -48,16 +46,16 @@ class MedicalRecordsApiPOST(HTTPEndpoint):
     async def post(self, form_data: RequestCreateMedicalRecordsSchema, auth: JsonWebToken):
         try:
             user_role = auth.get("role", "")
-            if user_role not in [Role.DOCTOR.name, Role.ADMIN.name]:
+            user_id = auth.get("id")
+            if user_role != Role.DOCTOR.value:
                 raise Forbidden(msg="Unauthorized access",
-                                error_code=ErrorCode.UNAUTHORIZED.name, errors={"message": "You are not authorized to access this resource"})
-            if user_role == Role.ADMIN.name and form_data.doctor_id is None:
-                raise BadRequest(msg="Bad request",
-                                 error_code=ErrorCode.BAD_REQUEST.name, errors={"message": "Doctor id is required"})
-            form_data.doctor_id = auth.get(
-                "id") if user_role == Role.DOCTOR.name else form_data.doctor_id
+                                error_code=ErrorCode.UNAUTHORIZED.name,
+                                errors={"message": "You are not authorized to access this resource"})
+
+            value = form_data.model_dump()
+            value.update({"doctor_id": user_id})
             medical_records_helper = await Factory().get_medical_records_helper()
-            result = await medical_records_helper.create_medical_records(value=form_data)
+            result = await medical_records_helper.create_medical_records(value=value)
             return result
         except (BadRequest, Forbidden, InternalServer) as e:
             log.error(e)
@@ -65,4 +63,5 @@ class MedicalRecordsApiPOST(HTTPEndpoint):
         except Exception as e:
             log.error(e)
             raise InternalServer(msg="Internal server error",
-                                 error_code=ErrorCode.SERVER_ERROR.name, errors={"message": "server is error, please try later"}) from e
+                                 error_code=ErrorCode.SERVER_ERROR.name,
+                                 errors={"message": "server is error, please try later"}) from e

@@ -64,7 +64,7 @@ class MedicalRecordModel(Model):
         ForeignKey("doctor.id"), nullable=False)
 
     appointment_id: Mapped[int] = mapped_column(
-        ForeignKey("appointment.id"), nullable=False)
+        ForeignKey("appointment.id"), nullable=False, unique=True)
 
     # ly do kham benh
     reason: Mapped[str] = mapped_column(Text, nullable=True)
@@ -75,7 +75,7 @@ class MedicalRecordModel(Model):
 
     # tien su benh
     medical_history: Mapped[MedicalHistorySchema] = mapped_column(
-        Text, nullable=False)
+        JSONB, nullable=False)
 
     # qua trinh benh ly
     pathological_process: Mapped[str] = mapped_column(Text, nullable=False)

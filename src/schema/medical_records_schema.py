@@ -20,7 +20,6 @@ class RequestGetAllMedicalRecordsSchema(BaseModel):
 
 
 class RequestCreateMedicalRecordsSchema(BaseModel):
-    doctor_id: int | None
     appointment_id: int
     reason: str | None
     quantity_day_medical: int | None
@@ -34,6 +33,8 @@ class RequestCreateMedicalRecordsSchema(BaseModel):
     end_date_treatment: date
     prescription: PrescriptionSchema | None
 
-    # @validator("end_date_treatment",pre=True)
+    class Config:
+        json_encoders = {date: lambda v: v.isoformat()}
+    # @validator("end_date_treatment", pre=True)
     # def validate_end_date_treatment(cls, v):
     #     if is

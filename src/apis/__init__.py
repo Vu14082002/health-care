@@ -97,7 +97,7 @@ routes = [
         "/medical-record",
         MedicalRecordsApiPOST,
         methods=["POST"],
-        tags=["ADMIN", "DOCTOR"]
+        tags=["DOCTOR"]
     ),
 
 

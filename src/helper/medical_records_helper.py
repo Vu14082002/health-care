@@ -28,16 +28,26 @@ class MedicalRecordsHelper:
         except Exception as e:
             raise e
 
-    async def get_medical_records_by_id(self, medical_records_id: int):
-        pass
-
-    async def create_medical_records(self, *, value: RequestCreateMedicalRecordsSchema):
+    async def create_medical_records(self, *, value: dict[str, Any]):
         try:
             result = await self.medical_records_repository.create_medical_records(value=value)
             return result
-        except (BadRequest, InternalServer, NoResultFound) as e:
+        except (BadRequest, InternalServer) as e:
             raise e
         except Exception as e:
             log.error(e)
             raise InternalServer(msg="Internal server error",
-                                 error_code=ErrorCode.SERVER_ERROR.name, errors={"message": "server is error, please try later"}) from e
+                                 error_code=ErrorCode.SERVER_ERROR.name,
+                                 errors={"message": "server is error, please try later"}) from e
+
+    async def get_medical_records(self, user_id: int, role: str, doctor_id: int = None):
+        try:
+            records = await self.medical_records_repository.get_medical_records(user_id, role, doctor_id)
+            return records
+        except (BadRequest, InternalServer) as e:
+            raise e
+        except Exception as e:
+            log.error(e)
+            raise InternalServer(msg="Internal server error",
+                                 error_code=ErrorCode.SERVER_ERROR.name,
+                                 errors={"message": "server is error, please try later"}) from e
