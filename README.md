@@ -23,6 +23,7 @@
     ```
 
 3. Install dependencies:
+
     ```
     pip3 install -r requirements.txt --no-cache
     ```
@@ -46,15 +47,18 @@ To manage database migrations, use the following Alembic commands:
     ```
 
 2. Apply migrations:
+
     ```
     alembic upgrade head
     ```
 
 ## API Documentation
 
-Access the API documentation at:
-`   http://localhost:5005/docs
-  `
+1. Access the API documentation at:
+
+    ```
+    http://localhost:5005/docs
+    ```
 
 ## Deployment
 
@@ -67,6 +71,7 @@ To deploy the application using Docker:
     ```
 
 2. Push the image to Docker Hub:
+
     ```
     docker push sherlockvufullsnack/health_care-api:latest
     ```
