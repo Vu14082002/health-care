@@ -29,7 +29,7 @@
 
 ### Running the Application
 
-To start the application, run:
+1. To start the application run:
 
     ```
     python3 main.py
@@ -53,10 +53,8 @@ To manage database migrations, use the following Alembic commands:
 ## API Documentation
 
 Access the API documentation at:
-
-    ```
-    http://localhost:5005/docs
-    ```
+`   http://localhost:5005/docs
+  `
 
 ## Deployment
 
