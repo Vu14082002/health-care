@@ -24,7 +24,7 @@ routes = [
     RouteSwagger("/auth/doctor/register/foreign", DoctorForeignRegisterApi,
                  methods=["POST"], tags=["DOCTOR"]),
 
-    RouteSwagger("/auth/doctor/register/local", DoctorLocalRegisterApi,
+    RouteSwagger("/auth/doctor/register", DoctorLocalRegisterApi,
                  methods=["POST"], tags=["ADMIN"]),
 
     RouteSwagger("/auth/admin/register", AdminRegisterApi,
