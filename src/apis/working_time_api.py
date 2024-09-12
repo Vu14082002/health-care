@@ -1,5 +1,6 @@
 
 import logging as log
+from re import A
 
 from src.core import HTTPEndpoint
 from src.core.exception import BadRequest, Forbidden, InternalServer
@@ -53,33 +54,6 @@ class CreateDoctorWorkingTimeApi(HTTPEndpoint):
             if not doctor_id:
                 raise BadRequest(error_code=ErrorCode.BAD_REQUEST.name, errors={
                                  "message": "Doctor id is required"})
-
-            if role == Role.DOCTOR.name:
-                verify_status = auth.get("verify_status")
-                if verify_status not in [1, 2]:
-                    raise Forbidden(
-                        error_code=ErrorCode.FORBIDDEN.name,
-                        errors={
-                            "message": "Only doctors with verify_status = 1 or 2 can add working schedule"}
-                    )
-
-                examination_type = form_data.examination_type
-                if verify_status != 2 and examination_type == "offline":
-                    raise Forbidden(
-                        error_code=ErrorCode.FORBIDDEN.name,
-                        errors={
-                            "message": "Only doctors with verify_status = 2 can add offline working schedule"}
-                    )
-
-                doctor_type = auth.get("type_of_disease")
-                if (doctor_type == "online" and examination_type == "offline") or \
-                        (doctor_type == "offline" and examination_type == "online"):
-                    raise Forbidden(
-                        error_code=ErrorCode.FORBIDDEN.name,
-                        errors={
-                            "message": f"Your cannot add {examination_type} working schedule because you are {doctor_type} doctor"}
-                    )
-
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             return await doctor_helper.create_doctor_work_schedule(doctor_id=doctor_id, data=form_data)
 

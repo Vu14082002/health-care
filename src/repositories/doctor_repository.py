@@ -5,14 +5,14 @@ from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple
 
 from regex import B
 from sqlalchemy import (Result, Row, and_, asc, case, delete, desc, exists,
-                        func, or_, select)
+                        func, not_, or_, select)
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 
 from src.config import config
 from src.core.cache.redis_backend import RedisBackend
 from src.core.database.postgresql import PostgresRepository
-from src.core.exception import BadRequest
+from src.core.exception import BadRequest, Forbidden
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
 from src.models.doctor_model import (DoctorExaminationPriceModel, DoctorModel,
@@ -60,6 +60,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             )
 
             current_date = datetime.now().date()
+            current_time = datetime.now().time()
             start_date = current_date
             if current_date.weekday() < 1:
                 start_date = current_date + \
@@ -85,8 +86,16 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                         )
                     ).label('work_schedules')
                 )
-                .where(WorkScheduleModel.work_date.between(start_date, end_date),
-                       WorkScheduleModel.id.not_in(ids))
+                .where(
+                    WorkScheduleModel.work_date.between(start_date, end_date),
+                    WorkScheduleModel.id.not_in(ids),
+                    not_(
+                        and_(
+                            WorkScheduleModel.work_date == current_date,
+                            WorkScheduleModel.start_time < current_time
+                        )
+                    )
+                )
                 .group_by(WorkScheduleModel.doctor_id)
                 .subquery()
             )
@@ -298,6 +307,31 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
 
     async def add_workingschedule(self, doctor_id: int, data: RequestDoctorWorkScheduleNextWeek) -> Dict[str, Any]:
         try:
+            # check have permit crea te working
+            doctor_check = select(DoctorModel).where(
+                DoctorModel.id == doctor_id)
+
+            data_check = await self.session.execute(doctor_check)
+            data_check_model = data_check.scalar_one_or_none()
+
+            if data_check_model is None:
+                await self.session.rollback()
+                raise BadRequest(
+                    error_code=ErrorCode.DOCTOR_NOT_FOUND.name, errors={
+                        "message": "doctor not found"
+                    })
+            if data_check_model.verify_status != 2:
+                raise BadRequest(
+                    error_code=ErrorCode.DOCTOR_NOT_FOUND.name, errors={
+                        "message": "doctor is not verify, pls varyfi and try again"
+                    })
+            if data_check_model.type_of_disease != "both":
+                if data_check_model.type_of_disease != data.examination_type:
+                    await self.session.rollback()
+                    raise Forbidden(
+                        error_code=ErrorCode.FORBIDDEN.name, errors={
+                            "message": "you not have permision"
+                        })
             new_schedules = []
             conflicts = []
             for daily_schedule in data.work_schedule:

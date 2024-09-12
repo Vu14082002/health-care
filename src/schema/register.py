@@ -109,11 +109,12 @@ class RequestRegisterDoctorForeignSchema(RequestRegisterDoctorSchema):
 
 
 class RequestRegisterDoctorLocalSchema(RequestRegisterDoctorSchema):
-    is_local_person: bool
     offline_price: Optional[float] = None
     online_price: Optional[float] = None
     type_of_disease: Literal[TypeOfDisease.BOTH.value,
                              TypeOfDisease.OFFLINE.value, TypeOfDisease.ONLINE.value]
+
+    is_local_person: bool
 
     @validator("type_of_disease")
     def check_type_of_disease(cls, v, values):
@@ -121,7 +122,8 @@ class RequestRegisterDoctorLocalSchema(RequestRegisterDoctorSchema):
         online_price = values.get("online_price")
 
         if v not in [TypeOfDisease.BOTH.value, TypeOfDisease.OFFLINE.value, TypeOfDisease.ONLINE.value]:
-            raise ValueError(f"Invalid type of disease")
+            raise ValueError(
+                f"Invalid type of disease, type_of_disease should be one of {TypeOfDisease.BOTH.value}, {TypeOfDisease.OFFLINE.value}, {TypeOfDisease.ONLINE.value}")
 
         if v == TypeOfDisease.OFFLINE.value:
             if offline_price is None or offline_price <= 0:
@@ -130,14 +132,26 @@ class RequestRegisterDoctorLocalSchema(RequestRegisterDoctorSchema):
                 raise ValueError(
                     f"Online price should not be set for offline-only type")
 
-        if v == TypeOfDisease.BOTH.value:
+        elif v == TypeOfDisease.ONLINE.value:
+            if online_price is None or online_price <= 0:
+                raise ValueError(f"Missing or invalid online price")
+            if offline_price is not None:
+                raise ValueError(
+                    f"Offline price should not be set for online-only type")
+
+        elif v == TypeOfDisease.BOTH.value:
             if offline_price is None or offline_price <= 0 or online_price is None or online_price <= 0:
                 raise ValueError(
                     f"Missing or invalid offline/online price for both types")
 
-        if v == TypeOfDisease.ONLINE.value:
-            if online_price is None or online_price <= 0:
-                raise ValueError(f"Missing or invalid online price")
+        return v
+
+    @validator("is_local_person")
+    def check_is_local_person(cls, v, values):
+        type_of_disease = values.get("type_of_disease")
+        if v == False and type_of_disease == TypeOfDisease.OFFLINE.value:
+            raise ValueError(
+                f"Offline type of disease is not allowed for foreign doctor")
         return v
 
 

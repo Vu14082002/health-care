@@ -41,7 +41,10 @@ class GetAllDoctorApi(HTTPEndpoint):
                 ]
             if query_params.phone_number:
                 where["phone_number"] = query_params.phone_number
+            if query_params.is_local_person is not None:
+                where["is_local_person"] = query_params.is_local_person
             response_data = await doctor_helper.get_all_doctor(current_page=current_page, page_size=page_size, where=where)
+
             return response_data
         except Exception as e:
             log.error(f"Error: {e}")
