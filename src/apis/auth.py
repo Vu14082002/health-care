@@ -147,7 +147,6 @@ class DoctorLocalRegisterApi(HTTPEndpoint):
             doctor_helper = await Factory().get_doctor_helper()
             data = form_data.model_dump()
             data["verify_status"] = 2
-            data["is_local_person"] = True
             result: DoctorModel = await doctor_helper.create_doctor(data)
             return result.as_dict  # type: ignore
         except (BadRequest, InternalServer) as e:

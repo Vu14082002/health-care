@@ -109,6 +109,7 @@ class RequestRegisterDoctorForeignSchema(RequestRegisterDoctorSchema):
 
 
 class RequestRegisterDoctorLocalSchema(RequestRegisterDoctorSchema):
+    is_local_person: bool
     offline_price: Optional[float] = None
     online_price: Optional[float] = None
     type_of_disease: Literal[TypeOfDisease.BOTH.value,
