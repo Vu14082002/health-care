@@ -13,10 +13,15 @@ from src.models.medical_records_model import (DrugSchema, MedicalHistoryMine,
 
 
 class RequestGetAllMedicalRecordsSchema(BaseModel):
-    appointment_id: int
-    # @validator("end_date_treatment",pre=True)
-    # def validate_end_date_treatment(cls, v):
-    #     if is
+    doctor_id: int | None
+    patient_id: int | None
+    start_date: date | None
+    end_date: date | None
+    current_page: Optional[int] = Field(default=1)
+    page_size: Optional[int] = Field(default=10)
+
+    class Config:
+        json_encoders = {date: lambda v: v.isoformat()}
 
 
 class RequestCreateMedicalRecordsSchema(BaseModel):

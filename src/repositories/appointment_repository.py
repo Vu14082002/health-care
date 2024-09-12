@@ -1,9 +1,6 @@
 import logging as log
 from datetime import date, datetime
-from sys import flags
-from typing import Any, Dict, List
 
-from attr import s
 from sqlalchemy import (Result, Row, and_, asc, case, delete, desc, exists,
                         func, or_, select)
 from sqlalchemy.orm import joinedload, selectinload

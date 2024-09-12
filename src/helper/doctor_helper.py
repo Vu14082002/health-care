@@ -22,8 +22,10 @@ class DoctorHelper:
 
     async def get_all_doctor(self, current_page: int = 1, page_size: int = 10, join_: set[str] | None = None, where: dict[str, Any] | None = None, order_by: dict[str, str] | None = None):
         try:
+
             skip = (current_page - 1) * page_size
             limit = page_size
+
             _doctors = await self.doctor_repository.get_all(skip, limit, join_, where, order_by)
 
             count_record = await self.doctor_repository.count_record(where)

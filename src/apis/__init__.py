@@ -100,5 +100,10 @@ routes = [
         tags=["DOCTOR"]
     ),
 
-
+    # RouteSwagger(
+    #     "/statistical/doctor",
+    #     MedicalRecordsApiPOST,
+    #     methods=["GET"],
+    #     tags=["ADMIN"]
+    # ),
 ]

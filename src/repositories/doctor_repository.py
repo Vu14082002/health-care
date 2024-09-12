@@ -1,6 +1,6 @@
 import logging
 from curses.ascii import isdigit
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple
 
 from regex import B
@@ -59,6 +59,38 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 .subquery()
             )
 
+            current_date = datetime.now().date()
+            start_date = current_date
+            if current_date.weekday() < 1:
+                start_date = current_date + \
+                    timedelta(days=(1 - current_date.weekday()) % 7)
+            end_date = start_date + \
+                timedelta(days=(6 - start_date.weekday()) % 7)
+
+            ids = []
+            key: List[str] = await redis_working.get_all_keys()
+            if key:
+                for k in key:
+                    if k.isdigit():
+                        ids.append(int(k))
+            work_schedule_subquery = (
+                select(
+                    WorkScheduleModel.doctor_id,
+                    func.json_agg(
+                        func.json_build_object(
+                            'work_date', WorkScheduleModel.work_date,
+                            'start_time', WorkScheduleModel.start_time,
+                            'end_time', WorkScheduleModel.end_time,
+                            'examination_type', WorkScheduleModel.examination_type
+                        )
+                    ).label('work_schedules')
+                )
+                .where(WorkScheduleModel.work_date.between(start_date, end_date),
+                       WorkScheduleModel.id.not_in(ids))
+                .group_by(WorkScheduleModel.doctor_id)
+                .subquery()
+            )
+
             query = (
                 select(
                     self.model_class,
@@ -70,10 +102,12 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                         (subquery.c.rating_count != None, subquery.c.rating_count),
                         else_=0
                     ).label('rating_count'),
-                    latest_price_subquery
+                    latest_price_subquery,
+                    work_schedule_subquery.c.work_schedules
                 )
                 .outerjoin(subquery, self.model_class.id == subquery.c.doctor_id)
                 .outerjoin(latest_price_subquery, self.model_class.id == latest_price_subquery.c.doctor_id)
+                .outerjoin(work_schedule_subquery, self.model_class.id == work_schedule_subquery.c.doctor_id)
             )
 
             if condition is not None:
@@ -95,7 +129,6 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 # Default sorting by avg_rating desc
                 query = query.order_by(desc(subquery.c.avg_rating))
 
-            # Apply any other sorting criteria
             other_order_expressions = process_orderby(
                 self.model_class, {k: v for k, v in (order_by or {}).items() if k != "avg_rating"})
             if other_order_expressions:
@@ -115,7 +148,8 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                         'online_price': doctor[5],
                         'offline_price': doctor[6],
                         'created_at': doctor[7]
-                    } if doctor[3] else None
+                    } if doctor[3] else None,
+                    'work_schedules': doctor[8] if doctor[8] else []
                 }
                 for doctor in doctors
             ]
@@ -438,3 +472,40 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         except SQLAlchemyError as e:
             logging.error(f"Error in get_working_schedules_v2 : {e}")
             raise
+
+    # async def statistical_doctor_for_admin(self):
+    #     try:
+    #         query = select(
+    #             func.count(case(
+    #                 (DoctorModel.verify_status != 0, 1),
+    #                 else_=None
+    #             )).label('amount_doctor'),
+    #             func.count(case(
+    #                 ((DoctorModel.type_of_disease == TypeOfDisease.ONLINE.value)
+    #                  & (DoctorModel.verify_status != 0), 1),
+    #                 else_=None
+    #             )).label('amount_doctor_online'),
+    #             func.count(case(
+    #                 ((DoctorModel.type_of_disease == TypeOfDisease.OFFLINE.value)
+    #                  & (DoctorModel.verify_status != 0), 1),
+    #                 else_=None
+    #             )).label('amount_doctor_offline'),
+    #             func.count(case(
+    #                 ((DoctorModel.type_of_disease == TypeOfDisease.BOTH.value)
+    #                  & (DoctorModel.verify_status != 0), 1),
+    #                 else_=None
+    #             )).label('amount_doctor_both')
+    #         )
+
+    #         result = await self.session.execute(query)
+    #         row = result.fetchone()
+
+    #         return {
+    #             "amount_doctor": row.amount_doctor,
+    #             "amount_doctor_online": row.amount_doctor_online,
+    #             "amount_doctor_offline": row.amount_doctor_offline,
+    #             "amount_doctor_both": row.amount_doctor_both
+    #         }
+    #     except SQLAlchemyError as e:
+    #         logging.error(f"Error in statistical_doctor_for_admin: {e}")
+    #         raise

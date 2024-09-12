@@ -1,8 +1,5 @@
 from functools import partial
 
-import src
-import src.helper
-import src.helper.medical_records_helper
 from src.core.database.postgresql import get_session
 from src.helper import (AppointmentHelper, DoctorHelper, MedicalRecordsHelper,
                         PatientHelper, UserHelper)
