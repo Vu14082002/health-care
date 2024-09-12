@@ -4,7 +4,7 @@ from src.apis.auth import (AdminRegisterApi, DoctorForeignRegisterApi,
                            DoctorOtherVerifyApiPut, LoginApi, LogoutApi,
                            PatientRegisterApi)
 from src.apis.docter_api import (GetAllDoctorApi, GetAllDoctorLocalAPi,
-                                 GetDetailtDoctorById)
+                                 GetDetailtDoctorById, StatisticalDoctorApi)
 from src.apis.health_check import HealthCheck
 from src.apis.medical_records_api import (MedicalRecordsApiGET,
                                           MedicalRecordsApiPOST)
@@ -100,10 +100,11 @@ routes = [
         tags=["DOCTOR"]
     ),
 
-    # RouteSwagger(
-    #     "/statistical/doctor",
-    #     MedicalRecordsApiPOST,
-    #     methods=["GET"],
-    #     tags=["ADMIN"]
-    # ),
+    # thong ke
+    RouteSwagger(
+        "/statistical/doctor",
+        StatisticalDoctorApi,
+        methods=["GET"],
+        tags=["ADMIN"]
+    ),
 ]

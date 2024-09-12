@@ -65,8 +65,8 @@ class DoctorModel(Model):
     verify_status: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0)
 
-    is_local_person: Mapped[bool | None] = mapped_column(
-        Boolean, nullable=True)
+    is_local_person: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False)
 
     diploma: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=True)
 

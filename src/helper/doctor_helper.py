@@ -20,6 +20,40 @@ class DoctorHelper:
     def __init__(self, *, doctor_repository: DoctorRepository):
         self.doctor_repository = doctor_repository
 
+    async def get_doctor_statistics(self) -> Dict[str, Any]:
+        try:
+
+            total_doctors = await self.doctor_repository.count_record({
+                "verify_status": {"$eq": 2}
+            })
+            total_doctor_online = await self.doctor_repository.count_record(
+                {
+                    "$or": [{"type_of_disease": TypeOfDisease.ONLINE.value}, {"type_of_disease": TypeOfDisease.BOTH.value}],
+                    "verify_status": {"$eq": 2}
+                }
+            )
+            total_doctor_ofline = await self.doctor_repository.count_record(
+                {
+                    "$or": [{"type_of_disease": TypeOfDisease.ONLINE.value}, {"type_of_disease": TypeOfDisease.BOTH.value}],
+                    "verify_status": {"$eq": 2}
+                }
+            )
+            total_doctor_both = await self.doctor_repository.count_record(
+                {
+                    "type_of_disease": TypeOfDisease.BOTH.value,
+                    "verify_status": {"$eq": 2}
+                }
+            )
+            return {
+                "total_doctors": total_doctors,
+                "total_doctor_online": total_doctor_online,
+                "total_doctor_ofline": total_doctor_ofline,
+                "total_doctor_both": total_doctor_both
+            }
+        except Exception as e:
+            logging.error(f"Error in get_doctor_statistics: {e}")
+            raise
+
     async def get_all_doctor(self, current_page: int = 1, page_size: int = 10, join_: set[str] | None = None, where: dict[str, Any] | None = None, order_by: dict[str, str] | None = None):
         try:
 
@@ -76,7 +110,7 @@ class DoctorHelper:
             logging.error(f"Error in create_doctor_work_schedule: {e}")
             raise e
         except Exception as ex:
-            logging.error(f"Error in create_doctor_work_schedule: {e}")
+            logging.error(f"Error in create_doctor_work_schedule: {ex}")
             raise ex
 
     async def verify_doctor(self, doctor_id: int) -> bool:
