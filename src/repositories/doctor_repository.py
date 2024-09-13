@@ -228,12 +228,12 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         filtered_doctor_data = {k: v for k,
                                 v in data.items() if k in valid_fields}
 
-        if "online_price" in data and "offline_price" not in data:
-            filtered_doctor_data["type_of_disease"] = TypeOfDisease.ONLINE.value
-        elif "offline_price" in data and "online_price" not in data:
-            filtered_doctor_data["type_of_disease"] = TypeOfDisease.OFFLINE.value
-        elif "online_price" in data and "offline_price" in data:
-            filtered_doctor_data["type_of_disease"] = TypeOfDisease.BOTH.value
+        # if "online_price" in data and "offline_price" not in data:
+        #     filtered_doctor_data["type_of_disease"] = TypeOfDisease.ONLINE.value
+        # elif "offline_price" in data and "online_price" not in data:
+        #     filtered_doctor_data["type_of_disease"] = TypeOfDisease.OFFLINE.value
+        # elif "online_price" in data and "offline_price" in data:
+        #     filtered_doctor_data["type_of_disease"] = TypeOfDisease.BOTH.value
 
         return DoctorModel(**filtered_doctor_data, user=user_model)
 

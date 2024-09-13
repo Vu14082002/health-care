@@ -7,9 +7,11 @@ from src.core.exception import BadRequest, Forbidden, InternalServer
 from src.core.security import JsonWebToken
 from src.enum import ErrorCode, Role
 from src.factory import Factory
+from src.helper import patient_helper
 from src.helper.doctor_helper import DoctorHelper
 from src.schema.doctor_schema import (RequestDoctorWorkScheduleNextWeek,
                                       RequestGetUncenteredTimeSchema,
+                                      RequestGetWorkingTimeOrderedSchema,
                                       RequestGetWorkingTimeSchema)
 
 
@@ -17,7 +19,12 @@ class DoctorWorkingTimeApi(HTTPEndpoint):
     async def get(self, query_params: RequestGetWorkingTimeSchema, auth: JsonWebToken):
         try:
             if auth.get("role") == Role.PATIENT.name:
-                query_params.ordered = False
+                # query_params.ordered = False
+                raise Forbidden(
+                    error_code=ErrorCode.FORBIDDEN.name,
+                    errors={
+                        "message": "You are not allowed to access this endpoint"}
+                )
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             id = auth.get("id") if auth.get(
                 "role") == "DOCTOR" else query_params.doctor_id
@@ -25,6 +32,31 @@ class DoctorWorkingTimeApi(HTTPEndpoint):
                 raise BadRequest(msg="Forbidden",
                                  error_code=ErrorCode.FORBIDDEN.name,
                                  errors={"message": "Doctor id  is required"})
+            response = await doctor_helper.get_working_schedules(**query_params.model_dump())
+            return response
+        except Forbidden as e:
+            raise e
+        except BadRequest as e:
+            raise e
+        except Exception as e:
+            log.error(f"Error getting doctor empty working  time: {e}")
+            raise InternalServer(msg="Internal server error",
+                                 error_code=ErrorCode.SERVER_ERROR.name, errors={"message": f"Error getting doctor empty working  time: {e}"}) from e
+
+
+class DoctorWorkingTimeOrderedApi(HTTPEndpoint):
+    async def get(self, query_params: RequestGetWorkingTimeOrderedSchema, auth: JsonWebToken):
+        try:
+
+            doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
+            where = query_params.model_dump()
+            patient_id = auth.get("id") if auth.get(
+                "role") == Role.PATIENT.name else None
+            where["patient_id"] = patient_id
+
+            doctor_id = auth.get("id") if auth.get(
+                "role") == "DOCTOR" else None
+            where = {}
             response = await doctor_helper.get_working_schedules(**query_params.model_dump())
             return response
         except Forbidden as e:

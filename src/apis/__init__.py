@@ -11,7 +11,8 @@ from src.apis.medical_records_api import (MedicalRecordsApiGET,
                                           MedicalRecordsApiPOST)
 from src.apis.working_time_api import (CreateDoctorWorkingTimeApi,
                                        DoctorEmptyWorkingSchedulingTimeApi,
-                                       DoctorWorkingTimeApi)
+                                       DoctorWorkingTimeApi,
+                                       DoctorWorkingTimeOrderedApi)
 from src.core.route import RouteSwagger
 
 routes = [
@@ -48,6 +49,12 @@ routes = [
     RouteSwagger(
         "/doctor/working-time",
         DoctorWorkingTimeApi,
+        methods=["GET"],
+        tags=["ADMIN", "DOCTOR"]
+    ),
+    RouteSwagger(
+        "/doctor/working-time/ordered",
+        DoctorWorkingTimeOrderedApi,
         methods=["GET"],
         tags=["ADMIN", "PATIENT", "DOCTOR"]
     ),
