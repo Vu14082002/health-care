@@ -24,24 +24,28 @@ class DoctorHelper:
         try:
 
             total_doctors = await self.doctor_repository.count_record({
-                "verify_status": {"$eq": 2}
+                "verify_status": {"$eq": 2},
+                "is_local_person": True
             })
             total_doctor_online = await self.doctor_repository.count_record(
                 {
                     "$or": [{"type_of_disease": TypeOfDisease.ONLINE.value}, {"type_of_disease": TypeOfDisease.BOTH.value}],
-                    "verify_status": {"$eq": 2}
+                    "verify_status": {"$eq": 2},
+                    "is_local_person": True
                 }
             )
             total_doctor_ofline = await self.doctor_repository.count_record(
                 {
                     "$or": [{"type_of_disease": TypeOfDisease.ONLINE.value}, {"type_of_disease": TypeOfDisease.BOTH.value}],
-                    "verify_status": {"$eq": 2}
+                    "verify_status": {"$eq": 2},
+                    "is_local_person": True
                 }
             )
             total_doctor_both = await self.doctor_repository.count_record(
                 {
                     "type_of_disease": TypeOfDisease.BOTH.value,
-                    "verify_status": {"$eq": 2}
+                    "verify_status": {"$eq": 2},
+                    "is_local_person": True
                 }
             )
             return {
