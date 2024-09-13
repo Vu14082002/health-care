@@ -30,19 +30,17 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                 doctor_model, work_schedule_model)
             # validate appointment
             appointment = AppointmentModel()
-            # appointment.work_schedule = datetime.combine(
-            #     work_schedule_model.work_date, work_schedule_model.start_time)
-
-            # appointment.appointment_date_end = datetime.combine(
-            #     work_schedule_model.work_date, work_schedule_model.end_time)
-            if work_schedule_model.examination_type.lower() == "offline":
-                appointment.appointment_status = "approved"
-            else:
-                # FIXME:check logic for online appointment and offline if choose payment id bank
-                appointment.appointment_status = "pending"
-                await redis_working.set({"doctor_id": doctor_id, "patient_id": patient_id, "work_schedule_id": work_schedule_id},
-                                        work_schedule_id, 300)
-                return {"message": "Create appointment successfully"}
+            # logic save redos if online and payment id bank
+            # if work_schedule_model.examination_type.lower() == "offline":
+            #     appointment.appointment_status = "approved"
+            # else:
+            #     # FIXME:check logic for online appointment and offline if choose payment id bank
+            #     appointment.appointment_status = "pending"
+            #     await redis_working.set({"doctor_id": doctor_id, "patient_id": patient_id, "work_schedule_id": work_schedule_id},
+            #                             work_schedule_id, 300)
+            #     return {"message": "Create appointment successfully"}
+            # FXIME: check logic for payment id bank
+            appointment.appointment_status = "approved"
             appointment.patient = patient_model
             appointment.doctor = work_schedule_model.doctor
             appointment.work_schedule_id = work_schedule_id
