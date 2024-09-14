@@ -5,7 +5,7 @@ from src.core import HTTPEndpoint
 from src.core.exception import InternalServer
 from src.enum import ErrorCode
 from src.factory import Factory
-from src.schema import RequestRegisterPatientSchema
+from src.schema.register import RequestRegisterPatientSchema
 
 
 class PatientRegisterApi(HTTPEndpoint):

@@ -117,7 +117,18 @@ class DoctorModel(Model):
     examination_prices: Mapped[list["DoctorExaminationPriceModel"]] = relationship(
         "DoctorExaminationPriceModel", back_populates="doctor", order_by="desc(DoctorExaminationPriceModel.created_at)"
     )
-    medical_records: Mapped[list["MedicalRecordModel"]] = relationship()
+    medical_records_read: Mapped[list["MedicalRecordModel"]] = relationship(
+        "MedicalRecordModel",
+        back_populates="doctor_read",
+        foreign_keys="[MedicalRecordModel.doctor_read_id]"
+    )
+
+    # You might also want to add a relationship for medical_records_create
+    medical_records_create: Mapped[list["MedicalRecordModel"]] = relationship(
+        "MedicalRecordModel",
+        back_populates="doctor_create",
+        foreign_keys="[MedicalRecordModel.doctor_create_id]"
+    )
 
     @property
     def latest_examination_price(self) -> "DoctorExaminationPriceModel | None":

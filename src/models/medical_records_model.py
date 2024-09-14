@@ -60,7 +60,10 @@ class MedicalRecordModel(Model):
     patient_id: Mapped[int] = mapped_column(
         ForeignKey("patient.id"), nullable=False)
 
-    doctor_id: Mapped[int] = mapped_column(
+    doctor_create_id: Mapped[int] = mapped_column(
+        ForeignKey("doctor.id"), nullable=False)
+
+    doctor_read_id: Mapped[int] = mapped_column(
         ForeignKey("doctor.id"), nullable=False)
 
     appointment_id: Mapped[int] = mapped_column(
@@ -112,5 +115,16 @@ class MedicalRecordModel(Model):
         "PatientModel", back_populates="medical_records", lazy="joined")
 
     # Many to one
-    doctor: Mapped["DoctorModel"] = relationship(
-        "DoctorModel", back_populates="medical_records", lazy="joined")
+    doctor_create: Mapped["DoctorModel"] = relationship(
+        "DoctorModel",
+        back_populates="medical_records_create",
+        lazy="joined",
+        foreign_keys=[doctor_create_id]
+    )
+
+    doctor_read: Mapped["DoctorModel"] = relationship(
+        "DoctorModel",
+        back_populates="medical_records_read",
+        lazy="joined",
+        foreign_keys=[doctor_read_id]
+    )

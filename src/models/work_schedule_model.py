@@ -6,7 +6,6 @@ from sqlalchemy import (Boolean, Date, Enum, Float, ForeignKey, Integer,
                         String, Time, event)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.apis import appointment
 from src.core.database.postgresql import Model
 from src.models.doctor_model import DoctorExaminationPriceModel, TypeOfDisease
 

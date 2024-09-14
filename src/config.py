@@ -28,6 +28,7 @@ class Config(BaseSettings):
 
     POSTGRES_URL_MASTER: str
     POSTGRES_URL_SLAVE: str
+    POSTGRES_URL_ELAMBIC: str
     PORT: str
     PREFIX_URL: Optional[str] = Field(default="/v1/admin")
     ACCESS_TOKEN: str

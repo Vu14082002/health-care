@@ -328,9 +328,9 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             if data_check_model.type_of_disease != "both":
                 if data_check_model.type_of_disease != data.examination_type:
                     await self.session.rollback()
-                    raise Forbidden(
+                    raise BadRequest(
                         error_code=ErrorCode.FORBIDDEN.name, errors={
-                            "message": "you not have permision"
+                            "message": f"You can't create working schedule for this {data.examination_type}"
                         })
             new_schedules = []
             conflicts = []
@@ -381,7 +381,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             await self.session.commit()
             return {"message": "Work schedule updated successfully"}
 
-        except BadRequest as e:
+        except (BadRequest, Forbidden) as e:
             logging.error(f"Error in add_workingschedule: {e}")
             raise e
         except SQLAlchemyError as e:

@@ -1,4 +1,5 @@
 import enum
+import logging
 from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, Integer, String, Text
@@ -9,6 +10,8 @@ from src.core.database.postgresql import Model
 if TYPE_CHECKING:
     from . import (DoctorModel, MedicalRecordModel, PatientModel, PaymentModel,
                    WorkScheduleModel)
+
+from sqlalchemy import event
 
 
 class AppointmentModelStatus(enum.Enum):
@@ -61,3 +64,18 @@ class AppointmentModel(Model):
 
     work_schedule: Mapped["WorkScheduleModel"] = relationship(
         "WorkScheduleModel", back_populates="appointment", lazy="joined")
+
+    @staticmethod
+    async def set_before_insert(mapper, connection, target):
+        target.appointment_status = AppointmentModelStatus.PENDING.value
+        if target.appointment_status not in [AppointmentModelStatus.PENDING.value, AppointmentModelStatus.APPROVED.value, AppointmentModelStatus.REJECTED.value, AppointmentModelStatus.COMPLETED.value]:
+            logging.error(
+                "From set_before_insert appointment status is invalid")
+            logging.error(
+                "target.appointment_status must is in ['pending', 'approved', 'rejected', 'completed']")
+            raise ValueError("Invalid appointment status",
+                             target.appointment_status)
+
+
+# Attach event listeners
+event.listen(Model, "before_insert", AppointmentModel.set_before_insert)

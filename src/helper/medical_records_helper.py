@@ -15,17 +15,14 @@ class MedicalRecordsHelper:
     def __init__(self, *, medical_records_repository: MedicalRecordsRepository):
         self.medical_records_repository = medical_records_repository
 
-    async def get_all_medical_records(self, current_page: int = 1, page_size: int = 10, join_: set[str] | None = None, where: dict[str, Any] | None = None, order_by: dict[str, str] | None = None):
+    async def get_all_medical_records(self, current_page: int = 1, page_size: int = 10, join_: set[str] | None = None, where: dict[str, Any] = {}, order_by: dict[str, str] = {"created_at": "desc"}):
         try:
             skip = (current_page - 1) * page_size
             limit = page_size
             _medical_records = await self.medical_records_repository.get_all(skip, limit, join_, where, order_by)
-
-            count_record = await self.medical_records_repository.count_record(where)
-
-            total_page = math.ceil(count_record / limit)
-            return {"data": _medical_records, "total_page": total_page, "current_page": current_page, "page_size": page_size}
+            return _medical_records
         except Exception as e:
+            log.error(e)
             raise e
 
     async def create_medical_records(self, *, value: dict[str, Any]):

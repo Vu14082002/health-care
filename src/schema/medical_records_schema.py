@@ -13,15 +13,25 @@ from src.models.medical_records_model import (DrugSchema, MedicalHistoryMine,
 
 
 class RequestGetAllMedicalRecordsSchema(BaseModel):
-    doctor_id: int | None
-    patient_id: int | None
-    start_date: date | None
-    end_date: date | None
-    current_page: Optional[int] = Field(default=1)
-    page_size: Optional[int] = Field(default=10)
+    start_date: Optional[date]
+    end_date: Optional[date]
+    current_page: int = Field(default=1)
+    page_size: int = Field(default=10)
 
     class Config:
         json_encoders = {date: lambda v: v.isoformat()}
+
+
+# class RequestGetAllMedicalRecordsSchema(BaseModel):
+#     doctor_id: int | None
+#     patient_id: int | None
+#     start_date: date | None
+#     end_date: date | None
+#     current_page: Optional[int] = Field(default=1)
+#     page_size: Optional[int] = Field(default=10)
+
+#     class Config:
+#         json_encoders = {date: lambda v: v.isoformat()}
 
 
 class RequestCreateMedicalRecordsSchema(BaseModel):

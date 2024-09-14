@@ -27,6 +27,7 @@ async def manage_database():
         _ = conn.execute(text("CREATE DATABASE health_care"))
         _ = conn.commit()
 
+
 async def create_tables():
     engine = create_async_engine(config.POSTGRES_URL_MASTER, echo=True)
     async with engine.begin() as conn:
@@ -43,6 +44,6 @@ async def create_tables():
         finally:
             await engine.dispose()
 
-if config.ENV == 'DEV':
-    asyncio.run(manage_database())
-    asyncio.run(create_tables())
+# if config.ENV == 'DEV':
+#     asyncio.run(manage_database())
+#     asyncio.run(create_tables())

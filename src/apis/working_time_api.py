@@ -2,6 +2,7 @@
 import logging as log
 from re import A
 
+from src.apis import user
 from src.core import HTTPEndpoint
 from src.core.exception import BadRequest, Forbidden, InternalServer
 from src.core.security import JsonWebToken
@@ -101,17 +102,23 @@ class CreateDoctorWorkingTimeApi(HTTPEndpoint):
 class DoctorEmptyWorkingSchedulingTimeApi(HTTPEndpoint):
     async def get(self, query_params: RequestGetUncenteredTimeSchema, auth: JsonWebToken):
         try:
-            if auth.get("role", "") not in ["DOCTOR", "ADMIN"]:
+
+            user_role = auth.get("role")
+            user_id = auth.get("id")
+            if user_role not in [Role.DOCTOR.name, Role.ADMIN.name]:
                 raise Forbidden(msg="Forbidden",
                                 error_code=ErrorCode.FORBIDDEN.name,
                                 errors={"message": "Only doctors or Admin can access this endpoint"})
-            doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
-            doctor_id = auth.get("id") if auth.get(
-                "role") == "DOCTOR" else query_params.doctor_id
+            if user_role == Role.DOCTOR.name and query_params.doctor_id is not None:
+                raise Forbidden(msg="Forbidden",
+                                error_code=ErrorCode.FORBIDDEN.name,
+                                errors={"message": "You are not allowed to access this endpoint"})
+            doctor_id = user_id if user_role == Role.DOCTOR.name else query_params.doctor_id
             if doctor_id is None:
                 raise BadRequest(msg="Bad Request",
                                  error_code=ErrorCode.BAD_REQUEST.name,
                                  errors={"message": "Doctor id is required"})
+            doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             response = await doctor_helper.get_empty_working_time(doctor_id=doctor_id, start_date=query_params.start_date, end_date=query_params.end_date)
             return response
         except Forbidden as e:

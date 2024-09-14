@@ -152,10 +152,10 @@ def process_operator(model_class, operator, value):
         raise ValueError(f"Unsupported operator: {operator}")
 
 
-def process_orderby(model_class: Model, orderby: Dict[str, str]) -> List[UnaryExpression]:
+def process_orderby(model_class: Model, orderby: Dict[str, str]):
     if not orderby:
         return []
-    expressions: List[UnaryExpression] = []
+    expressions = []
     for key, value in orderby.items():
         column = getattr(model_class, key, None)  # type: ignore
         if column is None:
