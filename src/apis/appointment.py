@@ -72,5 +72,6 @@ class AppointmentApi(HTTPEndpoint):
         except (BadRequest, Forbidden) as e:
             raise e
         except Exception as e:
+            log.error(e)
             raise InternalServer(msg="Internal server error",
                                  error_code=ErrorCode.SERVER_ERROR.name) from e

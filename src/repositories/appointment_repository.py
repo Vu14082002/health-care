@@ -57,6 +57,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                                     work_schedule_id, 300)
             return {"message": "Create appointment successfully"}
         except (BadRequest) as e:
+            log.error(e)
             raise e
         except Exception as e:
             log.error(e)
