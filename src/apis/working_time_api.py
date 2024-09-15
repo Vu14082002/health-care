@@ -19,13 +19,16 @@ from src.schema.doctor_schema import (RequestDoctorWorkScheduleNextWeek,
 class DoctorWorkingTimeApi(HTTPEndpoint):
     async def get(self, query_params: RequestGetWorkingTimeSchema, auth: JsonWebToken):
         try:
-            if auth.get("role") == Role.PATIENT.name:
-                query_params.ordered = False
-                # raise Forbidden(
-                #     error_code=ErrorCode.FORBIDDEN.name,
-                #     errors={
-                #         "message": "You are not allowed to access this endpoint"}
-                # )
+            user_role = auth.get("role")
+            query_params.ordered = False if user_role not in [
+                Role.ADMIN.name, Role.DOCTOR.name] else query_params.ordered
+            # if auth.get("role") == Role.PATIENT.name:
+            #     query_params.ordered = False
+            # raise Forbidden(
+            #     error_code=ErrorCode.FORBIDDEN.name,
+            #     errors={
+            #         "message": "You are not allowed to access this endpoint"}
+            # )
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             # id = auth.get("id") if auth.get(
             #     "role") == "DOCTOR" else query_params.doctor_id
