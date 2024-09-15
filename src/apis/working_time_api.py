@@ -20,19 +20,19 @@ class DoctorWorkingTimeApi(HTTPEndpoint):
     async def get(self, query_params: RequestGetWorkingTimeSchema, auth: JsonWebToken):
         try:
             if auth.get("role") == Role.PATIENT.name:
-                # query_params.ordered = False
-                raise Forbidden(
-                    error_code=ErrorCode.FORBIDDEN.name,
-                    errors={
-                        "message": "You are not allowed to access this endpoint"}
-                )
+                query_params.ordered = False
+                # raise Forbidden(
+                #     error_code=ErrorCode.FORBIDDEN.name,
+                #     errors={
+                #         "message": "You are not allowed to access this endpoint"}
+                # )
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
-            id = auth.get("id") if auth.get(
-                "role") == "DOCTOR" else query_params.doctor_id
-            if id is None:
-                raise BadRequest(msg="Forbidden",
-                                 error_code=ErrorCode.FORBIDDEN.name,
-                                 errors={"message": "Doctor id  is required"})
+            # id = auth.get("id") if auth.get(
+            #     "role") == "DOCTOR" else query_params.doctor_id
+            # if id is None:
+            #     raise BadRequest(msg="Forbidden",
+            #                      error_code=ErrorCode.FORBIDDEN.name,
+            #                      errors={"message": "Doctor id  is required"})
             response = await doctor_helper.get_working_schedules(**query_params.model_dump())
             return response
         except Forbidden as e:
@@ -49,7 +49,6 @@ class DoctorWorkingTimeOrderedApi(HTTPEndpoint):
     async def get(self, query_params: RequestGetWorkingTimeOrderedSchema, auth: JsonWebToken):
         try:
 
-            doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             where = query_params.model_dump()
             patient_id = auth.get("id") if auth.get(
                 "role") == Role.PATIENT.name else None
@@ -58,6 +57,7 @@ class DoctorWorkingTimeOrderedApi(HTTPEndpoint):
             doctor_id = auth.get("id") if auth.get(
                 "role") == "DOCTOR" else None
             where = {}
+            doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             response = await doctor_helper.get_working_schedules(**query_params.model_dump())
             return response
         except Forbidden as e:

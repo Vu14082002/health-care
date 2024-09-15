@@ -53,23 +53,27 @@ routes = [
         tags=["ADMIN", "DOCTOR"]
     ),
     RouteSwagger(
-        "/doctor/working-time/ordered",
-        DoctorWorkingTimeOrderedApi,
-        methods=["GET"],
-        tags=["ADMIN", "PATIENT", "DOCTOR"]
-    ),
-    RouteSwagger(
         "/doctor/working-time",
         CreateDoctorWorkingTimeApi,
         methods=["POST"],
         tags=["DOCTOR", "ADMIN"]
     ),
+
+    #  day la api lay danh sach gio lam viec con trong cua bac si trong tuan
     RouteSwagger(
         "/doctor/empty-working-hours",
         DoctorEmptyWorkingSchedulingTimeApi,
         methods=["GET"],
         tags=["DOCTOR", "ADMIN"]
     ),
+    # day la api lay danh cac lioc lam viec cua bac si da dc order
+    RouteSwagger(
+        "/doctor/working-time/ordered",
+        DoctorWorkingTimeOrderedApi,
+        methods=["GET"],
+        tags=["ADMIN", "PATIENT", "DOCTOR"]
+    ),
+
     RouteSwagger("/doctor", GetAllDoctorApi,
                  methods=["GET"], tags=["DOCTOR", "PATIENT", "ADMIN", "USER"]),
 
