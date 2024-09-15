@@ -1,5 +1,6 @@
 import logging as log
 from datetime import date, datetime
+from glob import iglob
 
 from sqlalchemy import (Result, Row, and_, asc, case, delete, desc, exists,
                         func, or_, select)
@@ -210,11 +211,45 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
 
         result = await self.session.execute(query)
         data = result.scalars().all()
-        item = [{**item.as_dict, "work_schedule": item.work_schedule.as_dict}
-                for item in data]
+        # item = [{**item.as_dict, "work_schedule": item.work_schedule.as_dict}
+        #         for item in data]
+        items = []
+
+        for item in data:
+            dict_item = item.as_dict
+            dict_item["work_schedule"] = item.work_schedule.as_dict
+            if doctor_id:
+                dict_item["work_schedule"].update({
+                    "patient": {
+                        "first_name": item.patient.first_name,
+                        "last_name": item.patient.last_name
+                    }
+                })
+            elif patient_id:
+                dict_item["work_schedule"].update({
+                    "doctor": {
+                        "first_name": item.doctor.first_name,
+                        "last_name": item.doctor.last_name
+                    }
+                })
+            else:
+                dict_item["work_schedule"].update({
+                    "patient": {
+                        "first_name": item.patient.first_name,
+                        "last_name": item.patient.last_name
+                    }
+                })
+                dict_item["work_schedule"].update({
+                    "doctor": {
+                        "first_name": item.doctor.first_name,
+                        "last_name": item.doctor.last_name
+                    }
+                })
+            items.append(dict_item)
+
         total_pages = (total_count.scalar_one() + page_size - 1) // page_size
         return {
-            "data": item,
+            "data": items,
             "current_page": current_page,
             "page_size": page_size,
             "total_pages": total_pages
