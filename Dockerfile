@@ -7,7 +7,7 @@ RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
-
+# RUN alembic upgrade head
 EXPOSE 5005
-
-CMD ["python", "main.py"]
+# CMD ["python", "main.py"]
+CMD ["sh", "-c", "alembic upgrade head && python main.py"]

@@ -16,8 +16,10 @@ services:
             - ENV=${ENV}
             - POSTGRES_URL_MASTER=${POSTGRES_URL_MASTER}
             - POSTGRES_URL_SLAVE=${POSTGRES_URL_SLAVE}
+            - POSTGRES_URL_ELAMBIC=${POSTGRES_URL_ELAMBIC}
             - BROKER_URL=${BROKER_URL}
             - REDIS_URL=${REDIS_URL}
+            - REDIS_URL_WORKING_TIME=${REDIS_URL_WORKING_TIME}
             - PORT=${PORT}
             - ACCESS_TOKEN=${ACCESS_TOKEN}
             - REFRESH_TOKEN=${REFRESH_TOKEN}
@@ -29,6 +31,7 @@ services:
             - S3_KEY=${S3_KEY}
             - S3_SECRET=${S3_SECRET}
             - REGION=${REGION}
+            - S3_ENDPOINT=${S3_ENDPOINT}
         volumes:
             - .:/app
     redis:
