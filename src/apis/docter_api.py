@@ -55,10 +55,10 @@ class GetAllDoctorApi(HTTPEndpoint):
 class GetAllDoctorLocalAPi(HTTPEndpoint):
     async def get(self, query_params: RequestGetAllDoctorsSchema, auth: JsonWebToken):
         try:
-            if auth.get("role") != Role.ADMIN.name:
-                raise Forbidden(msg="Permission denied",
-                                error_code=ErrorCode.FORBIDDEN.name,
-                                errors={"message": "You don't have permission to access this resource"})
+            # if auth.get("role") != Role.ADMIN.name:
+            #     raise Forbidden(msg="Permission denied",
+            #                     error_code=ErrorCode.FORBIDDEN.name,
+            #                     errors={"message": "You don't have permission to access this resource"})
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             current_page = query_params.current_page if query_params.current_page else 0
             page_size = query_params.page_size if query_params.page_size else 10
@@ -117,7 +117,7 @@ class GetAllDoctorForeignAPi(HTTPEndpoint):
 
 
 class GetDetailtDoctorById(HTTPEndpoint):
-    async def get(self, path_params: RequestDetailDoctorSchema, auth: JsonWebToken):
+    async def get(self, path_params: RequestDetailDoctorSchema):
         try:
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             reponse = await doctor_helper.get_doctor_by_id(path_params.doctor_id)

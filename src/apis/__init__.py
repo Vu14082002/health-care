@@ -82,7 +82,7 @@ routes = [
         "/doctor/{doctor_id}",
         GetDetailtDoctorById,
         methods=["GET"],
-        tags=["PATIENT", "ADMIN", "DOCTOR"]
+        tags=["PATIENT", "ADMIN", "DOCTOR", "USER"]
     ),
     # appointment api
     RouteSwagger(
