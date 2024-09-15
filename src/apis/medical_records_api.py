@@ -1,7 +1,6 @@
 import logging as log
 from datetime import date, datetime, time, timedelta
 
-
 from src.core import HTTPEndpoint
 from src.core.exception import BadRequest, Forbidden, InternalServer
 from src.core.security.authentication import JsonWebToken
@@ -61,7 +60,8 @@ class MedicalRecordsApiPOST(HTTPEndpoint):
                                 errors={"message": "You are not authorized to access this resource"})
 
             value = form_data.model_dump()
-            value.update({"doctor_id": user_id})
+            value.update({"doctor_create_id": user_id})
+            value.update({"doctor_read_id": user_id})
             medical_records_helper = await Factory().get_medical_records_helper()
             result = await medical_records_helper.create_medical_records(value=value)
             return result

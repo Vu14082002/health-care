@@ -43,11 +43,21 @@ class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
 
     async def create_medical_records(self, *, value: dict[str, Any]):
         try:
+
+            query_medical_record = await self.session.execute(
+                select(MedicalRecordModel).where(
+                    MedicalRecordModel.appointment_id == value["appointment_id"])
+            )
+            check_medical_record_exist = query_medical_record.scalar_one_or_none()
+            if check_medical_record_exist:
+                raise BadRequest(msg="Medical record already exists",
+                                 error_code=ErrorCode.MEDICAL_RECORD_EXIST.name,
+                                 errors={"message": "The medical record already exists"})
             appointment = await self.session.execute(
                 select(AppointmentModel).where(
                     and_(
                         AppointmentModel.id == value["appointment_id"],
-                        AppointmentModel.doctor_id == value["doctor_id"],
+                        AppointmentModel.doctor_id == value["doctor_create_id"],
                     )
                 )
             )
@@ -56,14 +66,14 @@ class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
                 raise BadRequest(msg="Invalid appointment or doctor",
                                  error_code=ErrorCode.INVALID_APPOINTMENT.name,
                                  errors={"message": "The doctor does not have an active appointment with this patient"})
-            if appointment.appointment_status != AppointmentModelStatus.APPROVED:
+            if appointment.appointment_status == AppointmentModelStatus.COMPLETED.value:
                 raise BadRequest(msg="Invalid appointment",
                                  error_code=ErrorCode.INVALID_APPOINTMENT.name,
-                                 errors={"message": "The appointment is not approved yet"})
-            if appointment.appointment_status == "completed":
+                                 errors={"message": "The appointment is  completed, you can't create a medical record for it"})
+            elif appointment.appointment_status != AppointmentModelStatus.APPROVED.value:
                 raise BadRequest(msg="Invalid appointment",
                                  error_code=ErrorCode.INVALID_APPOINTMENT.name,
-                                 errors={"message": "The appointment is already completed, you can't create a medical record for it"})
+                                 errors={"message": "The appointment is not approved yet, you can't create a medical record for it"})
             # Check if the medical record already exists
             value.update({"patient_id": appointment.patient_id})
             medical_record = await self.session.execute(
