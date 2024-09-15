@@ -86,7 +86,9 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                             'work_date', WorkScheduleModel.work_date,
                             'start_time', WorkScheduleModel.start_time,
                             'end_time', WorkScheduleModel.end_time,
-                            'examination_type', WorkScheduleModel.examination_type
+                            'examination_type', WorkScheduleModel.examination_type,
+                            "medical_examination_fee", WorkScheduleModel.medical_examination_fee,
+                            "ordered", WorkScheduleModel.ordered
                         )
                     ).label('work_schedules')
                 )
