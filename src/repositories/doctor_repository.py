@@ -80,6 +80,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                     WorkScheduleModel.doctor_id,
                     func.json_agg(
                         func.json_build_object(
+                            "id", WorkScheduleModel.id,
                             'work_date', WorkScheduleModel.work_date,
                             'start_time', WorkScheduleModel.start_time,
                             'end_time', WorkScheduleModel.end_time,
