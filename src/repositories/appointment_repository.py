@@ -3,7 +3,7 @@ from datetime import date, datetime
 from glob import iglob
 
 from sqlalchemy import (Result, Row, and_, asc, case, delete, desc, exists,
-                        func, or_, select)
+                        func, or_, select, update)
 from sqlalchemy.orm import joinedload, selectinload
 
 from src.core.database.postgresql import PostgresRepository
@@ -11,6 +11,7 @@ from src.core.exception import BadRequest
 from src.enum import ErrorCode
 from src.models.appointment_model import AppointmentModel
 from src.models.doctor_model import DoctorExaminationPriceModel, DoctorModel
+from src.models.medical_records_model import MedicalRecordModel
 from src.models.patient_model import PatientModel
 from src.models.work_schedule_model import WorkScheduleModel
 from src.repositories.global_helper_repository import redis_working
@@ -52,6 +53,14 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             appointment.total_amount = fee_examprice
             work_schedule_model.ordered = True
             self.session.add(appointment)
+
+            query_update_medical_record_by_patient = update(MedicalRecordModel).where(
+                MedicalRecordModel.patient_id == patient_id).values(
+                {
+                    "doctor_read_id": doctor_id,
+                }
+            )
+            result = await self.session.execute(query_update_medical_record_by_patient)
             await self.session.flush()
             await self.session.commit()
             await redis_working.set(work_schedule_model.as_dict,
