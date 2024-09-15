@@ -50,13 +50,10 @@ class DoctorWorkingTimeApi(HTTPEndpoint):
 
 
 class DoctorWorkingTimeByIdApi(HTTPEndpoint):
-    async def get(self, query_params: RequestGetWorkingTimeByIdSchema, auth: JsonWebToken):
+    async def get(self, path_params: RequestGetWorkingTimeByIdSchema, auth: JsonWebToken):
         try:
-            user_role = auth.get("role")
-            query_params.ordered = False if user_role not in [
-                Role.ADMIN.name, Role.DOCTOR.name] else query_params.ordered
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
-            response = await doctor_helper.get_working_schedules_by_id(id=query_params.id)
+            response = await doctor_helper.get_working_schedules_by_id(id=path_params.id)
             return response
         except (Forbidden, BadRequest) as e:
             raise e
