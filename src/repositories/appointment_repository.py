@@ -122,12 +122,13 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             is_ot = not (8 <= work_scheduling.start_time.hour <= 17)
             is_online = work_scheduling.examination_type.lower() == "online"
             fee = 0.0
+            # FIXME: LOGIC OT
             if is_online and is_ot:
-                fee = ex.online_price * ex.ot_price_fee
+                fee = ex.online_price * 2
             elif is_online:
                 fee = ex.online_price
             elif not is_online and is_ot:
-                fee = ex.offline_price * ex.ot_price_fee
+                fee = ex.offline_price * 2
             else:
                 fee = ex.offline_price
             return fee

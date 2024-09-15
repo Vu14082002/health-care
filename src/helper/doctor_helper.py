@@ -70,6 +70,9 @@ class DoctorHelper:
 
             total_page = math.ceil(count_record / limit)
             return {"data": _doctors, "total_page": total_page, "current_page": current_page, "page_size": page_size}
+        except BadRequest as e:
+            logging.error(f"Error in get_all_doctor: {e}")
+            raise e
         except Exception as e:
             raise e
 
