@@ -30,9 +30,36 @@ class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
             result_select = result_select.scalars().all()
 
             total_page = math.ceil(len(result_select) / limit)
+            items = []
+            for item in result_select:
+                dict_item = item.as_dict
+                dict_item.update(
+                    {
+                        "doctor_create": {
+                            "first_name": item.doctor_create.first_name,
+                            "last_name": item.doctor_create.last_name,
+                            "phone_number": item.doctor_create.phone_number,
+                            "email": item.doctor_create.email,
+                            "address": item.doctor_create.address,
+                        }
+                    }
+                )
+                if where.get("patient_id", None) is None and where.get("doctor_read_id", None) is None:
+                    dict_item.update(
+                        {
+                            "doctor_read": {
+                                "first_name": item.doctor_read.first_name,
+                                "last_name": item.doctor_read.last_name,
+                                "phone_number": item.doctor_read.phone_number,
+                                "email": item.doctor_read.email,
+                                "address": item.doctor_read.address,
+                            }
+                        }
+                    )
+                items.append(dict_item)
 
             return {
-                "items": [item.as_dict for item in result_select],
+                "items": items,
                 "current_page": skip,
                 "page_size": limit,
                 "total_page": total_page,

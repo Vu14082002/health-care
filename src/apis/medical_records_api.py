@@ -31,7 +31,7 @@ class MedicalRecordsApiGET(HTTPEndpoint):
             elif time_unix_end:
                 where["created_at"] = {"$lte": query_params.end_date}
             if user_role == Role.DOCTOR.value:
-                where["doctor_id"] = user_id
+                where["doctor_read_id"] = user_id
             elif user_role == Role.PATIENT.value:
                 where["patient_id"] = user_id
             order_by = {"created_at": "desc"}
