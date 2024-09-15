@@ -12,6 +12,7 @@ from src.apis.medical_records_api import (MedicalRecordsApiGET,
 from src.apis.working_time_api import (CreateDoctorWorkingTimeApi,
                                        DoctorEmptyWorkingSchedulingTimeApi,
                                        DoctorWorkingTimeApi,
+                                       DoctorWorkingTimeByIdApi,
                                        DoctorWorkingTimeOrderedApi)
 from src.core.route import RouteSwagger
 
@@ -56,7 +57,13 @@ routes = [
         "/doctor/working-time",
         CreateDoctorWorkingTimeApi,
         methods=["POST"],
-        tags=["DOCTOR", "ADMIN"]
+        tags=["DOCTOR", "ADMIN", "PATIENT"]
+    ),
+    RouteSwagger(
+        "/doctor/working-time/<int:id>",
+        DoctorWorkingTimeByIdApi,
+        methods=["GET"],
+        tags=["ADMIN", "DOCTOR"]
     ),
 
     #  day la api lay danh sach gio lam viec con trong cua bac si trong tuan

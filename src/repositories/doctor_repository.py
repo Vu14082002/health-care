@@ -15,6 +15,7 @@ from src.core.database.postgresql import PostgresRepository
 from src.core.exception import BadRequest, Forbidden
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
+from src.models import work_schedule_model
 from src.models.doctor_model import (DoctorExaminationPriceModel, DoctorModel,
                                      TypeOfDisease)
 from src.models.rating_model import RatingModel
@@ -432,6 +433,30 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                     for cs in conflicting_schedules
                 ])
         return conflicts
+
+    async def get_working_schedules_by_id(self, *, id: int):
+
+        try:
+            query = select(WorkScheduleModel).where(
+                WorkScheduleModel.id == id)
+
+            result_query = await self.session.execute(query)
+            work_schedule_model = result_query.scalar_one_or_none()
+            if work_schedule_model is None:
+                raise BadRequest(
+                    error_code=ErrorCode.WORK_SCHEDULE_NOT_FOUND.name, errors={
+                        "message": "Work schedule not found"
+                    })
+            return work_schedule_model.as_dict
+        except BadRequest as e:
+            logging.error(f"Error in get_working_schedules_by_id: {e}")
+            raise e
+        except SQLAlchemyError as e:
+            logging.error(f"Error in get_working_schedules: {e}")
+            raise
+        except Exception as ex:
+            logging.error(f"Error in get_working_schedules: {ex}")
+            raise
 
     async def get_working_schedules(self, doctor_id: int | None, start_date: date | None, end_date: date | None, examination_type: Literal["online", "ofline"] | None, ordered: bool | None) -> List[Dict[str, Any]]:
 

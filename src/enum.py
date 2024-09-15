@@ -27,6 +27,7 @@ class ErrorCode(Enum):
     ALLREADY_ORDERED = "ALLREADY_ORDERED"
     msg_server_error = "Server is error, pls try again"
     INVALID_APPOINTMENT = "INVALID_APPOINTMENT"
+    WORK_SCHEDULE_NOT_FOUND = "WORK_SCHEDULE_NOT_FOUND"
 
 
 CACHE_REFRESH_TOKEN = 60 * 60 * 5

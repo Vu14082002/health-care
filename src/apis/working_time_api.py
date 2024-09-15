@@ -12,6 +12,7 @@ from src.helper import patient_helper
 from src.helper.doctor_helper import DoctorHelper
 from src.schema.doctor_schema import (RequestDoctorWorkScheduleNextWeek,
                                       RequestGetUncenteredTimeSchema,
+                                      RequestGetWorkingTimeByIdSchema,
                                       RequestGetWorkingTimeOrderedSchema,
                                       RequestGetWorkingTimeSchema)
 
@@ -46,6 +47,23 @@ class DoctorWorkingTimeApi(HTTPEndpoint):
             log.error(f"Error getting doctor empty working  time: {e}")
             raise InternalServer(msg="Internal server error",
                                  error_code=ErrorCode.SERVER_ERROR.name, errors={"message": f"Error getting doctor empty working  time: {e}"}) from e
+
+
+class DoctorWorkingTimeByIdApi(HTTPEndpoint):
+    async def get(self, query_params: RequestGetWorkingTimeByIdSchema, auth: JsonWebToken):
+        try:
+            user_role = auth.get("role")
+            query_params.ordered = False if user_role not in [
+                Role.ADMIN.name, Role.DOCTOR.name] else query_params.ordered
+            doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
+            response = await doctor_helper.get_working_schedules_by_id(id=query_params.id)
+            return response
+        except (Forbidden, BadRequest) as e:
+            raise e
+        except Exception as e:
+            log.error(f"Error getting doctor empty working  time: {e}")
+            raise InternalServer(msg="Internal server error",
+                                 error_code=ErrorCode.SERVER_ERROR.name, errors={"message": f"Error getting woking time by id {e}"}) from e
 
 
 class DoctorWorkingTimeOrderedApi(HTTPEndpoint):

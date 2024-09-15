@@ -135,6 +135,10 @@ class RequestGetWorkingTimeSchema(BaseModel):
         return int(v)
 
 
+class RequestGetWorkingTimeByIdSchema(BaseModel):
+    id: int
+
+
 class RequestGetWorkingTimeOrderedSchema(BaseModel):
     start_date: date | None = None
     end_date: date | None = None

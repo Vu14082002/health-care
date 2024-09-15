@@ -139,6 +139,15 @@ class DoctorHelper:
             logging.error(f"Error in get_working_schedules: {e}")
             raise
 
+    async def get_working_schedules_by_id(self, *, id: int):
+        try:
+            return await self.doctor_repository.get_working_schedules_by_id(id=id)
+        except BadRequest as e:
+            raise e
+        except Exception as e:
+            logging.error(f"Error in get_working_schedules: {e}")
+            raise
+
     async def get_empty_working_time(self, doctor_id: int, start_date: date, end_date: date) -> Dict[str, List[Dict[str, str]]]:
         try:
             occupied_slots = await self.doctor_repository.get_working_schedules_v2(doctor_id, start_date, end_date)
