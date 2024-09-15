@@ -46,6 +46,8 @@ class GetAllDoctorApi(HTTPEndpoint):
             response_data = await doctor_helper.get_all_doctor(current_page=current_page, page_size=page_size, where=where)
 
             return response_data
+        except BadRequest as e:
+            raise e
         except Exception as e:
             log.error(f"Error: {e}")
             raise InternalServer(msg="Internal server error",

@@ -150,24 +150,30 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         page_size: int = kwargs.get('page_size', 10)
         doctor_id: int = kwargs.get('doctor_id', None)
         patient_id: int = kwargs.get('patient_id', None)
-
+        is_join_WorkScheduleModel = True
         if appointment_status:
             query = query.filter(
                 self.model_class.appointment_status == appointment_status)
         if from_date and to_date is None:
             query = query.join(WorkScheduleModel).filter(
                 WorkScheduleModel.work_date >= from_date)
-        if to_date and from_date is None:
+        elif to_date and from_date is None:
             query = query.join(WorkScheduleModel).filter(
                 WorkScheduleModel.work_date <= to_date)
-        if from_date and to_date:
+        elif from_date and to_date:
             query = query.join(WorkScheduleModel).filter(
                 and_(WorkScheduleModel.work_date >= from_date,
                      WorkScheduleModel.work_date <= to_date)
             )
+        else:
+            is_join_WorkScheduleModel = False
         if examination_type:
-            query = query.join(WorkScheduleModel).filter(
-                WorkScheduleModel.examination_type == examination_type)
+            if is_join_WorkScheduleModel:
+                query = query.filter(
+                    WorkScheduleModel.examination_type == examination_type)
+            else:
+                query = query.join(WorkScheduleModel).filter(
+                    WorkScheduleModel.examination_type == examination_type)
         if doctor_id:
             query = query.filter(self.model_class.doctor_id == doctor_id)
         if patient_id:

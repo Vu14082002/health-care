@@ -34,7 +34,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                       min_avg_rating: Optional[float] = None, min_rating_count: Optional[int] = None) -> List[Dict[str, Any]]:
         try:
             condition = destruct_where(self.model_class, where or {})
-
+            # subquery to get avg_rating and rating_count
             subquery = (
                 select(
                     RatingModel.doctor_id,
@@ -44,6 +44,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 .group_by(RatingModel.doctor_id)
                 .subquery()
             )
+            # subquery to get latest examination price
             latest_price_subquery = (
                 select(
                     DoctorExaminationPriceModel.id,
@@ -69,6 +70,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             end_date = start_date + \
                 timedelta(days=(6 - start_date.weekday()) % 7)
 
+            # key in redis
             ids = []
             key: List[str] = await redis_working.get_all_keys()
             if key:
@@ -90,7 +92,9 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 )
                 .where(
                     WorkScheduleModel.work_date.between(start_date, end_date),
-                    WorkScheduleModel.id.not_in(ids),
+                    # FIXME for redis
+                    # WorkScheduleModel.id.not_in(ids),
+                    # FIXMEL: if tesst post men comemnt this code to test
                     not_(
                         and_(
                             WorkScheduleModel.work_date == current_date,
@@ -101,7 +105,6 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 .group_by(WorkScheduleModel.doctor_id)
                 .subquery()
             )
-
             query = (
                 select(
                     self.model_class,
