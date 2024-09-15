@@ -210,7 +210,8 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
 
         result = await self.session.execute(query)
         data = result.scalars().all()
-        item = [item.as_dict for item in data]
+        item = [{**item.as_dict, "work_schedule": item.work_schedule.as_dict}
+                for item in data]
         total_pages = (total_count.scalar_one() + page_size - 1) // page_size
         return {
             "data": item,
