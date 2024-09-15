@@ -97,7 +97,7 @@ class CreateDoctorWorkingTimeApi(HTTPEndpoint):
                 raise Forbidden(
                     error_code=ErrorCode.FORBIDDEN.name,
                     errors={
-                        "message": "Only doctors or Admin can access this endpoint"}
+                        "message": "You can't access this endpoint"}
                 )
 
             doctor_id = auth.get(

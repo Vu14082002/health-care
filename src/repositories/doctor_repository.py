@@ -64,12 +64,12 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             current_date = datetime.now().date()
             current_time = datetime.now().time()
             start_date = current_date
-            if current_date.weekday() < 1:
-                start_date = current_date + \
-                    timedelta(days=(1 - current_date.weekday()) % 7)
-            end_date = start_date + \
-                timedelta(days=(6 - start_date.weekday()) % 7)
-
+            end_date = start_date + timedelta(days=(6 - start_date.weekday()))
+            # if current_date.weekday() < 1:
+            #     start_date = current_date + \
+            #         timedelta(days=(1 - current_date.weekday()) % 7)
+            # end_date = start_date + \
+            #     timedelta(days=(6 - start_date.weekday()) % 7)
             # key in redis
             ids = []
             key: List[str] = await redis_working.get_all_keys()
@@ -314,7 +314,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
 
     async def add_workingschedule(self, doctor_id: int, data: RequestDoctorWorkScheduleNextWeek) -> Dict[str, Any]:
         try:
-            # check have permit crea te working
+            # check have permit create te working
             doctor_check = select(DoctorModel).where(
                 DoctorModel.id == doctor_id)
 
