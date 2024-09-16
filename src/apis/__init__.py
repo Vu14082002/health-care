@@ -3,6 +3,7 @@ from src.apis.auth import (AdminRegisterApi, DoctorForeignRegisterApi,
                            DoctorLocalRegisterApi, DoctorOtherVerifyApi,
                            DoctorOtherVerifyApiPut, LoginApi, LogoutApi,
                            PatientRegisterApi)
+from src.apis.bot_ai import BotServiceApi
 from src.apis.docter_api import (GetAllDoctorApi, GetAllDoctorForeignAPi,
                                  GetAllDoctorLocalAPi, GetDetailtDoctorById,
                                  StatisticalDoctorApi)
@@ -130,4 +131,12 @@ routes = [
         methods=["GET"],
         tags=["ADMIN"]
     ),
+
+    # chat bot
+
+    RouteSwagger(
+        "/bot-chat",
+        BotServiceApi,
+        methods=["GET"],
+        tags=["USER", "PATIENT", "DOCTOR", "ADMIN"]),
 ]

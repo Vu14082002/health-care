@@ -32,8 +32,17 @@ services:
             - S3_SECRET=${S3_SECRET}
             - REGION=${REGION}
             - S3_ENDPOINT=${S3_ENDPOINT}
+            - BOT_SERVICE_URL=${BOT_SERVICE_URL}
         volumes:
             - .:/app
+    bot_chat:
+        container_name: bot-chat-service
+        image: sherlockvufullsnack/health_care_bot-api:latest
+        restart: always
+        ports:
+            - '8080:8080'
+        networks:
+            - app-network
     redis:
         container_name: redis_health_care
         image: redis:alpine

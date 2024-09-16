@@ -68,10 +68,12 @@ To deploy the application using Docker:
 
     ```
     docker build -t sherlockvufullsnack/health_care-api:latest .
+    docker build -t sherlockvufullsnack/health_care_bot-api:latest .
     ```
 
 2. Push the image to Docker Hub:
 
     ```
     docker push sherlockvufullsnack/health_care-api:latest
+    docker push sherlockvufullsnack/health_care_bot-api:latest
     ```

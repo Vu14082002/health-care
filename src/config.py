@@ -43,6 +43,7 @@ class Config(BaseSettings):
     S3_SECRET: str
     REGION: str
     S3_ENDPOINT: str
+    BOT_SERVICE_URL: str = ""
 
 
 config = Config()
