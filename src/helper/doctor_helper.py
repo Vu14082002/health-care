@@ -194,3 +194,15 @@ class DoctorHelper:
                 if (occupied_start <= start_time < occupied_end) or (occupied_start < end_time <= occupied_end):
                     return True
         return False
+
+    async def get_patient_by_doctor_id(self,
+                                       doctor_id: int | None,
+                                       current_page: int = 1,
+                                       page_size: int = 10,
+                                       appointment_status: str | None = None,
+                                       status_order: tuple[str, ...] = ("approved", "processing", "completed")):
+        try:
+            return await self.doctor_repository.get_patient_by_doctor_id(doctor_id, current_page, page_size, appointment_status, status_order)
+        except Exception as e:
+            logging.error(f"Error in get_patient_by_doctor_id: {e}")
+            raise

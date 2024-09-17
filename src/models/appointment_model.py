@@ -19,6 +19,7 @@ class AppointmentModelStatus(enum.Enum):
     APPROVED = "approved"
     REJECTED = "rejected"
     COMPLETED = "completed"
+    PROCESSING = "processing"
 
 
 class AppointmentModelTypeStatus(enum.Enum):

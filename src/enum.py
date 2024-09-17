@@ -29,6 +29,7 @@ class ErrorCode(Enum):
     INVALID_APPOINTMENT = "INVALID_APPOINTMENT"
     WORK_SCHEDULE_NOT_FOUND = "WORK_SCHEDULE_NOT_FOUND"
     MEDICAL_RECORD_EXIST = "MEDICAL_RECORD_EXIST"
+    YOU_HAVE_NOT_COMPLETE_OTHER_APPOINTMENT = "YOU_HAVE_NOT_COMPLETE_OTHER_APPOINTMENT"
 
 
 CACHE_REFRESH_TOKEN = 60 * 60 * 5
@@ -46,3 +47,11 @@ class TypeOfDisease(Enum):
     ONLINE = "online"
     OFFLINE = "offline"
     BOTH = "both"
+
+
+class AppointmentModelStatus(Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    COMPLETED = "completed"
+    PROCESSING = "processing"

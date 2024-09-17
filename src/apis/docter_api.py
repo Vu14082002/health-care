@@ -1,7 +1,9 @@
 import logging as log
+from calendar import c
 
 from regex import F
 
+from src.apis import appointment
 from src.core import HTTPEndpoint
 from src.core.exception import BadRequest, Forbidden, InternalServer
 from src.core.security import JsonWebToken
@@ -9,6 +11,7 @@ from src.enum import ErrorCode, Role
 from src.factory import Factory
 from src.helper.doctor_helper import DoctorHelper
 from src.schema.doctor_schema import (RequestDetailDoctorSchema,
+                                      RequestDoctorPatientSchema,
                                       RequestDoctorWorkScheduleNextWeek,
                                       RequestGetAllDoctorsSchema,
                                       RequestGetUncenteredTimeSchema,
@@ -124,6 +127,44 @@ class GetDetailtDoctorById(HTTPEndpoint):
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             reponse = await doctor_helper.get_doctor_by_id(path_params.doctor_id)
             return reponse if reponse else {"message": "Doctor not found"}
+        except Exception as e:
+            log.error(f"Error: {e}")
+            raise InternalServer(msg="Internal server error",
+                                 error_code=ErrorCode.SERVER_ERROR.name) from e
+
+
+class DoctorGetPatientsApi(HTTPEndpoint):
+    async def get(self, query_params: RequestDoctorPatientSchema, auth: JsonWebToken):
+        try:
+            user_role = auth.get("role")
+            if user_role not in [Role.ADMIN.name, Role.DOCTOR.name]:
+                raise Forbidden(msg="Permission denied",
+                                error_code=ErrorCode.FORBIDDEN.name,
+                                errors={"message": "You don't have permission to access this resource"})
+            if user_role == Role.DOCTOR.name:
+                query_params.doctor_id = auth.get("id")
+            if user_role == Role.ADMIN.name:
+                if not query_params.doctor_id:
+                    raise BadRequest(msg="Bad request",
+                                     error_code=ErrorCode.BAD_REQUEST.name,
+                                     errors={"message": "Doctor id is required"})
+            doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
+            doctor_id = query_params.doctor_id
+            current_page = query_params.current_page
+            page_size = query_params.page_size
+            status_order = query_params.status_order
+            appointment_status = query_params.appointment_status
+
+            response = await doctor_helper.get_patient_by_doctor_id(
+                doctor_id=doctor_id,
+                current_page=current_page,
+                page_size=page_size,
+                status_order=status_order,
+                appointment_status=appointment_status,
+            )
+            return response
+        except (BadRequest, Forbidden) as e:
+            raise e
         except Exception as e:
             log.error(f"Error: {e}")
             raise InternalServer(msg="Internal server error",

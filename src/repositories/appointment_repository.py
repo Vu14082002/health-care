@@ -8,7 +8,7 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from src.core.database.postgresql import PostgresRepository
 from src.core.exception import BadRequest
-from src.enum import ErrorCode
+from src.enum import AppointmentModelStatus, ErrorCode
 from src.models.appointment_model import AppointmentModel
 from src.models.doctor_model import DoctorExaminationPriceModel, DoctorModel
 from src.models.medical_records_model import MedicalRecordModel
@@ -21,6 +21,18 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
     # start::create_appointment[]
     async def create_appointment(self, patient_id: int, doctor_id: int, work_schedule_id: int, pre_examination_notes: str | None = None):
         try:
+
+            # first check exist appointment with doctor is approved
+            appointment_exist = await self.session.execute(select(AppointmentModel).where(
+                and_(AppointmentModel.patient_id == patient_id,
+                     AppointmentModel.appointment_status == AppointmentModelStatus.APPROVED.value)
+            ))
+            appointment_exist = appointment_exist.scalar_one_or_none()
+            if appointment_exist:
+                raise BadRequest(error_code=ErrorCode.YOU_HAVE_NOT_COMPLETE_OTHER_APPOINTMENT.name, errors={
+                    "message": "You have must complete other appointment before create new appointment"})
+
+            # check work schedule is ordered
             patient_model = await self._get_patient_model_by_id(patient_id)
             doctor_model = await self._get_doctor_model_by_id(doctor_id)
             work_schedule_model = self._get_work_schedule_model_by_id(
@@ -53,15 +65,10 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             appointment.total_amount = fee_examprice
             work_schedule_model.ordered = True
             self.session.add(appointment)
-
+            patient_id = patient_id
             query_update_medical_record_by_patient = update(MedicalRecordModel).where(
-                MedicalRecordModel.patient_id == patient_id).values(
-                {
-                    "doctor_read_id": doctor_id,
-                }
-            )
-            result = await self.session.execute(query_update_medical_record_by_patient)
-            await self.session.flush()
+                MedicalRecordModel.patient_id == patient_id).values({"doctor_read_id": doctor_id})
+            _ = await self.session.execute(query_update_medical_record_by_patient)
             await self.session.commit()
             await redis_working.set(work_schedule_model.as_dict,
                                     work_schedule_id, 300)

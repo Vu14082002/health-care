@@ -4,9 +4,9 @@ from src.apis.auth import (AdminRegisterApi, DoctorForeignRegisterApi,
                            DoctorOtherVerifyApiPut, LoginApi, LogoutApi,
                            PatientRegisterApi)
 from src.apis.bot_ai import BotServiceApi
-from src.apis.docter_api import (GetAllDoctorApi, GetAllDoctorForeignAPi,
-                                 GetAllDoctorLocalAPi, GetDetailtDoctorById,
-                                 StatisticalDoctorApi)
+from src.apis.docter_api import (DoctorGetPatientsApi, GetAllDoctorApi,
+                                 GetAllDoctorForeignAPi, GetAllDoctorLocalAPi,
+                                 GetDetailtDoctorById, StatisticalDoctorApi)
 from src.apis.health_check import HealthCheck
 from src.apis.medical_records_api import (MedicalRecordsApiGET,
                                           MedicalRecordsApiPOST)
@@ -85,6 +85,12 @@ routes = [
 
     RouteSwagger("/doctor", GetAllDoctorApi,
                  methods=["GET"], tags=["DOCTOR", "PATIENT", "ADMIN", "USER"]),
+    RouteSwagger(
+        "/doctor/patients",
+        DoctorGetPatientsApi,
+        methods=["GET"],
+        tags=["ADMIN", "DOCTOR"]
+    ),
 
     RouteSwagger("/doctor/local", GetAllDoctorLocalAPi,
                  methods=["GET"], tags=["ADMIN"]),
@@ -117,6 +123,7 @@ routes = [
         methods=["GET"],
         tags=["PATIENT", "ADMIN", "DOCTOR"]
     ),
+
     RouteSwagger(
         "/medical-record",
         MedicalRecordsApiPOST,

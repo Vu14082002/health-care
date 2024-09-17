@@ -1,11 +1,14 @@
 import json
 from datetime import date, datetime, time, timedelta
-from typing import Annotated, List, Optional
+from math import e
+from typing import Annotated, List, Optional, Tuple
 
-from pydantic import (BaseModel, ConfigDict, Field, field_validator,
-                      model_validator, validator)
+from pydantic import (BaseModel, ConfigDict, Field, field_serializer,
+                      field_validator, model_validator, validator)
 from starlette.datastructures import UploadFile
 from typing_extensions import Any, Literal
+
+from src.enum import AppointmentModelStatus
 
 
 class DoctorSchema(BaseModel):
@@ -164,3 +167,40 @@ class RequestGetWorkingSchedulesSchema(BaseModel):
 
     class Config:
         json_encoders = {date: lambda v: v.isoformat()}
+
+
+class RequestDoctorPatientSchema(BaseModel):
+    doctor_id: Optional[int] = Field(
+        default=None,
+        description="This value is set only for role ADMIN. If value is None, then get all patients.",
+        examples="1"
+    )
+    current_page: Optional[int] = Field(
+        default=1,
+        description="Page number to get, starting from 1.",
+        examples="1"
+    )
+    page_size: Optional[int] = Field(
+        default=10,
+        description="Number of items per page.",
+        examples="10"
+    )
+    appointment_status: Optional[Literal["approved", "completed", "processing"]] = Field(
+        default=None,
+        description="If value is None, then get all appointments.",
+        examples="pending, approved, rejected, completed, processing or None"
+    )
+    status_order: Optional[Tuple[str, ...]] = Field(
+        default=("approved", "processing", "completed"),
+        description="Order of statuses for sorting. If value is None, default order is used.",
+        examples="approved&processing&completed"
+    )
+
+    @validator('status_order', pre=True, always=True)
+    def parse_status_order(cls, value):
+        if value is None:
+            return ("approved", "processing", "completed")
+        # Handle the case where value is a string of statuses separated by '&'
+        if isinstance(value, str):
+            return tuple(value.split('&'))
+        return value

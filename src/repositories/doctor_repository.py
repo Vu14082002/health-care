@@ -1,6 +1,9 @@
 import logging
+import math
+from collections import defaultdict
 from curses.ascii import isdigit
 from datetime import date, datetime, time, timedelta
+from re import M
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple
 
 from regex import B
@@ -16,8 +19,10 @@ from src.core.exception import BadRequest, Forbidden
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
 from src.models import work_schedule_model
+from src.models.appointment_model import AppointmentModel
 from src.models.doctor_model import (DoctorExaminationPriceModel, DoctorModel,
                                      TypeOfDisease)
+from src.models.medical_records_model import MedicalRecordModel
 from src.models.rating_model import RatingModel
 from src.models.user_model import Role, UserModel
 from src.models.work_schedule_model import WorkScheduleModel
@@ -538,6 +543,78 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             logging.error(f"Error in get_working_schedules_v2 : {e}")
             raise
 
+    async def get_patient_by_doctor_id(
+        self,
+        doctor_id: int | None,
+        current_page: int = 1,
+        page_size: int = 10,
+        appointment_status: str | None = None,
+        status_order: tuple[str, ...] = ("approved", "processing", "completed")
+    ):
+        try:
+            main_query = select(AppointmentModel).options(
+                joinedload(AppointmentModel.medical_record)
+            )
+            if doctor_id:
+                main_query = main_query.where(
+                    AppointmentModel.doctor_id == doctor_id,
+                )
+            if appointment_status:
+                main_query = main_query.where(
+                    AppointmentModel.status == appointment_status
+                )
+            # process code here
+            result_apointmant = await self.session.execute(main_query)
+            appointment_model = result_apointmant.unique().scalars().all()
+            data_response = []
+            patients_by_id = defaultdict(list)
+            for appointment in appointment_model:
+                if appointment.medical_record is not None and appointment.medical_record.doctor_read_id != doctor_id:
+                    continue
+                patients_by_id[appointment.patient_id].append(appointment)
+            for patient_id, appointments in patients_by_id.items():
+                latest_appointment = max(
+                    appointments, key=lambda a: a.created_at)
+                item = {}
+                appointment_dict = latest_appointment.as_dict
+                if "id" in appointment_dict:
+                    appointment_dict["appointment_id"] = appointment_dict.pop(
+                        "id")
+                item.update({"patient": latest_appointment.patient.as_dict})
+                appointment_dict.pop("patient_id", {})
+
+                if doctor_id is None:
+                    item.update(
+                        {"doctor": latest_appointment.doctor.as_dict})
+                    appointment_dict.pop("doctor_id")
+
+                item.update(**appointment_dict)
+
+                data_response.append(item)
+
+                # pending,approved,rejected,completed,processing
+            len_data_object = len(data_response)
+            status_priority = {status: index for index,
+                               status in enumerate(status_order)}
+            sorted_appointments = sorted(
+                data_response,
+                key=lambda a: (status_priority.get(
+                    a['appointment_status'], float('inf')), -a['created_at'])
+            )
+
+            return {
+                "items": sorted_appointments,
+                "total_page": math.ceil(len_data_object / page_size),
+                "current_page": current_page,
+                "page_size": page_size
+            }
+
+        except SQLAlchemyError as e:
+            logging.error(f"Error in get_patient_by_doctor_id: {e}")
+            raise e
+        except Exception as e:
+            logging.error(f"Error in get_patient_by_doctor_id: {e}")
+            raise e
     # async def statistical_doctor_for_admin(self):
     #     try:
     #         query = select(
