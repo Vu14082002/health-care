@@ -41,6 +41,7 @@ class MedicalHistoryMine(BaseModel):
     alcohol: bool = False
     cigarette: bool = False
     pipe_tobacco: bool = False
+    other: str = ""
 
 
 class MedicalHistorySchema(BaseModel):
@@ -92,6 +93,11 @@ class MedicalRecordModel(Model):
     # cac xet nghiem lam san'  can' lam'
     clinical_tests: Mapped[str] = mapped_column(Text, nullable=True)
 
+    main_defense: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    secondary_diseases: Mapped[str] = mapped_column(
+        Text, nullable=False, default="")
+    treatment_results: Mapped[str] = mapped_column(
+        Text, nullable=False, default="")
     #  tom tat benh
     medical_summary: Mapped[str] = mapped_column(Text, nullable=True)
 
