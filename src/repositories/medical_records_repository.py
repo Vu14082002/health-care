@@ -2,7 +2,7 @@ import logging
 import math
 from typing import Any, Dict
 
-from sqlalchemy import and_, exists, insert, select
+from sqlalchemy import and_, exists, insert, select, update
 
 from src.core.database.postgresql import PostgresRepository, Transactional
 from src.core.exception import BadRequest, InternalServer
@@ -140,6 +140,51 @@ class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
             return {
                 "message": "Medical record created successfully",
                 "data": medical_record.scalars().first(),
+            }
+
+        except (BadRequest, InternalServer) as e:
+            logging.error(e)
+            await self.session.rollback()
+            raise e
+        except Exception as e:
+            await self.session.rollback()
+            logging.error(e)
+            raise InternalServer(
+                msg="Internal server error",
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": "Server error, please try again later"},
+            ) from e
+
+    async def update_medical_records(self, *, value: dict[str, Any]):
+        try:
+            query_medical_record = select(MedicalRecordModel).where(
+                MedicalRecordModel.id == value["id"],
+            )
+            result_medical_record = await self.session.execute(query_medical_record)
+            medical_record = result_medical_record.scalar_one_or_none()
+            if medical_record is None:
+                raise BadRequest(
+                    msg="Invalid medical record",
+                    error_code=ErrorCode.INVALID_MEDICAL_RECORD.name,
+                    errors={"message": "The medical record does not exist"},
+                )
+            if medical_record.doctor_create_id != value["doctor_create_id"]:
+                raise BadRequest(
+                    msg="Invalid doctor",
+                    error_code=ErrorCode.INVALID_MEDICAL_RECORD.name,
+                    errors={
+                        "message": "You are not authorized to update this medical record, only the doctor who created it can update it"
+                    },
+                )
+            update_query = (
+                update(MedicalRecordModel)
+                .where(MedicalRecordModel.id == value["id"])
+                .values(value)
+            )
+            _ = await self.session.execute(update_query)
+            await self.session.commit()
+            return {
+                "message": "medical record updated successfully",
             }
 
         except (BadRequest, InternalServer) as e:

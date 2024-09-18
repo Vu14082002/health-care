@@ -679,7 +679,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
 
             data_response = []
 
-            time_stamp_now = datetime.now(timezone.utc) + timedelta(hours=7)
+            # time_stamp_now = datetime.now(timezone.utc) + timedelta(hours=7)
             for appointments in appointment_model:
                 item = {}
                 item["patient"] = appointments.patient.as_dict

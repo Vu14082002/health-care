@@ -141,7 +141,10 @@ routes = [
         tags=["PATIENT", "ADMIN", "DOCTOR"],
     ),
     RouteSwagger(
-        "/medical-record", MedicalRecordsApiPOST, methods=["POST"], tags=["DOCTOR"]
+        "/medical-record",
+        MedicalRecordsApiPOST,
+        methods=["POST", "PUT"],
+        tags=["DOCTOR"],
     ),
     # thong ke
     RouteSwagger(
