@@ -679,7 +679,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 if "patient" not in item:
                     appointment: AppointmentModel = appointments[0]
                     item.update({"patient": appointment.patient.as_dict})
-                item.update({"doctor_id": doctor_id})
+                # item.update({"doctor_id": doctor_id})
                 appointment_dict = defaultdict(list)
                 for appointment in appointments:
                     work_date: date = appointment.work_schedule.work_date
