@@ -685,12 +685,14 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                     work_date: date = appointment.work_schedule.work_date
                     start_time: time = appointment.work_schedule.start_time
                     end_time: time = appointment.work_schedule.end_time
+                    examination_type: str = appointment.work_schedule.examination_type
                     appointment_data = appointment.as_dict
                     appointment_data.update(
                         {
                             "work_date": work_date.isoformat(),
                             "start_time": start_time.isoformat(),
                             "end_time": end_time.isoformat(),
+                            "examination_type": examination_type,
                         }
                     )
                     appointment_dict["appointment"].append(appointment_data)
