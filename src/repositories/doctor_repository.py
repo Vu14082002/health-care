@@ -3,8 +3,8 @@ import math
 import re
 from collections import defaultdict
 from curses.ascii import isdigit
-from datetime import date, datetime, time, timedelta
-from re import M
+from datetime import date, datetime, time, timedelta, timezone
+from re import I, M
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple
 
 from regex import B
@@ -652,10 +652,12 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 joinedload(AppointmentModel.medical_record),
                 joinedload(AppointmentModel.work_schedule),
             )
-            if examination_type:
-                main_query = main_query.where(
-                    AppointmentModel.work_schedule.examination_type == examination_type
-                )
+            # if examination_type:
+            #     main_query = main_query.where(
+            #         AppointmentModel.work_schedule.extension_type.like(
+            #             f"%{examination_type}%"
+            #         )
+            #     )
             if doctor_id:
                 main_query = main_query.where(
                     AppointmentModel.doctor_id == doctor_id,
@@ -666,66 +668,34 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 )
             # process code here
             result_appoint_result = await self.session.execute(main_query)
-            appointment_model = result_appoint_result.unique().scalars().all()
+            appointment_model_temp = result_appoint_result.unique().scalars().all()
+            appointment_model = []
+            if examination_type:
+                for item in appointment_model_temp:
+                    if item.work_schedule.examination_type == examination_type:
+                        appointment_model.append(item)
+            else:
+                appointment_model = appointment_model_temp
+
             data_response = []
 
-            # group by patient_id
-            patients_by_id = defaultdict(list)
-            for appointment in appointment_model:
-                patients_by_id[appointment.patient_id].append(appointment)
-
-            status_priority = {
-                status: index for index, status in enumerate(status_order)
-            }
-            # custom reponse schema
-            for patient_id, appointments in patients_by_id.items():
+            time_stamp_now = datetime.now(timezone.utc) + timedelta(hours=7)
+            for appointments in appointment_model:
                 item = {}
-                if "patient" not in item:
-                    appointment: AppointmentModel = appointments[0]
-                    item.update({"patient": appointment.patient.as_dict})
-                # item.update({"doctor_id": doctor_id})
-                appointment_dict = defaultdict(list)
-                appointment_newest_time = 0
-                for appointment in appointments:
-                    work_date: date = appointment.work_schedule.work_date
-                    start_time: time = appointment.work_schedule.start_time
-                    end_time: time = appointment.work_schedule.end_time
-                    examination_type: str = appointment.work_schedule.examination_type
-                    appointment_data = appointment.as_dict
-                    if appointment.created_at > appointment_newest_time:
-                        appointment_newest_time = appointment.created_at
-                    appointment_data.update(
-                        {
-                            "work_date": work_date.isoformat(),
-                            "start_time": start_time.isoformat(),
-                            "end_time": end_time.isoformat(),
-                            "examination_type": examination_type,
-                        }
-                    )
-                    appointment_dict["appointment"].append(appointment_data)
-                value: List[Any] = appointment_dict.get("appointment", [])
-                sorted_appointments = sorted(
-                    value,
-                    key=lambda a: (
-                        status_priority.get(a["appointment_status"], float("inf")),
-                        -a["created_at"],
-                    ),
-                )
-                item.update({"newest_appointment": appointment_newest_time})
-                item.update({"appointment": sorted_appointments})
+                item["patient"] = appointments.patient.as_dict
+                item["work_schedule"] = {
+                    "work_date": appointments.work_schedule.work_date.isoformat(),
+                    "start_time": appointments.work_schedule.start_time.isoformat(),
+                    "end_time": appointments.work_schedule.end_time.isoformat(),
+                    "examination_type": appointments.work_schedule.examination_type,
+                    "medical_examination_fee": appointments.work_schedule.medical_examination_fee,
+                }
+                item["appointment"] = appointments.as_dict
                 data_response.append(item)
 
-                # pending,approved,rejected,completed,processing
-            len_data_object = len(data_response)
-
-            sorted_appointments_by_newest = sorted(
-                data_response,
-                key=lambda a: -a["newest_appointment"],
-            )
-
             return {
-                "items": sorted_appointments_by_newest,
-                "total_page": math.ceil(len_data_object / page_size),
+                "items": data_response,
+                "total_page": math.ceil(len(data_response) / page_size),
                 "current_page": current_page,
                 "page_size": page_size,
             }
