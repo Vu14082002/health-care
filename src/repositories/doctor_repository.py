@@ -1,5 +1,6 @@
 import logging
 import math
+import re
 from collections import defaultdict
 from curses.ascii import isdigit
 from datetime import date, datetime, time, timedelta
@@ -673,6 +674,9 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             for appointment in appointment_model:
                 patients_by_id[appointment.patient_id].append(appointment)
 
+            status_priority = {
+                status: index for index, status in enumerate(status_order)
+            }
             # custom reponse schema
             for patient_id, appointments in patients_by_id.items():
                 item = {}
@@ -681,12 +685,15 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                     item.update({"patient": appointment.patient.as_dict})
                 # item.update({"doctor_id": doctor_id})
                 appointment_dict = defaultdict(list)
+                appointment_newest_time = 0
                 for appointment in appointments:
                     work_date: date = appointment.work_schedule.work_date
                     start_time: time = appointment.work_schedule.start_time
                     end_time: time = appointment.work_schedule.end_time
                     examination_type: str = appointment.work_schedule.examination_type
                     appointment_data = appointment.as_dict
+                    if appointment.created_at > appointment_newest_time:
+                        appointment_newest_time = appointment.created_at
                     appointment_data.update(
                         {
                             "work_date": work_date.isoformat(),
@@ -697,24 +704,27 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                     )
                     appointment_dict["appointment"].append(appointment_data)
                 value: List[Any] = appointment_dict.get("appointment", [])
-                item.update({"appointment": value})
+                sorted_appointments = sorted(
+                    value,
+                    key=lambda a: (
+                        status_priority.get(a["appointment_status"], float("inf")),
+                        -a["created_at"],
+                    ),
+                )
+                item.update({"newest_appointment": appointment_newest_time})
+                item.update({"appointment": sorted_appointments})
                 data_response.append(item)
 
                 # pending,approved,rejected,completed,processing
             len_data_object = len(data_response)
-            status_priority = {
-                status: index for index, status in enumerate(status_order)
-            }
-            # sorted_appointments = sorted(
-            #     data_response,
-            #     key=lambda a: (
-            #         status_priority.get(a["appointment_status"], float("inf")),
-            #         -a["created_at"],
-            #     ),
-            # )
+
+            sorted_appointments_by_newest = sorted(
+                data_response,
+                key=lambda a: -a["newest_appointment"],
+            )
 
             return {
-                "items": data_response,
+                "items": sorted_appointments_by_newest,
                 "total_page": math.ceil(len_data_object / page_size),
                 "current_page": current_page,
                 "page_size": page_size,
