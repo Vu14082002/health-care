@@ -8,8 +8,7 @@ from src.core.database.postgresql import PostgresRepository, Transactional
 from src.core.exception import BadRequest, InternalServer
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
-from src.models.appointment_model import (AppointmentModel,
-                                          AppointmentModelStatus)
+from src.models.appointment_model import AppointmentModel, AppointmentModelStatus
 from src.models.medical_records_model import MedicalRecordModel
 from src.repositories.global_func import destruct_where, process_orderby
 from src.schema.medical_records_schema import RequestCreateMedicalRecordsSchema
@@ -17,14 +16,24 @@ from src.schema.medical_records_schema import RequestCreateMedicalRecordsSchema
 
 class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
 
-    async def get_all(self, skip: int = 0, limit: int = 10, join_: set[str] | None = None, where: dict[str, Any] = {},
-                      order_by:  dict[str, Any] = {}):
+    async def get_all(
+        self,
+        skip: int = 0,
+        limit: int = 10,
+        join_: set[str] | None = None,
+        where: dict[str, Any] = {},
+        order_by: dict[str, Any] = {},
+    ):
         try:
             where_condition = destruct_where(MedicalRecordModel, where)
-            order_by_process = process_orderby(
-                MedicalRecordModel, order_by)
-            query = select(MedicalRecordModel).where(where_condition).order_by(
-                *order_by_process).offset(skip).limit(limit)  # type: ignore
+            order_by_process = process_orderby(MedicalRecordModel, order_by)
+            query = (
+                select(MedicalRecordModel)
+                .where(where_condition)
+                .order_by(*order_by_process)
+                .offset(skip)
+                .limit(limit)
+            )  # type: ignore
             result_select = await self.session.execute(query)
 
             result_select = result_select.scalars().all()
@@ -44,7 +53,10 @@ class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
                         }
                     }
                 )
-                if where.get("patient_id", None) is None and where.get("doctor_read_id", None) is None:
+                if (
+                    where.get("patient_id", None) is None
+                    and where.get("doctor_read_id", None) is None
+                ):
                     dict_item.update(
                         {
                             "doctor_read": {
@@ -73,13 +85,16 @@ class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
 
             query_medical_record = await self.session.execute(
                 select(MedicalRecordModel).where(
-                    MedicalRecordModel.appointment_id == value["appointment_id"])
+                    MedicalRecordModel.appointment_id == value["appointment_id"]
+                )
             )
             check_medical_record_exist = query_medical_record.scalar_one_or_none()
             if check_medical_record_exist:
-                raise BadRequest(msg="Medical record already exists",
-                                 error_code=ErrorCode.MEDICAL_RECORD_EXIST.name,
-                                 errors={"message": "The medical record already exists"})
+                raise BadRequest(
+                    msg="Medical record already exists",
+                    error_code=ErrorCode.MEDICAL_RECORD_EXIST.name,
+                    errors={"message": "The medical record already exists"},
+                )
             appointment = await self.session.execute(
                 select(AppointmentModel).where(
                     and_(
@@ -90,17 +105,31 @@ class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
             )
             appointment = appointment.scalar_one_or_none()
             if not appointment:
-                raise BadRequest(msg="Invalid appointment or doctor",
-                                 error_code=ErrorCode.INVALID_APPOINTMENT.name,
-                                 errors={"message": "The doctor does not have an active appointment with this patient"})
+                raise BadRequest(
+                    msg="Invalid appointment or doctor",
+                    error_code=ErrorCode.INVALID_APPOINTMENT.name,
+                    errors={
+                        "message": "The doctor does not have an active appointment with this patient"
+                    },
+                )
             if appointment.appointment_status == AppointmentModelStatus.COMPLETED.value:
-                raise BadRequest(msg="Invalid appointment",
-                                 error_code=ErrorCode.INVALID_APPOINTMENT.name,
-                                 errors={"message": "The appointment is  completed, you can't create a medical record for it"})
-            elif appointment.appointment_status != AppointmentModelStatus.APPROVED.value:
-                raise BadRequest(msg="Invalid appointment",
-                                 error_code=ErrorCode.INVALID_APPOINTMENT.name,
-                                 errors={"message": "The appointment is not approved yet, you can't create a medical record for it"})
+                raise BadRequest(
+                    msg="Invalid appointment",
+                    error_code=ErrorCode.INVALID_APPOINTMENT.name,
+                    errors={
+                        "message": "The appointment is  completed, you can't create a medical record for it"
+                    },
+                )
+            elif (
+                appointment.appointment_status != AppointmentModelStatus.APPROVED.value
+            ):
+                raise BadRequest(
+                    msg="Invalid appointment",
+                    error_code=ErrorCode.INVALID_APPOINTMENT.name,
+                    errors={
+                        "message": "The appointment is not approved yet, you can't create a medical record for it"
+                    },
+                )
             # Check if the medical record already exists
             value.update({"patient_id": appointment.patient_id})
             medical_record = await self.session.execute(
@@ -108,7 +137,10 @@ class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
             )
             appointment.appointment_status = "completed"
             await self.session.commit()
-            return {"message": "Medical record created successfully", "data": medical_record.scalars().first()}
+            return {
+                "message": "Medical record created successfully",
+                "data": medical_record.scalars().first(),
+            }
 
         except (BadRequest, InternalServer) as e:
             logging.error(e)
@@ -117,6 +149,8 @@ class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
         except Exception as e:
             await self.session.rollback()
             logging.error(e)
-            raise InternalServer(msg="Internal server error",
-                                 error_code=ErrorCode.SERVER_ERROR.name,
-                                 errors={"message": "Server error, please try again later"}) from e
+            raise InternalServer(
+                msg="Internal server error",
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": "Server error, please try again later"},
+            ) from e

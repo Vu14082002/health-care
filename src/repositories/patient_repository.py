@@ -23,23 +23,27 @@ class PatientRepository(PostgresRepository[PatientModel]):
                 select(exists().where(UserModel.phone_number == data.phone_number))
             )
             if user_exists:
-                raise BadRequest(msg="User has already been registered",
-                                 error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name)
+                raise BadRequest(
+                    msg="User has already been registered",
+                    error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
+                )
 
             # Check if patient exists by email
             patient_exists = await self.session.scalar(
                 select(exists().where(PatientModel.email == data.email))
             )
             if patient_exists:
-                raise BadRequest(msg="Patient with this email has already been registered",
-                                 error_code=ErrorCode.EMAIL_HAVE_BEEN_REGISTERED.name)
+                raise BadRequest(
+                    msg="Patient with this email has already been registered",
+                    error_code=ErrorCode.EMAIL_HAVE_BEEN_REGISTERED.name,
+                )
 
             # Create user and patient models
             password_hash = PasswordHandler.hash(data.password_hash)
             user_model = UserModel(
                 phone_number=data.phone_number,
                 password_hash=password_hash,
-                role=Role.PATIENT.value
+                role=Role.PATIENT.value,
             )
             patient_data = data.model_dump(exclude={"password_hash"})
             patient_model = PatientModel(**patient_data, user=user_model)
@@ -53,8 +57,9 @@ class PatientRepository(PostgresRepository[PatientModel]):
         except Exception as e:
             logging.error(f"Failed to create patient: {e}")
             await self.session.rollback()
-            raise InternalServer(msg="Failed to create patient",
-                                 error_code=ErrorCode.SERVER_ERROR.name) from e
+            raise InternalServer(
+                msg="Failed to create patient", error_code=ErrorCode.SERVER_ERROR.name
+            ) from e
 
     async def get_by_id(self, patient_id: int):
-        return await self.get_by('id', patient_id)
+        return await self.get_by("id", patient_id)

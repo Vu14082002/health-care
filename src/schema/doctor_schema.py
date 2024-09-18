@@ -3,8 +3,15 @@ from datetime import date, datetime, time, timedelta
 from math import e
 from typing import Annotated, List, Optional, Tuple
 
-from pydantic import (BaseModel, ConfigDict, Field, field_serializer,
-                      field_validator, model_validator, validator)
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_serializer,
+    field_validator,
+    model_validator,
+    validator,
+)
 from starlette.datastructures import UploadFile
 from typing_extensions import Any, Literal
 
@@ -57,7 +64,12 @@ class RequestUpdatePathParamsSchema(BaseModel):
 
 class RequestUpdateDoctorSchema(BaseModel):
     model_config = ConfigDict(
-        from_attributes=True, use_enum_values=True, arbitrary_types_allowed=True, str_strip_whitespace=True, extra="allow")
+        from_attributes=True,
+        use_enum_values=True,
+        arbitrary_types_allowed=True,
+        str_strip_whitespace=True,
+        extra="allow",
+    )
     first_name: str | None = None
     last_name: str | None = None
     phone_number: str | None = None
@@ -76,7 +88,7 @@ class TimeSlot(BaseModel):
     start_time: time
     end_time: time
 
-    @validator('start_time', 'end_time', pre=True)
+    @validator("start_time", "end_time", pre=True)
     def parse_time(cls, value):
         if isinstance(value, str):
             try:
@@ -85,9 +97,9 @@ class TimeSlot(BaseModel):
                 raise ValueError("Invalid time format. Use HH:MM:SS")
         return value
 
-    @validator('end_time')
+    @validator("end_time")
     def validate_time_slot(cls, v, values):
-        start = values.get('start_time')
+        start = values.get("start_time")
         if start and v:
             if v <= start:
                 raise ValueError("End time must be after start time")
@@ -99,12 +111,14 @@ class TimeSlot(BaseModel):
 class DailySchedule(BaseModel):
     work_date: date
     time_slots: List[TimeSlot]
+
+
 # FIXME eanble check past
-    # @validator('work_date')
-    # def validate_work_date(cls, v):
-    #     if v < date.today():
-    #         raise ValueError("Work date cannot be in the past")
-    #     return v
+# @validator('work_date')
+# def validate_work_date(cls, v):
+#     if v < date.today():
+#         raise ValueError("Work date cannot be in the past")
+#     return v
 
 
 class RequestDoctorWorkScheduleNextWeek(BaseModel):
@@ -173,34 +187,37 @@ class RequestDoctorPatientSchema(BaseModel):
     doctor_id: Optional[int] = Field(
         default=None,
         description="This value is set only for role ADMIN. If value is None, then get all patients.",
-        examples="1"
+        examples=["1"],
+    )
+    examination_type: Literal["online", "offline"] | None = Field(
+        default=None,
+        description="Type of examination. Default is online.",
+        examples=["online", "offline", "None"],
     )
     current_page: Optional[int] = Field(
-        default=1,
-        description="Page number to get, starting from 1.",
-        examples="1"
+        default=1, description="Page number to get, starting from 1.", examples=["1"]
     )
     page_size: Optional[int] = Field(
-        default=10,
-        description="Number of items per page.",
-        examples="10"
+        default=10, description="Number of items per page.", examples=["10"]
     )
-    appointment_status: Optional[Literal["approved", "completed", "processing"]] = Field(
-        default=None,
-        description="If value is None, then get all appointments.",
-        examples="pending, approved, rejected, completed, processing or None"
+    appointment_status: Optional[Literal["approved", "completed", "processing"]] = (
+        Field(
+            default=None,
+            description="If value is None, then get all appointments.",
+            examples=["approved", "completed", "processing", " None"],
+        )
     )
     status_order: Optional[Tuple[str, ...]] = Field(
         default=("approved", "processing", "completed"),
         description="Order of statuses for sorting. If value is None, default order is used.",
-        examples="approved&processing&completed"
+        examples=["approved&processing&completed"],
     )
 
-    @validator('status_order', pre=True, always=True)
+    @validator("status_order", pre=True, always=True)
     def parse_status_order(cls, value):
         if value is None:
             return ("approved", "processing", "completed")
         # Handle the case where value is a string of statuses separated by '&'
         if isinstance(value, str):
-            return tuple(value.split('&'))
+            return tuple(value.split("&"))
         return value

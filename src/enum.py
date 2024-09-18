@@ -1,5 +1,7 @@
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
+
+from pydantic import BaseModel
 
 
 class ErrorCode(Enum):
@@ -20,7 +22,9 @@ class ErrorCode(Enum):
     INVALID_PARAMETER = "INVALID_PARAMETER"
     EMAIL_HAVE_BEEN_REGISTERED = "EMAIL_HAVE_BEEN_REGISTERED"
     LICENSE_NUMBER_HAVE_BEEN_REGISTERED = "LICENSE_NUMBER_HAVE_BEEN_REGISTERED"
-    EMAIL_OR_LICENSE_NUMBER_HAVE_BEEN_REGISTERED = "EMAIL_OR_LICENSE_NUMBER_HAVE_BEEN_REGISTERED"
+    EMAIL_OR_LICENSE_NUMBER_HAVE_BEEN_REGISTERED = (
+        "EMAIL_OR_LICENSE_NUMBER_HAVE_BEEN_REGISTERED"
+    )
     DOCTOR_NOT_FOUND = "DOCTOR_NOT_FOUND"
     INVALID_EXAMINATION_TYPE = "INVALID_EXAMINATION_TYPE"
     SCHEDULE_CONFLICT = "SCHEDULE_CONFLICT"
@@ -55,3 +59,15 @@ class AppointmentModelStatus(Enum):
     REJECTED = "rejected"
     COMPLETED = "completed"
     PROCESSING = "processing"
+
+
+class MessageContentSchema(BaseModel):
+    content: str
+    type: Literal["tag", "text"]
+
+
+class FileMessageSchema(BaseModel):
+    file_name: str
+    file_size: int
+    file_type: str
+    file_url: str
