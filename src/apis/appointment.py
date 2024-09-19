@@ -27,8 +27,10 @@ class AppointmentApiGET(HTTPEndpoint):
                 Role.PATIENT.value,
             ]:
                 raise Forbidden(
-                    msg="Unauthorized access",
                     error_code=ErrorCode.UNAUTHORIZED.name,
+                    errors={
+                        "message": "You don't have permission to access this resource"
+                    },
                 )
 
             filter_params = query_params.model_dump()
@@ -38,7 +40,6 @@ class AppointmentApiGET(HTTPEndpoint):
                     **filter_params
                 )
             elif user_role == Role.DOCTOR.value:
-                # Doctor can only see their own appointments
                 filter_params["doctor_id"] = user_id
                 appointments = await appointment_helper.get_all_appointments(
                     **filter_params

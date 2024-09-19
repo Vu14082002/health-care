@@ -1,9 +1,8 @@
-
-
 from datetime import date, datetime, time
+from email.policy import default
 from typing import List, Literal
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Field, validator
 
 
 class RequestRegisterAppointment(BaseModel):
@@ -14,15 +13,47 @@ class RequestRegisterAppointment(BaseModel):
 
 
 class RequestGetAllAppointmentSchema(BaseModel):
-    appointment_status: Literal["pending", "approved",
-                                "rejected", "completed"] | None = None
-    from_date: date | None = None
-    to_date: date | None = None
-    examination_type: Literal["online", "offline"] | None = None
-    current_page: int | None = 1
-    page_size: int | None = 10
-    doctor_name: str | None = None
-    patient_name: str | None = None
+    appointment_status: Literal["pending", "approved", "completed"] | None = Field(
+        default=None,
+        description="query appointment by status,if not assign will ignore ",
+        examples=["pending", "approved", "completed", "None"],
+    )
+
+    from_date: date | None = Field(
+        default=None,
+        description="query appointment by from date,if not assign will ignore : value format yyy-MM-dd",
+        examples=["2021-01-01"],
+    )
+    to_date: date | None = Field(
+        default=None,
+        description="query appointment by to date,if not assign will ignore : value format yyy-MM-dd",
+        examples=["2021-01-01", "None"],
+    )
+    examination_type: Literal["online", "offline"] | None = Field(
+        default=None,
+        description="query appointment by examination type,if not assign will ignore",
+        examples=["online", "offline", "None"],
+    )
+    current_page: int | None = Field(
+        default=1,
+        description="current page, if not assign will default 1",
+        examples=[1],
+    )
+    page_size: int | None = Field(
+        default=10,
+        description="page size, if not assign will default 10",
+        examples=[10],
+    )
+    doctor_name: str | None = Field(
+        default=None,
+        description="query appointment by doctor name,if not assign will ignore, if you is role doctor must be assign this value",
+        examples=["None", "Nguyen Van Hieu"],
+    )
+    patient_name: str | None = Field(
+        default=None,
+        description="query appointment by patient name,if not assign will ignore, if you is role patient must be assign this value",
+        examples=["None", "Nguyen Van Hieu"],
+    )
 
     class Config:
         json_encoders = {date: lambda v: v.isoformat()}
