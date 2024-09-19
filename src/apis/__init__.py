@@ -12,6 +12,7 @@ from src.apis.auth import (
 from src.apis.bot_ai import BotServiceApi
 from src.apis.docter_api import (
     DoctorGetPatientsApi,
+    DoctorGetPatientsByIdApi,
     GetAllDoctorApi,
     GetAllDoctorForeignAPi,
     GetAllDoctorLocalAPi,
@@ -112,8 +113,12 @@ routes = [
         tags=["ADMIN", "DOCTOR"],
     ),
     RouteSwagger(
-        "/doctor/local", GetAllDoctorLocalAPi, methods=["GET"], tags=["ADMIN"]
+        f"/doctor/patient/{{patient_id}}",
+        DoctorGetPatientsByIdApi,
+        methods=["GET"],
+        tags=["ADMIN", "DOCTOR"],
     ),
+    RouteSwagger("/doctor/local", GetAllDoctorLocalAPi, methods=["GET"], tags=["ADMIN"]),
     RouteSwagger(
         "/doctor/foreign", GetAllDoctorForeignAPi, methods=["GET"], tags=["ADMIN"]
     ),

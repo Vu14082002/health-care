@@ -12,6 +12,7 @@ from src.factory import Factory
 from src.helper.doctor_helper import DoctorHelper
 from src.schema.doctor_schema import (
     RequestDetailDoctorSchema,
+    RequestDoctorPatientByIdSchema,
     RequestDoctorPatientSchema,
     RequestDoctorWorkScheduleNextWeek,
     RequestGetAllDoctorsSchema,
@@ -198,6 +199,36 @@ class DoctorGetPatientsApi(HTTPEndpoint):
                 status_order=status_order,
                 appointment_status=appointment_status,
                 examination_type=examination_type,
+            )
+            return response
+        except (BadRequest, Forbidden) as e:
+            raise e
+        except Exception as e:
+            log.error(f"Error: {e}")
+            raise InternalServer(
+                msg="Internal server error", error_code=ErrorCode.SERVER_ERROR.name
+            ) from e
+
+
+class DoctorGetPatientsByIdApi(HTTPEndpoint):
+
+    async def get(self, path_params: RequestDoctorPatientByIdSchema, auth: JsonWebToken):
+        try:
+            user_role = auth.get("role")
+            if user_role not in [Role.ADMIN.name, Role.DOCTOR.name]:
+                raise Forbidden(
+                    msg="Permission denied",
+                    error_code=ErrorCode.FORBIDDEN.name,
+                    errors={
+                        "message": "You don't have permission to access this resource"
+                    },
+                )
+            doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
+            doctor_id = auth.get("id") if user_role == Role.DOCTOR.name else None
+            patient_id = path_params.patient_id
+            response = await doctor_helper.get_one_patient_by_doctor(
+                doctor_id=doctor_id,
+                patient_id=patient_id,
             )
             return response
         except (BadRequest, Forbidden) as e:

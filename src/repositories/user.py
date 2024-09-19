@@ -19,18 +19,20 @@ class UserRepository(PostgresRepository[UserModel]):
 
     async def register_admin(self, data: RequestAdminRegisterSchema):
         try:
-            where = destruct_where(UserModel, {
-                "phone_number": data.phone_number})
+            where = destruct_where(UserModel, {"phone_number": data.phone_number})
             if where is None:
                 raise BadRequest(
-                    ErrorCode.INVALID_PARAMETER.name, msg="Invalid parameter")
+                    ErrorCode.INVALID_PARAMETER.name, msg="Invalid parameter"
+                )
 
             exists_query = select(exists().where(where))
 
             patient_exists = await self.session.scalar(exists_query)
             if patient_exists:
-                raise BadRequest(msg="User have been registered",
-                                 error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name)
+                raise BadRequest(
+                    msg="User have been registered",
+                    error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
+                )
             password_hash = PasswordHandler.hash(data.password_hash)
             user_model = UserModel()
             user_model.phone_number = data.phone_number
@@ -48,7 +50,7 @@ class UserRepository(PostgresRepository[UserModel]):
 
     async def get_by_id(self, user_id: int) -> UserModel | None:
 
-        return await self.get_by('id', user_id)
+        return await self.get_by("id", user_id)
 
     async def get_one(self, where: Dict[str, Any]):
         try:

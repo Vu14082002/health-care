@@ -1,11 +1,10 @@
 import logging
 import math
-import re
 from collections import defaultdict
 from curses.ascii import isdigit
 from datetime import date, datetime, time, timedelta, timezone
 from re import I, M
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Sequence, Tuple
 
 from regex import B
 from sqlalchemy import (
@@ -31,6 +30,7 @@ from src.core.database.postgresql import PostgresRepository
 from src.core.exception import BadRequest, Forbidden
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
+from src.lib.exception import InternalServer
 from src.models import work_schedule_model
 from src.models.appointment_model import AppointmentModel
 from src.models.doctor_model import (
@@ -39,6 +39,7 @@ from src.models.doctor_model import (
     TypeOfDisease,
 )
 from src.models.medical_records_model import MedicalRecordModel
+from src.models.patient_model import PatientModel
 from src.models.rating_model import RatingModel
 from src.models.user_model import Role, UserModel
 from src.models.work_schedule_model import WorkScheduleModel
@@ -348,21 +349,19 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 .limit(1)
             )
 
-            result: Result[
-                Tuple[DoctorModel, Any, Any, DoctorExaminationPriceModel]
-            ] = await self.session.execute(query)
-            row: (
-                Row[Tuple[DoctorModel, Any, Any, DoctorExaminationPriceModel]] | None
-            ) = result.first()
+            result: Result[Tuple[DoctorModel, Any, Any, DoctorExaminationPriceModel]] = (
+                await self.session.execute(query)
+            )
+            row: Row[Tuple[DoctorModel, Any, Any, DoctorExaminationPriceModel]] | None = (
+                result.first()
+            )
 
             if row is None:
                 return None
 
             doctor, avg_rating, comments, latest_price = row
             doctor_dict = doctor.as_dict
-            doctor_dict["avg_rating"] = (
-                float(avg_rating) if avg_rating is not None else 0
-            )
+            doctor_dict["avg_rating"] = float(avg_rating) if avg_rating is not None else 0
             doctor_dict["comments"] = [
                 comment for comment in comments if comment is not None
             ]
@@ -401,9 +400,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             if data_check_model.verify_status != 2:
                 raise BadRequest(
                     error_code=ErrorCode.DOCTOR_NOT_FOUND.name,
-                    errors={
-                        "message": "doctor is not verify, pls varyfi and try again"
-                    },
+                    errors={"message": "doctor is not verify, pls varyfi and try again"},
                 )
             if data_check_model.type_of_disease != "both":
                 if data_check_model.type_of_disease != data.examination_type:
@@ -576,9 +573,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                     WorkScheduleModel.work_date.between(start_date, end_date)
                 )
             if examination_type:
-                conditions.append(
-                    WorkScheduleModel.examination_type == examination_type
-                )
+                conditions.append(WorkScheduleModel.examination_type == examination_type)
             if ordered is not None:
                 conditions.append(WorkScheduleModel.ordered == ordered)
             if conditions:
@@ -658,6 +653,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             #             f"%{examination_type}%"
             #         )
             #     )
+
             if doctor_id:
                 main_query = main_query.where(
                     AppointmentModel.doctor_id == doctor_id,
@@ -707,39 +703,33 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             logging.error(f"Error in get_patient_by_doctor_id: {e}")
             raise e
 
-    # async def statistical_doctor_for_admin(self):
-    #     try:
-    #         query = select(
-    #             func.count(case(
-    #                 (DoctorModel.verify_status != 0, 1),
-    #                 else_=None
-    #             )).label('amount_doctor'),
-    #             func.count(case(
-    #                 ((DoctorModel.type_of_disease == TypeOfDisease.ONLINE.value)
-    #                  & (DoctorModel.verify_status != 0), 1),
-    #                 else_=None
-    #             )).label('amount_doctor_online'),
-    #             func.count(case(
-    #                 ((DoctorModel.type_of_disease == TypeOfDisease.OFFLINE.value)
-    #                  & (DoctorModel.verify_status != 0), 1),
-    #                 else_=None
-    #             )).label('amount_doctor_offline'),
-    #             func.count(case(
-    #                 ((DoctorModel.type_of_disease == TypeOfDisease.BOTH.value)
-    #                  & (DoctorModel.verify_status != 0), 1),
-    #                 else_=None
-    #             )).label('amount_doctor_both')
-    #         )
+    async def get_one_patient_by_doctor(self, doctot_id: int | None, patient_id: int):
+        try:
+            query_patient = select(PatientModel).where(PatientModel.id == patient_id)
 
-    #         result = await self.session.execute(query)
-    #         row = result.fetchone()
+            if doctot_id:
+                query_patient = query_patient.where(
+                    PatientModel.doctor_manage_id == doctot_id
+                )
 
-    #         return {
-    #             "amount_doctor": row.amount_doctor,
-    #             "amount_doctor_online": row.amount_doctor_online,
-    #             "amount_doctor_offline": row.amount_doctor_offline,
-    #             "amount_doctor_both": row.amount_doctor_both
-    #         }
-    #     except SQLAlchemyError as e:
-    #         logging.error(f"Error in statistical_doctor_for_admin: {e}")
-    #         raise
+            result_patient = await self.session.execute(query_patient)
+            patient = result_patient.scalar_one_or_none()
+            if patient is None:
+                raise BadRequest(
+                    error_code=ErrorCode.PATIENT_NOT_FOUND.name,
+                    errors={"message": "Patient not found"},
+                )
+            return patient.as_dict
+
+        except SQLAlchemyError as e:
+            logging.error(f"Error in get_one_patient_by_doctor: {e}")
+            raise e
+        except BadRequest as e:
+            logging.error(f"Error in get_one_patient_by_doctor: {e}")
+            raise e
+        except Exception as e:
+            logging.error(f"Error in get_one_patient_by_doctor: {e}")
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": "Unexpected error"},
+            )

@@ -6,27 +6,14 @@ from src.core.security.authentication import JsonWebToken
 from src.enum import ErrorCode, Role
 from src.factory import Factory
 from src.helper.appointment_helper import AppointmentHelper
-from src.helper.doctor_helper import DoctorHelper
-from src.models.appointment_model import AppointmentModel
 from src.schema.appointment_schema import (
     RequestGetAllAppointmentSchema,
     RequestRegisterAppointment,
 )
-from src.schema.doctor_schema import (
-    RequestDetailDoctorSchema,
-    RequestDoctorWorkScheduleNextWeek,
-    RequestGetAllDoctorsSchema,
-    RequestGetUncenteredTimeSchema,
-    RequestGetWorkingTimeSchema,
-    RequestUpdateDoctorSchema,
-    RequestUpdatePathParamsSchema,
-)
 
 
 class AppointmentApiGET(HTTPEndpoint):
-    async def get(
-        self, query_params: RequestGetAllAppointmentSchema, auth: JsonWebToken
-    ):
+    async def get(self, query_params: RequestGetAllAppointmentSchema, auth: JsonWebToken):
         try:
             appointment_helper: AppointmentHelper = (
                 await Factory().get_appointment_helper()
@@ -40,7 +27,8 @@ class AppointmentApiGET(HTTPEndpoint):
                 Role.PATIENT.value,
             ]:
                 raise Forbidden(
-                    msg="Unauthorized access", error_code=ErrorCode.UNAUTHORIZED.name
+                    msg="Unauthorized access",
+                    error_code=ErrorCode.UNAUTHORIZED.name,
                 )
 
             filter_params = query_params.model_dump()
@@ -81,9 +69,7 @@ class AppointmentApi(HTTPEndpoint):
                 raise Forbidden(
                     msg="Unauthorized access",
                     error_code=ErrorCode.UNAUTHORIZED.name,
-                    errors={
-                        "message": "Only patients or admins can create appointments"
-                    },
+                    errors={"message": "Only patients or admins can create appointments"},
                 )
 
             if user_role == "ADMIN" and not form_data.patient_id:
@@ -116,5 +102,6 @@ class AppointmentApi(HTTPEndpoint):
         except Exception as e:
             log.error(e)
             raise InternalServer(
-                msg="Internal server error", error_code=ErrorCode.SERVER_ERROR.name
+                msg="Internal server error",
+                error_code=ErrorCode.SERVER_ERROR.name,
             ) from e

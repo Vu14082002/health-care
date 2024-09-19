@@ -221,3 +221,7 @@ class RequestDoctorPatientSchema(BaseModel):
         if isinstance(value, str):
             return tuple(value.split("&"))
         return value
+
+
+class RequestDoctorPatientByIdSchema(BaseModel):
+    patient_id: int = Field(description="Patient id", examples=["1"])

@@ -111,9 +111,7 @@ class DoctorHelper:
         except Exception as e:
             raise e
 
-    async def create_doctor(
-        self, data: dict[str, Any], *args: Any, **kwargs: Any
-    ) -> Any:
+    async def create_doctor(self, data: dict[str, Any], *args: Any, **kwargs: Any) -> Any:
         try:
             doctor = await self.doctor_repository.insert(data)
             return doctor
@@ -199,9 +197,7 @@ class DoctorHelper:
             occupied_slots = await self.doctor_repository.get_working_schedules_v2(
                 doctor_id, start_date, end_date
             )
-            empty_slots = self._generate_empty_slots(
-                start_date, end_date, occupied_slots
-            )
+            empty_slots = self._generate_empty_slots(start_date, end_date, occupied_slots)
             return empty_slots
         except Exception as e:
             logging.error(f"Error in get_empty_working_time: {e}")
@@ -268,6 +264,21 @@ class DoctorHelper:
                 status_order=status_order,
                 examination_type=examination_type,
             )
+        except Exception as e:
+            logging.error(f"Error in get_patient_by_doctor_id: {e}")
+            raise
+
+    async def get_one_patient_by_doctor(
+        self,
+        doctor_id: int | None,
+        patient_id: int,
+    ):
+        try:
+            return await self.doctor_repository.get_one_patient_by_doctor(
+                doctot_id=doctor_id, patient_id=patient_id
+            )
+        except (BadRequest, NoResultFound) as e:
+            raise e
         except Exception as e:
             logging.error(f"Error in get_patient_by_doctor_id: {e}")
             raise
