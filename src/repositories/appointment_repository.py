@@ -301,6 +301,8 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                         "patient": {
                             "first_name": item.patient.first_name,
                             "last_name": item.patient.last_name,
+                            "avatar": item.patient.avatar,
+                            "phone_number": item.patient.phone_number,
                         }
                     }
                 )
@@ -310,6 +312,10 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                         "doctor": {
                             "first_name": item.doctor.first_name,
                             "last_name": item.doctor.last_name,
+                            "certification": item.doctor.certification,
+                            "specialization": item.doctor.specialization,
+                            "avatar": item.doctor.avatar,
+                            "phone_number": item.doctor.phone_number,
                         }
                     }
                 )
@@ -319,6 +325,8 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                         "patient": {
                             "first_name": item.patient.first_name,
                             "last_name": item.patient.last_name,
+                            "avatar": item.patient.avatar,
+                            "phone_number": item.patient.phone_number,
                         }
                     }
                 )
@@ -327,6 +335,10 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                         "doctor": {
                             "first_name": item.doctor.first_name,
                             "last_name": item.doctor.last_name,
+                            "certification": item.doctor.certification,
+                            "specialization": item.doctor.specialization,
+                            "avatar": item.doctor.avatar,
+                            "phone_number": item.doctor.phone_number,
                         }
                     }
                 )
