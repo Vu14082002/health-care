@@ -6,7 +6,6 @@ from datetime import date, datetime, time, timedelta, timezone
 from re import I, M
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Sequence, Tuple
 
-from regex import B
 from sqlalchemy import (
     Result,
     Row,
@@ -15,6 +14,7 @@ from sqlalchemy import (
     case,
     delete,
     desc,
+    distinct,
     exists,
     func,
     not_,
@@ -643,40 +643,70 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         examination_type: Literal["online", "offline"] | None = None,
     ):
         try:
-            main_query = select(AppointmentModel).options(
-                joinedload(AppointmentModel.medical_record),
-                joinedload(AppointmentModel.work_schedule),
+            query_patient = (
+                select(PatientModel)
+                .distinct()
+                .join(PatientModel.appointments)
+                .join(AppointmentModel.work_schedule)
             )
-            # if examination_type:
-            #     main_query = main_query.where(
-            #         AppointmentModel.work_schedule.extension_type.like(
-            #             f"%{examination_type}%"
-            #         )
-            #     )
-
             if doctor_id:
-                main_query = main_query.where(
-                    AppointmentModel.doctor_id == doctor_id,
+                query_patient = query_patient.where(
+                    PatientModel.doctor_manage_id == doctor_id
                 )
-            if appointment_status:
-                main_query = main_query.where(
-                    AppointmentModel.status == appointment_status
-                )
-            # process code here
-            result_appoint_result = await self.session.execute(main_query)
-            appointment_model_temp = result_appoint_result.unique().scalars().all()
-            appointment_model = []
+
             if examination_type:
-                for item in appointment_model_temp:
-                    if item.work_schedule.examination_type == examination_type:
-                        appointment_model.append(item)
-            else:
-                appointment_model = appointment_model_temp
+                query_patient = query_patient.where(
+                    WorkScheduleModel.extension_type == examination_type
+                )
+            if status_order:
+                query_patient = query_patient.where(
+                    AppointmentModel.appointment_status.in_(status_order)
+                )
+            query_patient = query_patient.options(
+                joinedload(PatientModel.appointments).joinedload(
+                    AppointmentModel.work_schedule
+                )
+            )
+            # query_patient = query_patient.offset((current_page - 1) * page_size).limit(
+            #     page_size
+            # )
 
-            data_response = []
+            # Thực hiện truy vấn
+            result = await self.session.execute(query_patient)
 
-            # time_stamp_now = datetime.now(timezone.utc) + timedelta(hours=7)
-            for appointments in appointment_model:
+            patients_list = result.unique().scalars().all()
+            appointments = []
+            for item in patients_list:
+                for appoint in item.appointments:
+                    appointments.append(appoint)
+            now = datetime.now()
+
+            def time_to_seconds(t: time) -> int:
+                """Chuyển đổi thời gian thành số giây kể từ đầu ngày."""
+                return t.hour * 3600 + t.minute * 60 + t.second
+
+            sorted_appointments: list[AppointmentModel] = sorted(
+                appointments,
+                key=lambda a: (
+                    (
+                        status_order.index(a.appointment_status)
+                        if a.appointment_status in status_order
+                        else len(status_order)
+                    ),
+                    abs((a.work_schedule.work_date - now.date()).days),
+                    abs(
+                        time_to_seconds(a.work_schedule.start_time)
+                        - time_to_seconds(now.time())
+                    ),
+                ),
+            )
+            start_index = (current_page - 1) * page_size
+            end_index = start_index + page_size
+            # paging
+            sorted_appointments_limit = sorted_appointments[start_index:end_index]
+            # destruct object
+            custom_data_reponse = []
+            for appointments in sorted_appointments_limit:
                 item = {}
                 item["patient"] = appointments.patient.as_dict
                 item["work_schedule"] = {
@@ -687,15 +717,13 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                     "medical_examination_fee": appointments.work_schedule.medical_examination_fee,
                 }
                 item["appointment"] = appointments.as_dict
-                data_response.append(item)
-
+                custom_data_reponse.append(item)
             return {
-                "items": data_response,
-                "total_page": math.ceil(len(data_response) / page_size),
+                "items": custom_data_reponse,
+                "total_page": math.ceil(len(sorted_appointments) / page_size),
                 "current_page": current_page,
                 "page_size": page_size,
             }
-
         except SQLAlchemyError as e:
             logging.error(f"Error in get_patient_by_doctor_id: {e}")
             raise e
@@ -717,7 +745,9 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             if patient is None:
                 raise BadRequest(
                     error_code=ErrorCode.PATIENT_NOT_FOUND.name,
-                    errors={"message": "Patient not found"},
+                    errors={
+                        "message": "Patient not found or you not have permission to access this patient"
+                    },
                 )
             return patient.as_dict
 

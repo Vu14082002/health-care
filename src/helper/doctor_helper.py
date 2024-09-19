@@ -6,16 +6,13 @@ from typing import Any, Dict, List, Literal, Optional
 
 from sqlalchemy.exc import NoResultFound
 
-from src.core.exception import BadRequest
+from src.core.exception import BadRequest, InternalServer
 from src.enum import ErrorCode
 from src.models.doctor_model import DoctorModel, TypeOfDisease
 from src.models.work_schedule_model import WorkScheduleModel
 from src.repositories.doctor_repository import DoctorRepository
-from src.schema.doctor_schema import (
-    DoctorSchema,
-    ReponseGetAllDoctorsSchema,
-    RequestDoctorWorkScheduleNextWeek,
-)
+from src.schema.doctor_schema import (DoctorSchema, ReponseGetAllDoctorsSchema,
+                                      RequestDoctorWorkScheduleNextWeek)
 from src.schema.register import RequestRegisterDoctorSchema
 
 
@@ -264,6 +261,8 @@ class DoctorHelper:
                 status_order=status_order,
                 examination_type=examination_type,
             )
+        except (BadRequest, NoResultFound, InternalServer) as e:
+            raise e
         except Exception as e:
             logging.error(f"Error in get_patient_by_doctor_id: {e}")
             raise

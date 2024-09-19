@@ -82,7 +82,6 @@ class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
 
     async def create_medical_records(self, *, value: dict[str, Any]):
         try:
-
             query_medical_record = await self.session.execute(
                 select(MedicalRecordModel).where(
                     MedicalRecordModel.appointment_id == value["appointment_id"]
@@ -120,9 +119,7 @@ class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
                         "message": "The appointment is  completed, you can't create a medical record for it"
                     },
                 )
-            elif (
-                appointment.appointment_status != AppointmentModelStatus.APPROVED.value
-            ):
+            if appointment.appointment_status != AppointmentModelStatus.APPROVED.value:
                 raise BadRequest(
                     msg="Invalid appointment",
                     error_code=ErrorCode.INVALID_APPOINTMENT.name,
@@ -135,7 +132,7 @@ class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
             medical_record = await self.session.execute(
                 insert(MedicalRecordModel).values(value)
             )
-            appointment.appointment_status = "completed"
+            appointment.appointment_status = AppointmentModelStatus.COMPLETED.value
             await self.session.commit()
             return {
                 "message": "Medical record created successfully",
