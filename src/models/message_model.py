@@ -1,14 +1,11 @@
-import json
-from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING
 
-from pydantic import Json
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, ForeignKey, Integer
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
-from src.enum import FileMessageSchema, MessageContentSchema
+from src.enum import MessageContentSchema
 
 if TYPE_CHECKING:
     from src.models.conversation_model import ConversationModel
@@ -29,18 +26,13 @@ class MessageModel(Model):
     reply_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("message.id"), nullable=True
     )
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    message: Mapped[MessageContentSchema | None] = mapped_column(JSONB, nullable=True)
-
-    files: Mapped[List[FileMessageSchema] | None] = mapped_column(JSONB, default=[])
-
-    location: Mapped[Dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
-
-    sticker: Mapped[str | None] = mapped_column(String, nullable=True)
-
-    notification: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    message: Mapped[MessageContentSchema] = mapped_column(JSONB, nullable=True)
 
     # Relationships
     conversation: Mapped["ConversationModel"] = relationship(
         "ConversationModel", back_populates="messages"
     )
+
+    sender: Mapped["UserModel"] = relationship("UserModel", back_populates="messages")

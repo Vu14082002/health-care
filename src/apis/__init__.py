@@ -172,4 +172,5 @@ routes = [
         methods=["GET"],
         tags=["USER", "PATIENT", "DOCTOR", "ADMIN"],
     ),
+    # message
 ]

@@ -63,15 +63,9 @@ class AppointmentModelStatus(Enum):
     PROCESSING = "processing"
 
 
-class MessageContentObjectSchema(BaseModel):
-    content: str
-    type: Literal["tag", "text"]
-    tag: Optional[str]
-
-
 class MessageContentSchema(BaseModel):
+    type: Literal["img", "text", "video"]
     content: str
-    type: Literal["tag", "text"]
 
 
 class FileMessageSchema(BaseModel):

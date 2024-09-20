@@ -19,7 +19,6 @@ from src.core.logger import DefaultFormatter, logger
 from src.core.middlewares.header import HeadersMiddleware
 from src.core.middlewares.sqlalchemy import SQLAlchemyMiddleware
 from src.enum import ErrorCode
-from src.factory import Factory
 from src.swagger import SwaggerUI
 
 schemas = SchemaGenerator(
@@ -27,7 +26,10 @@ schemas = SchemaGenerator(
         "openapi": "3.0.0",
         "info": {"title": "Health Care", "version": "1.0"},
         # "servers": [{"url": "/" if config.ENV == "DEV" else config.PREFIX_URL}],
-        "servers": [{"url": "/"}, {"url": "/" if config.ENV == "DEV" else config.PREFIX_URL}],
+        "servers": [
+            {"url": "/"},
+            {"url": "/" if config.ENV == "DEV" else config.PREFIX_URL},
+        ],
         "components": {
             "securitySchemes": {
                 "bearerAuth": {
@@ -134,21 +136,21 @@ def openapi_schema(request):
     return schemas.OpenAPIResponse(request=request)
 
 
-routes.append(Route("/schema", endpoint=openapi_schema,
-              include_in_schema=False))
+routes.append(Route("/schema", endpoint=openapi_schema, include_in_schema=False))
 app = Application(
     routes=routes,
     lifespan=lifespan,
     middleware=[
         Middleware(SQLAlchemyMiddleware),
         Middleware(HeadersMiddleware),
-        Middleware(CORSMiddleware,
-                   allow_origins=["*"],
-                   allow_credentials=True,
-                   allow_methods=["*"],
-                   allow_headers=["*"],
-                   )
-    ]
+        Middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        ),
+    ],
 )
 SwaggerUI(
     app,
