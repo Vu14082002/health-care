@@ -9,6 +9,7 @@ from src.factory import Factory
 from src.schema.medical_records_schema import (
     RequestCreateMedicalRecordsSchema,
     RequestGetAllMedicalRecordsSchema,
+    RequestGetAppointmentByIdSchema,
     RequestUpdateMedicalRecordsSchema,
 )
 
@@ -85,6 +86,39 @@ class MedicalRecordsApiGET(HTTPEndpoint):
         return {"message": "this is not implemented yet"}
 
 
+class GetMedicalRecordByAppointId(HTTPEndpoint):
+    async def get(self, path_params: RequestGetAppointmentByIdSchema, auth: JsonWebToken):
+        try:
+            user_role = auth.get("role", "")
+            if user_role not in ["ADMIN", "PATIENT", "DOCTOR"]:
+                raise Forbidden(
+                    msg="Unauthorized access",
+                    error_code=ErrorCode.UNAUTHORIZED.name,
+                    errors={
+                        "message": "You don't have permission to access this resource"
+                    },
+                )
+            user_id = auth.get("id")
+            id = path_params.appointment_id
+
+            helper = await Factory().get_medical_records_helper()
+            result = await helper.get_medical_record_by_appointment_id(
+                user_id=user_id,
+                appointment_id=id,
+                role=user_role,
+            )
+            return result
+
+        except (BadRequest, Forbidden, InternalServer) as e:
+            raise e
+        except Exception as ex:
+            log.error(ex)
+            raise InternalServer(
+                msg="Internal server error",
+                error_code=ErrorCode.SERVER_ERROR.name,
+            ) from ex
+
+
 class MedicalRecordsApiPOST(HTTPEndpoint):
     async def post(
         self, form_data: RequestCreateMedicalRecordsSchema, auth: JsonWebToken
@@ -96,9 +130,7 @@ class MedicalRecordsApiPOST(HTTPEndpoint):
                 raise Forbidden(
                     msg="Unauthorized access",
                     error_code=ErrorCode.UNAUTHORIZED.name,
-                    errors={
-                        "message": "You are not authorized to access this resource"
-                    },
+                    errors={"message": "You are not authorized to access this resource"},
                 )
 
             value = form_data.model_dump()
@@ -118,9 +150,7 @@ class MedicalRecordsApiPOST(HTTPEndpoint):
                 errors={"message": "server is error, please try later"},
             ) from e
 
-    async def put(
-        self, form_data: RequestUpdateMedicalRecordsSchema, auth: JsonWebToken
-    ):
+    async def put(self, form_data: RequestUpdateMedicalRecordsSchema, auth: JsonWebToken):
         try:
             user_role = auth.get("role", "")
             user_id = auth.get("id")
@@ -128,9 +158,7 @@ class MedicalRecordsApiPOST(HTTPEndpoint):
                 raise Forbidden(
                     msg="Unauthorized access",
                     error_code=ErrorCode.UNAUTHORIZED.name,
-                    errors={
-                        "message": "You are not authorized to access this resource"
-                    },
+                    errors={"message": "You are not authorized to access this resource"},
                 )
 
             value = form_data.model_dump()

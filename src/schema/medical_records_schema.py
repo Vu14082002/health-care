@@ -115,3 +115,7 @@ class RequestUpdateMedicalRecordsSchema(BaseModel):
 
     class Config:
         json_encoders = {date: lambda v: v.isoformat()}
+
+
+class RequestGetAppointmentByIdSchema(BaseModel):
+    appointment_id: int

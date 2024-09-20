@@ -18,7 +18,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import joinedload
 
 from src.core.database.postgresql import PostgresRepository
-from src.core.exception import BadRequest
+from src.core.exception import BadRequest, InternalServer
 from src.enum import AppointmentModelStatus, ErrorCode
 from src.models.appointment_model import AppointmentModel
 from src.models.doctor_model import DoctorExaminationPriceModel, DoctorModel

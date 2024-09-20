@@ -20,7 +20,11 @@ from src.apis.docter_api import (
     StatisticalDoctorApi,
 )
 from src.apis.health_check import HealthCheck
-from src.apis.medical_records_api import MedicalRecordsApiGET, MedicalRecordsApiPOST
+from src.apis.medical_records_api import (
+    GetMedicalRecordByAppointId,
+    MedicalRecordsApiGET,
+    MedicalRecordsApiPOST,
+)
 from src.apis.working_time_api import (
     CreateDoctorWorkingTimeApi,
     DoctorEmptyWorkingSchedulingTimeApi,
@@ -135,6 +139,12 @@ routes = [
     RouteSwagger(
         "/appointment",
         AppointmentApiGET,
+        methods=["GET"],
+        tags=["PATIENT", "ADMIN", "DOCTOR"],
+    ),
+    RouteSwagger(
+        f"/appointment/{{appointment_id}}/medical-record",
+        GetMedicalRecordByAppointId,
         methods=["GET"],
         tags=["PATIENT", "ADMIN", "DOCTOR"],
     ),

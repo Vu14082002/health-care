@@ -3,11 +3,12 @@ import math
 from typing import Any, Dict
 
 from sqlalchemy import and_, exists, insert, select, update
+from sqlalchemy.orm import joinedload
 
 from src.core.database.postgresql import PostgresRepository, Transactional
 from src.core.exception import BadRequest, InternalServer
 from src.core.security.password import PasswordHandler
-from src.enum import ErrorCode
+from src.enum import ErrorCode, Role
 from src.models.appointment_model import AppointmentModel, AppointmentModelStatus
 from src.models.medical_records_model import MedicalRecordModel
 from src.repositories.global_func import destruct_where, process_orderby
@@ -190,6 +191,67 @@ class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
             raise e
         except Exception as e:
             await self.session.rollback()
+            logging.error(e)
+            raise InternalServer(
+                msg="Internal server error",
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": "Server error, please try again later"},
+            ) from e
+
+    async def get_medical_record_by_appointment_id(
+        self, user_id: int, appointment_id: int, role: str
+    ):
+        try:
+            query_data = (
+                select(MedicalRecordModel).where(
+                    MedicalRecordModel.appointment_id == appointment_id,
+                )
+                # .options(
+                #     joinedload(MedicalRecordModel.doctor_create),
+                #     joinedload(MedicalRecordModel.patient_id),
+                # )
+            )
+
+            result_query = await self.session.execute(query_data)
+            medical_record = result_query.scalar_one_or_none()
+            if medical_record is None:
+                raise BadRequest(
+                    msg="Invalid medical record",
+                    error_code=ErrorCode.INVALID_MEDICAL_RECORD.name,
+                    errors={
+                        "message": "The medical record does not exist, maybe appointment is not completed yet"
+                    },
+                )
+            item = medical_record.as_dict
+            if role in [Role.DOCTOR.name, Role.ADMIN.name]:
+                item.update(
+                    {
+                        "patient_id": {
+                            "first_name": medical_record.patient.first_name,
+                            "last_name": medical_record.patient.last_name,
+                            "phone_number": medical_record.patient.phone_number,
+                            "email": medical_record.patient.email,
+                            "address": medical_record.patient.address,
+                        }
+                    }
+                )
+            if role in [Role.PATIENT.name, Role.ADMIN.name]:
+                item.update(
+                    {
+                        "doctor_create_id": {
+                            "first_name": medical_record.doctor_create.first_name,
+                            "last_name": medical_record.doctor_create.last_name,
+                            "phone_number": medical_record.doctor_create.phone_number,
+                            "email": medical_record.doctor_create.email,
+                            "address": medical_record.doctor_create.address,
+                        }
+                    }
+                )
+            return item
+        except BadRequest as e:
+            logging.error(e)
+            raise e
+        except Exception as e:
             logging.error(e)
             raise InternalServer(
                 msg="Internal server error",

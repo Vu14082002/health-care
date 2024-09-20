@@ -80,3 +80,21 @@ class MedicalRecordsHelper:
                 error_code=ErrorCode.SERVER_ERROR.name,
                 errors={"message": "server is error, please try later"},
             ) from e
+
+    async def get_medical_record_by_appointment_id(
+        self, user_id: int, appointment_id: int, role: str
+    ):
+        try:
+            return await self.medical_records_repository.get_medical_record_by_appointment_id(
+                user_id, appointment_id, role
+            )
+        except (BadRequest, InternalServer) as e:
+            raise e
+        except Exception as e:
+            log.error(e)
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={
+                    "message": "Error when get medical record by appointment id,pls try later"
+                },
+            )
