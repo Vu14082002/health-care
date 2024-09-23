@@ -631,7 +631,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
 
             if examination_type:
                 query_patient = query_patient.where(
-                    WorkScheduleModel.extension_type == examination_type
+                    WorkScheduleModel.examination_type == examination_type
                 )
             if status_order:
                 query_patient = query_patient.where(

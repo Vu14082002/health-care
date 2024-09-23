@@ -1,3 +1,5 @@
 {
-    "cSpell.words": ["ondelete", "sqlalchemy", "uselist"]
+    "ruff.lineLength": 90,
+    "ruff.lint.select": ["C", "E", "F", "W"],
+    "ruff.configuration": "../pyproject.toml"
 }

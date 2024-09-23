@@ -195,12 +195,12 @@ class RequestDoctorPatientSchema(BaseModel):
     examination_type: Literal["online", "offline"] | None = Field(
         default=None,
         description="Type of examination. Default is online.",
-        examples=["online", "offline", "None"],
+        examples=["online", "offline", None],
     )
-    current_page: Optional[int] = Field(
+    current_page: int = Field(
         default=1, description="Page number to get, starting from 1.", examples=["1"]
     )
-    page_size: Optional[int] = Field(
+    page_size: int = Field(
         default=10, description="Number of items per page.", examples=["10"]
     )
     appointment_status: Optional[Literal["approved", "completed", "processing"]] = Field(
