@@ -173,13 +173,6 @@ class DoctorGetPatientsApi(HTTPEndpoint):
                 )
             if user_role == Role.DOCTOR.name:
                 query_params.doctor_id = auth.get("id")
-            if user_role == Role.ADMIN.name:
-                if not query_params.doctor_id:
-                    raise BadRequest(
-                        msg="Bad request",
-                        error_code=ErrorCode.BAD_REQUEST.name,
-                        errors={"message": "Doctor id is required"},
-                    )
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             doctor_id = query_params.doctor_id
             current_page = query_params.current_page
