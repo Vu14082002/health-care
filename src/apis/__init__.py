@@ -77,13 +77,6 @@ routes = [
     RouteSwagger(
         "/auth/logout", LogoutApi, methods=["POST"], tags=["ADMIN", "PATIENT", "DOCTOR"]
     ),
-    # ADMIN
-    RouteSwagger(
-        "/admin/patients",
-        PatientApi,
-        methods=["GET"],
-        tags=["ADMIN"],
-    ),
     # Doctor api
     RouteSwagger(
         "/doctor/working-time",
@@ -125,7 +118,7 @@ routes = [
         "/doctor/patients",
         DoctorGetPatientsApi,
         methods=["GET"],
-        tags=["ADMIN", "DOCTOR"],
+        tags=["DOCTOR", "ADMIN"],
     ),
     RouteSwagger(
         "/doctor/patient/{patient_id}",

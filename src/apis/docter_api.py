@@ -157,6 +157,10 @@ class GetDetailtDoctorById(HTTPEndpoint):
 
 class DoctorGetPatientsApi(HTTPEndpoint):
     async def get(self, query_params: RequestDoctorPatientSchema, auth: JsonWebToken):
+        """
+        this api using for get patient by doctor id if login user is doctor
+        if login user is admin, can get all patient
+        """
         try:
             user_role = auth.get("role")
             if user_role not in [Role.ADMIN.name, Role.DOCTOR.name]:
