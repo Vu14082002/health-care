@@ -57,35 +57,42 @@ class DoctorOtherVerifyApi(HTTPEndpoint):
     async def get(
         self, query_params: RequestGetAllDoctorsNotVerifySchema, auth: JsonWebToken
     ):
+        """
+        Get all doctor not verify by admin, only admin can access
+        have search by key_word, verify_status and pagination
+        """
         try:
-            if auth.get("role", "") != "ADMIN":
+            if auth.get("role") != Role.ADMIN.name:
                 raise Forbidden(
-                    msg="Unauthorized access",
                     error_code=ErrorCode.UNAUTHORIZED.name,
-                    errors={"message": "only admin can access"},
+                    errors={"message": "You are not authorized to access this resource"},
                 )
 
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
-            current_page = query_params.current_page if query_params.current_page else 0
-            page_size = query_params.page_size if query_params.page_size else 10
-            where = {"verify_status": 0}
-            if query_params.key_word:
-                where["$or"] = [
-                    {"first_name": {"$regex": query_params.key_word}},
-                    {"last_name": {"$regex": query_params.key_word}},
-                ]
-            if query_params.phone_number:
-                where["phone_number"] = query_params.phone_number
-            response_data = await doctor_helper.get_all_doctor(
-                current_page=current_page, page_size=page_size, where=where
+            current_page = query_params.current_page
+            page_size = query_params.page_size
+            where = {}
+            if query_params.verify_status is None:
+                where.update({"verify_status": {"$in": [0, 1]}})
+            else:
+                where.update({"verify_status": query_params.verify_status})
+
+            text_search = query_params.text_search
+            response_data = await doctor_helper.get_all_doctor_by_text_search(
+                current_page=current_page,
+                page_size=page_size,
+                text_search=text_search,
+                where=where,
             )
             return response_data
-        except Forbidden as e:
+        except (BadRequest, Forbidden) as e:
             raise e
         except Exception as e:
             log.error(f"Error: {e}")
             raise InternalServer(
-                msg="Internal server error", error_code=ErrorCode.SERVER_ERROR.name
+                msg="Internal server error",
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": "Error when get all doctor not verify"},
             ) from e
 
 

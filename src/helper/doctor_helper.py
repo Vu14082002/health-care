@@ -92,6 +92,38 @@ class DoctorHelper:
         except Exception as e:
             raise e
 
+    async def get_all_doctor_by_text_search(
+        self,
+        current_page: int = 1,
+        page_size: int = 10,
+        text_search: str | None = None,
+        where: dict[str, Any] | None = None,
+        order_by: dict[str, str] | None = None,
+    ):
+        try:
+            skip = (current_page - 1) * page_size
+            limit = page_size
+            _doctors = await self.doctor_repository.get_all(
+                skip=skip,
+                limit=limit,
+                where=where,
+                order_by=order_by,
+                text_search=text_search,
+            )
+            count_record = await self.doctor_repository.count_record(where)
+            total_page = math.ceil(count_record / limit)
+            return {
+                "data": _doctors,
+                "total_page": total_page,
+                "current_page": current_page,
+                "page_size": page_size,
+            }
+        except BadRequest as e:
+            logging.error(f"Error in get_all_doctor: {e}")
+            raise e
+        except Exception as e:
+            raise e
+
     async def get_doctor_by_id(self, doctor_id: int):
         try:
             doctor = await self.doctor_repository.get_doctor_with_ratings(

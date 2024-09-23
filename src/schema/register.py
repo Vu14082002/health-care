@@ -160,17 +160,34 @@ class RequestVerifyDoctorSchema(BaseModel):
 
 
 class RequestGetAllDoctorsNotVerifySchema(BaseModel):
-    key_word: str | None = None
-    phone_number: str | None = None
-    current_page: Optional[int] = Field(default=1)
-    page_size: Optional[int] = Field(default=10)
+    text_search: Optional[str] = Field(
+        default=None,
+        description="Search by full name or phone number",
+        examples=["John Doe", "0123456789", None],
+    )
+    current_page: int = Field(
+        default=1, description="Page number to get, starting from 1", examples=[1]
+    )
+    page_size: int = Field(
+        default=10, description="Number of items per page, default = 10", examples=[10]
+    )
+    verify_status: Optional[int] = Field(
+        default=None,
+        description="0: not verify, 1: verified step 1, if not assign, return all",
+        examples=[0, 1, None],
+    )
 
-    class Config:
-        json_schema_extra = {
-            "exclude": ["is_local_person", "type_of_disease", "verify_status"]
-        }
-        from_attributes = True
-        use_enum_values = True
+    @validator("verify_status", pre=True)
+    def verify_status_validator(cls, v):
+        if v is not None:
+            if isinstance(v, str):
+                if v.isdigit():
+                    v = int(v)
+                else:
+                    raise ValueError("Invalid verify status, must be 0 or 1")
+            if v not in [0, 1]:
+                raise ValueError("Invalid verify status, must be 0 or 1")
+        return v
 
 
 class RequestRegisterDoctorOfflineSchema(RequestRegisterDoctorSchema):

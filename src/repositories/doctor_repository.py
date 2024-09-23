@@ -33,6 +33,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         order_by: Optional[Dict[str, str]] = None,
         min_avg_rating: Optional[float] = None,
         min_rating_count: Optional[int] = None,
+        **kwargs: Any,
     ) -> List[Dict[str, Any]]:
         try:
             condition = destruct_where(self.model_class, where or {})
@@ -149,6 +150,22 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
 
             if min_rating_count is not None:
                 query = query.where(subquery.c.rating_count >= min_rating_count)
+
+            if kwargs.get("text_search") is not None:
+                text_search = kwargs.get("text_search").strip().lower()
+                data_text_search = text_search.split(" ")
+                query = query.where(
+                    or_(
+                        *[
+                            or_(
+                                self.model_class.first_name.ilike(f"%{name}%"),
+                                self.model_class.last_name.ilike(f"%{name}%"),
+                            )
+                            for name in data_text_search
+                        ],
+                        self.model_class.phone_number.ilike(f"%{text_search}%"),
+                    )
+                )
 
             # Handle sorting
             if order_by and "avg_rating" in order_by:

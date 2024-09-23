@@ -213,6 +213,11 @@ class RequestDoctorPatientSchema(BaseModel):
         description="Order of statuses for sorting. If value is None, default order is used.",
         examples=["approved&processing&completed"],
     )
+    text_search: str = Field(
+        default=None,
+        description="Search by patient name or phone number",
+        examples=["John Handsome", "0123456789"],
+    )
 
     @validator("status_order", pre=True, always=True)
     def parse_status_order(cls, value):
