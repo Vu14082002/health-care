@@ -1,6 +1,5 @@
 import logging
 import logging as log
-import math
 from datetime import date, datetime, time, timedelta
 from typing import Any, Dict, List, Literal
 
@@ -64,28 +63,24 @@ class DoctorHelper:
         self,
         current_page: int = 1,
         page_size: int = 10,
+        text_search: str | None = None,
         join_: set[str] | None = None,
         where: dict[str, Any] | None = None,
         order_by: dict[str, str] | None = None,
     ):
         try:
-
             skip = (current_page - 1) * page_size
             limit = page_size
 
-            _doctors = await self.doctor_repository.get_all(
-                skip, limit, join_, where, order_by
+            result = await self.doctor_repository.get_all(
+                skip=skip,
+                limit=limit,
+                join_=join_,
+                where=where,
+                order_by=order_by,
+                text_search=text_search,
             )
-
-            count_record = await self.doctor_repository.count_record(where)
-
-            total_page = math.ceil(count_record / limit)
-            return {
-                "data": _doctors,
-                "total_page": total_page,
-                "current_page": current_page,
-                "page_size": page_size,
-            }
+            return result
         except BadRequest as e:
             logging.error(f"Error in get_all_doctor: {e}")
             raise e
@@ -103,21 +98,14 @@ class DoctorHelper:
         try:
             skip = (current_page - 1) * page_size
             limit = page_size
-            _doctors = await self.doctor_repository.get_all(
+            result = await self.doctor_repository.get_all(
                 skip=skip,
                 limit=limit,
                 where=where,
                 order_by=order_by,
                 text_search=text_search,
             )
-            count_record = await self.doctor_repository.count_record(where)
-            total_page = math.ceil(count_record / limit)
-            return {
-                "data": _doctors,
-                "total_page": total_page,
-                "current_page": current_page,
-                "page_size": page_size,
-            }
+            return result
         except BadRequest as e:
             logging.error(f"Error in get_all_doctor: {e}")
             raise e

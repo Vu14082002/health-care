@@ -28,12 +28,27 @@ class DoctorSchema(BaseModel):
 
 class RequestGetAllDoctorsSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
-    key_word: str | None = None
-    phone_number: str | None = None
-    current_page: Optional[int] = Field(default=1)
-    page_size: Optional[int] = Field(default=10)
-    type_of_disease: Literal["online", "offline", "both"] | None = None
-    is_local_person: bool | None = None
+    text_search: Optional[str] = Field(
+        default=None,
+        description="Search by full name or phone number",
+        examples=["John Doe", "0123456789", None],
+    )
+    current_page: int = Field(
+        default=1, description="Page number to get, starting from 1", examples=[1]
+    )
+    page_size: int = Field(
+        default=10, description="Number of items per page, default = 10", examples=[10]
+    )
+    type_of_disease: Literal["online", "offline", "both"] | None = Field(
+        default=None,
+        description="Type of disease online,offline,both. Default is None. if not assign will get all",
+        examples=["online", "offline", "both", None],
+    )
+    is_local_person: bool | None = Field(
+        default=None,
+        description="True: local person, False: foreign person. Default is None. if not assign will get all",
+        examples=[True, False, None],
+    )
 
 
 class ReponseGetAllDoctorsSchema(BaseModel):

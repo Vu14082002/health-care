@@ -39,17 +39,13 @@ class GetAllDoctorApi(HTTPEndpoint):
                         {"type_of_disease": "offline"},
                         {"type_of_disease": "both"},
                     ]
-            if query_params.key_word:
-                where["$or"] = [
-                    {"first_name": {"$regex": query_params.key_word}},
-                    {"last_name": {"$regex": query_params.key_word}},
-                ]
-            if query_params.phone_number:
-                where["phone_number"] = query_params.phone_number
             if query_params.is_local_person is not None:
                 where["is_local_person"] = query_params.is_local_person
             response_data = await doctor_helper.get_all_doctor(
-                current_page=current_page, page_size=page_size, where=where
+                current_page=current_page,
+                page_size=page_size,
+                where=where,
+                text_search=query_params.text_search,
             )
 
             return response_data
@@ -82,15 +78,11 @@ class GetAllDoctorLocalAPi(HTTPEndpoint):
                     ]
                 else:
                     where["type_of_disease"] = query_params.type_of_disease
-            if query_params.key_word:
-                where["$or"] = [
-                    {"first_name": {"$regex": query_params.key_word}},
-                    {"last_name": {"$regex": query_params.key_word}},
-                ]
-            if query_params.phone_number:
-                where["phone_number"] = query_params.phone_number
             response_data = await doctor_helper.get_all_doctor(
-                current_page=current_page, page_size=page_size, where=where
+                current_page=current_page,
+                page_size=page_size,
+                where=where,
+                text_search=query_params.text_search,
             )
             return response_data
         except Exception as e:
@@ -124,15 +116,12 @@ class GetAllDoctorForeignAPi(HTTPEndpoint):
                     ]
                 else:
                     where["type_of_disease"] = query_params.type_of_disease
-            if query_params.key_word:
-                where["$or"] = [
-                    {"first_name": {"$regex": query_params.key_word}},
-                    {"last_name": {"$regex": query_params.key_word}},
-                ]
-            if query_params.phone_number:
-                where["phone_number"] = query_params.phone_number
+
             response_data = await doctor_helper.get_all_doctor(
-                current_page=current_page, page_size=page_size, where=where
+                current_page=current_page,
+                page_size=page_size,
+                where=where,
+                text_search=query_params.text_search,
             )
             return response_data
         except Exception as e:

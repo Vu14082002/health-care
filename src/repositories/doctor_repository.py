@@ -34,7 +34,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         min_avg_rating: Optional[float] = None,
         min_rating_count: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[Dict[str, Any]]:
+    ):
         try:
             condition = destruct_where(self.model_class, where or {})
             # subquery to get avg_rating and rating_count
@@ -182,11 +182,15 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             if other_order_expressions:
                 query = query.order_by(*other_order_expressions)
 
+            query_funccount = select(func.count(self.model_class.id)).select_from(query)
+            result_count = await self.session.execute(query_funccount)
+            total_pages = (result_count.scalar_one() + limit - 1) // limit
+            current_page: int = skip // limit + 1
             query = query.offset(skip).limit(limit)
 
             result = await self.session.execute(query)
             doctors = result.all()
-            return [
+            _doctors = [
                 {
                     **doctor[0].as_dict,
                     "avg_rating": doctor[1],
@@ -205,6 +209,13 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 }
                 for doctor in doctors
             ]
+
+            return {
+                "data": _doctors,
+                "total_page": total_pages,
+                "current_page": current_page,
+                "page_size": limit,
+            }
         except SQLAlchemyError as e:
             logging.error(f"Error in get_all: {e}")
             raise
