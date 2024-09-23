@@ -3,13 +3,11 @@ import logging as log
 from typing import Any, Dict
 
 from sqlalchemy import exists, select
-from sqlalchemy.orm import joinedload, selectinload
 
-from src.core.database.postgresql import PostgresRepository, Transactional
+from src.core.database.postgresql import PostgresRepository
 from src.core.exception import BadRequest
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
-from src.models.patient_model import PatientModel
 from src.models.user_model import Role, UserModel
 from src.repositories.global_func import destruct_where
 from src.schema.register import RequestAdminRegisterSchema

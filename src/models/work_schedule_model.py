@@ -1,11 +1,9 @@
-from datetime import date, datetime, time
-from math import e
+from datetime import date, time
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
     Date,
-    Enum,
     Float,
     ForeignKey,
     Integer,
@@ -16,7 +14,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
-from src.models.doctor_model import DoctorExaminationPriceModel, TypeOfDisease
+from src.enum import TypeOfDisease
 
 if TYPE_CHECKING:
     from . import AppointmentModel, DoctorModel

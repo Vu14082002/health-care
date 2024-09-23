@@ -1,20 +1,66 @@
 import logging
-from typing import Any, Dict
-
-from sqlalchemy import exists, insert, select
-
-from src.core.database.postgresql import PostgresRepository, Transactional
+from typing import Any
+from sqlalchemy.orm import joinedload
+from sqlalchemy import exists, func, select
+from src.core.database.postgresql import PostgresRepository
 from src.core.exception import BadRequest, InternalServer
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
-from src.models import patient_model
 from src.models.patient_model import PatientModel
 from src.models.user_model import Role, UserModel
-from src.repositories.global_func import destruct_where
 from src.schema.register import RequestRegisterPatientSchema
 
 
 class PatientRepository(PostgresRepository[PatientModel]):
+
+    async def get_all_patient(
+        self,
+        *,
+        skip: int = 0,
+        limit: int = 10,
+        where: dict[str, Any] = {},
+        order_by: dict[str, str] | None = None,
+    ):
+        # condition = destruct_where(PatientModel, where or {})
+
+        query_patient = select(PatientModel)
+        # if condition is not None:
+        #     query_patient = query_patient.where(condition)
+
+        amount_query = select(func.count(PatientModel.id)).select_from(query_patient)
+        query_patient = (
+            query_patient.options(joinedload(PatientModel.doctor_manage))
+            .offset(skip)
+            .limit(limit)
+        )
+
+        result_amount = await self.session.execute(amount_query)
+        page_size: int = limit
+        total_pages = (result_amount.scalar_one() + page_size - 1) // page_size
+        current_page: int = skip // limit + 1
+
+        result_patient = await self.session.execute(query_patient)
+        result_patient = result_patient.unique().scalars().all()
+
+        items = [
+            {
+                **{
+                    key: value
+                    for key, value in element.as_dict.items()
+                    if key != "doctor_manage_id"
+                },
+                "doctor_manager": (
+                    element.doctor_manage.as_dict if element.doctor_manage else None
+                ),
+            }
+            for element in result_patient
+        ]
+        return {
+            "items": items,
+            "total_page": total_pages,
+            "current_page": current_page,
+            "page_size": page_size,
+        }
 
     async def insert_patient(self, data: RequestRegisterPatientSchema) -> PatientModel:
         try:
@@ -45,8 +91,10 @@ class PatientRepository(PostgresRepository[PatientModel]):
                 password_hash=password_hash,
                 role=Role.PATIENT.value,
             )
+            self.session.add(user_model)
+            await self.session.flush()
             patient_data = data.model_dump(exclude={"password_hash"})
-            patient_model = PatientModel(**patient_data, user=user_model)
+            patient_model = PatientModel(id=user_model.id, **patient_data)
 
             self.session.add(patient_model)
             await self.session.commit()

@@ -1,13 +1,10 @@
 import logging as log
-from datetime import date, datetime, time, timedelta
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any
 
-from sqlalchemy.exc import NoResultFound
 
 from src.core.exception import BadRequest, InternalServer
 from src.enum import ErrorCode
 from src.repositories.medical_records_repository import MedicalRecordsRepository
-from src.schema.medical_records_schema import RequestCreateMedicalRecordsSchema
 
 
 class MedicalRecordsHelper:

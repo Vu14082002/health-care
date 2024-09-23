@@ -1,5 +1,3 @@
-from typing import Any, Dict, List
-
 from src.core.exception import BadRequest
 from src.repositories.appointment_repository import AppointmentRepository
 

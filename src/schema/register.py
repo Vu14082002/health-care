@@ -1,17 +1,10 @@
 import json
-import re
 from datetime import date
 from typing import Any, Literal, Optional
-from uuid import UUID
 
-from click import File
-from pydantic import BaseModel, ConfigDict, Field, field_serializer, validator
-from starlette.datastructures import UploadFile
+from pydantic import BaseModel, ConfigDict, Field, validator
 
 from src.enum import TypeOfDisease
-from src.lib.postgres import Base
-from src.models.doctor_model import TypeOfDisease
-from src.models.user_model import Role
 
 
 class RequestRegisterPatientSchema(BaseModel):
@@ -92,7 +85,7 @@ class RequestRegisterDoctorSchema(BaseModel):
             if json_data.get("data"):
                 data = Education(data=json_data.get("data"))
                 return data
-            raise ValueError(f"Invalid education data")
+            raise ValueError("Invalid education data")
 
     @validator("diploma", pre=True)
     def check_diploma(cls, v):
@@ -101,7 +94,7 @@ class RequestRegisterDoctorSchema(BaseModel):
             if json_data.get("data"):
                 data = Diploma(data=json_data.get("data"))
                 return data
-            raise ValueError(f"Invalid diploma data")
+            raise ValueError("Invalid diploma data")
 
 
 class RequestRegisterDoctorForeignSchema(RequestRegisterDoctorSchema):
@@ -111,8 +104,9 @@ class RequestRegisterDoctorForeignSchema(RequestRegisterDoctorSchema):
 class RequestRegisterDoctorLocalSchema(RequestRegisterDoctorSchema):
     offline_price: Optional[float] = None
     online_price: Optional[float] = None
-    type_of_disease: Literal[TypeOfDisease.BOTH.value,
-                             TypeOfDisease.OFFLINE.value, TypeOfDisease.ONLINE.value]
+    type_of_disease: Literal[
+        TypeOfDisease.BOTH.value, TypeOfDisease.OFFLINE.value, TypeOfDisease.ONLINE.value
+    ]
 
     is_local_person: bool
 
@@ -121,28 +115,35 @@ class RequestRegisterDoctorLocalSchema(RequestRegisterDoctorSchema):
         offline_price = values.get("offline_price")
         online_price = values.get("online_price")
 
-        if v not in [TypeOfDisease.BOTH.value, TypeOfDisease.OFFLINE.value, TypeOfDisease.ONLINE.value]:
+        if v not in [
+            TypeOfDisease.BOTH.value,
+            TypeOfDisease.OFFLINE.value,
+            TypeOfDisease.ONLINE.value,
+        ]:
             raise ValueError(
-                f"Invalid type of disease, type_of_disease should be one of {TypeOfDisease.BOTH.value}, {TypeOfDisease.OFFLINE.value}, {TypeOfDisease.ONLINE.value}")
+                f"Invalid type of disease, type_of_disease should be one of {TypeOfDisease.BOTH.value}, {TypeOfDisease.OFFLINE.value}, {TypeOfDisease.ONLINE.value}"
+            )
 
         if v == TypeOfDisease.OFFLINE.value:
             if offline_price is None or offline_price <= 0:
-                raise ValueError(f"Missing or invalid offline price")
+                raise ValueError("Missing or invalid offline price")
             if online_price is not None:
-                raise ValueError(
-                    f"Online price should not be set for offline-only type")
+                raise ValueError("Online price should not be set for offline-only type")
 
         elif v == TypeOfDisease.ONLINE.value:
             if online_price is None or online_price <= 0:
-                raise ValueError(f"Missing or invalid online price")
+                raise ValueError("Missing or invalid online price")
             if offline_price is not None:
-                raise ValueError(
-                    f"Offline price should not be set for online-only type")
+                raise ValueError("Offline price should not be set for online-only type")
 
         elif v == TypeOfDisease.BOTH.value:
-            if offline_price is None or offline_price <= 0 or online_price is None or online_price <= 0:
-                raise ValueError(
-                    f"Missing or invalid offline/online price for both types")
+            if (
+                offline_price is None
+                or offline_price <= 0
+                or online_price is None
+                or online_price <= 0
+            ):
+                raise ValueError("Missing or invalid offline/online price for both types")
 
         return v
 
@@ -150,8 +151,7 @@ class RequestRegisterDoctorLocalSchema(RequestRegisterDoctorSchema):
     def check_is_local_person(cls, v, values):
         type_of_disease = values.get("type_of_disease")
         if v == False and type_of_disease == TypeOfDisease.OFFLINE.value:
-            raise ValueError(
-                f"Offline type of disease is not allowed for foreign doctor")
+            raise ValueError("Offline type of disease is not allowed for foreign doctor")
         return v
 
 
@@ -175,8 +175,7 @@ class RequestGetAllDoctorsNotVerifySchema(BaseModel):
 
 class RequestRegisterDoctorOfflineSchema(RequestRegisterDoctorSchema):
     is_local_person: bool = Field(default=True)
-    type_of_disease: Literal["offline"] = Field(
-        default=TypeOfDisease.OFFLINE.value)
+    type_of_disease: Literal["offline"] = Field(default=TypeOfDisease.OFFLINE.value)
     verify_status: int = Field(default=2)
     offline_price: float
 
@@ -188,8 +187,7 @@ class RequestRegisterDoctorOfflineSchema(RequestRegisterDoctorSchema):
 
 class RequestRegisterDoctorBothSchema(RequestRegisterDoctorSchema):
     is_local_person: bool = Field(default=True)
-    type_of_disease: Literal["both"] = Field(
-        default=TypeOfDisease.BOTH.value)
+    type_of_disease: Literal["both"] = Field(default=TypeOfDisease.BOTH.value)
     verify_status: int = Field(default=2)
     offline_price: float
     online_price: float

@@ -1,44 +1,18 @@
 import logging
 import math
-from collections import defaultdict
-from curses.ascii import isdigit
-from datetime import date, datetime, time, timedelta, timezone
-from re import I, M
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Sequence, Tuple
+from datetime import date, datetime, time, timedelta
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
-from sqlalchemy import (
-    Result,
-    Row,
-    and_,
-    asc,
-    case,
-    delete,
-    desc,
-    distinct,
-    exists,
-    func,
-    not_,
-    or_,
-    select,
-)
+from sqlalchemy import Result, Row, and_, asc, case, desc, exists, func, not_, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 
-from src.config import config
-from src.core.cache.redis_backend import RedisBackend
 from src.core.database.postgresql import PostgresRepository
-from src.core.exception import BadRequest, Forbidden
+from src.core.exception import BadRequest, InternalServer
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
-from src.lib.exception import InternalServer
-from src.models import work_schedule_model
 from src.models.appointment_model import AppointmentModel
-from src.models.doctor_model import (
-    DoctorExaminationPriceModel,
-    DoctorModel,
-    TypeOfDisease,
-)
-from src.models.medical_records_model import MedicalRecordModel
+from src.models.doctor_model import DoctorExaminationPriceModel, DoctorModel
 from src.models.patient_model import PatientModel
 from src.models.rating_model import RatingModel
 from src.models.user_model import Role, UserModel
@@ -46,7 +20,6 @@ from src.models.work_schedule_model import WorkScheduleModel
 from src.repositories.global_func import destruct_where, process_orderby
 from src.repositories.global_helper_repository import redis_working
 from src.schema.doctor_schema import RequestDoctorWorkScheduleNextWeek
-from src.schema.register import RequestRegisterDoctorSchema
 
 
 class DoctorRepository(PostgresRepository[DoctorModel]):
@@ -232,9 +205,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             doctor_model = self._create_doctor_model(data, user_model)
 
             self.session.add(doctor_model)
-            await self.session.flush()  # This will assign an ID to the doctor_model
-
-            # Create and add the examination price
+            await self.session.flush()
             examination_price = self._create_examination_price(data, doctor_model.id)
             self.session.add(examination_price)
 
@@ -385,14 +356,11 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         self, doctor_id: int, data: RequestDoctorWorkScheduleNextWeek
     ) -> Dict[str, Any]:
         try:
-            # check have permit create te working
             doctor_check = select(DoctorModel).where(DoctorModel.id == doctor_id)
 
             data_check = await self.session.execute(doctor_check)
             data_check_model = data_check.scalar_one_or_none()
-
             if data_check_model is None:
-                await self.session.rollback()
                 raise BadRequest(
                     error_code=ErrorCode.DOCTOR_NOT_FOUND.name,
                     errors={"message": "doctor not found"},
@@ -416,7 +384,8 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             for daily_schedule in data.work_schedule:
                 for time_slot in daily_schedule.time_slots:
                     existing_schedules = await self.session.execute(
-                        select(WorkScheduleModel).where(
+                        select(WorkScheduleModel)
+                        .where(
                             and_(
                                 WorkScheduleModel.doctor_id == doctor_id,
                                 WorkScheduleModel.work_date == daily_schedule.work_date,
@@ -424,10 +393,29 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                                 == data.examination_type,
                             )
                         )
+                        .options(
+                            joinedload(WorkScheduleModel.appointment),
+                        )
                     )
                     existing_schedules = existing_schedules.scalars().all()
 
                     for existing_schedule in existing_schedules:
+                        if existing_schedule.appointment:
+                            raise BadRequest(
+                                error_code=ErrorCode.SCHEDULE_CONFLICT.name,
+                                errors={
+                                    "message": "Conflicts detected with existing appointments",
+                                    "conflicts": [
+                                        {
+                                            "work_date": existing_schedule.work_date.isoformat(),
+                                            "start_time": existing_schedule.start_time.isoformat(),
+                                            "end_time": existing_schedule.end_time.isoformat(),
+                                            "examination_type": existing_schedule.examination_type,
+                                        }
+                                    ],
+                                    "appointment_ids": existing_schedule.appointment.as_dict,
+                                },
+                            )
                         await self.session.delete(existing_schedule)
 
                     query_doctor_model = (
@@ -438,7 +426,6 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                     doctor_model = await self.session.execute(query_doctor_model)
                     doctor_model = doctor_model.unique().scalar_one_or_none()
                     if doctor_model is None:
-                        await self.session.rollback()
                         raise BadRequest(
                             error_code=ErrorCode.DOCTOR_NOT_FOUND.name,
                             msg="Doctor not found",
@@ -456,7 +443,6 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             conflicts = await self._check_schedule_conflicts(doctor_id, new_schedules)
 
             if conflicts:
-                await self.session.rollback()
                 raise BadRequest(
                     error_code=ErrorCode.SCHEDULE_CONFLICT.name,
                     errors={
@@ -464,29 +450,18 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                         "conflicts": conflicts,
                     },
                 )
-
             self.session.add_all(new_schedules)
             await self.session.commit()
             return {"message": "Work schedule updated successfully"}
-
-        except (BadRequest, Forbidden) as e:
-            logging.error(f"Error in add_workingschedule: {e}")
+        except BadRequest as e:
+            await self.session.rollback()
             raise e
-        except SQLAlchemyError as e:
-            logging.error(f"Error in add_workingschedule: {e}")
+        except Exception:
             await self.session.rollback()
-            raise BadRequest(
-                msg="Failed to update work schedule",
+            raise InternalServer(
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": f"Error in add_workingschedule: {e}"},
-            ) from e
-        except Exception as e:
-            logging.error(f"Error in add_workingschedule: {e}")
-            await self.session.rollback()
-            raise BadRequest(
-                msg="Failed to update work schedule",
-                error_code=ErrorCode.SERVER_ERROR.name,
-            ) from e
+                errors={"message": "Unexpected error"},
+            )
 
     async def _check_schedule_conflicts(
         self, doctor_id: int, new_schedules: List[WorkScheduleModel]

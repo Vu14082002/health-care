@@ -1,9 +1,6 @@
 import logging as log
-from calendar import c
 
-from regex import F
 
-from src.apis import appointment
 from src.core import HTTPEndpoint
 from src.core.exception import BadRequest, Forbidden, InternalServer
 from src.core.security import JsonWebToken
@@ -14,12 +11,7 @@ from src.schema.doctor_schema import (
     RequestDetailDoctorSchema,
     RequestDoctorPatientByIdSchema,
     RequestDoctorPatientSchema,
-    RequestDoctorWorkScheduleNextWeek,
     RequestGetAllDoctorsSchema,
-    RequestGetUncenteredTimeSchema,
-    RequestGetWorkingTimeSchema,
-    RequestUpdateDoctorSchema,
-    RequestUpdatePathParamsSchema,
 )
 
 

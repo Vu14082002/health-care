@@ -15,16 +15,14 @@ class Config(BaseSettings):
     BROKER_URL: str = Field(alias="broker_url")
     CELERY_ROUTES: dict = Field(
         default={
-            "worker.on_admin_action": {"queue": "ait.admin_queue"}, },
+            "worker.on_admin_action": {"queue": "admin_queue"},
+        },
         alias="task_routes",
     )
     CELERY_IMPORTS: list = Field(default=["src.tasks"], alias="imports")
-    CELERY_RESULT_BACKEND: str = Field(
-        default="rpc://", alias="result_backend")
-    CELERY_TRACK_STARTED: bool = Field(
-        default=True, alias="task_track_started")
-    CELERY_RESULT_PERSISTENT: bool = Field(
-        default=True, alias="result_persistent")
+    CELERY_RESULT_BACKEND: str = Field(default="rpc://", alias="result_backend")
+    CELERY_TRACK_STARTED: bool = Field(default=True, alias="task_track_started")
+    CELERY_RESULT_PERSISTENT: bool = Field(default=True, alias="result_persistent")
 
     POSTGRES_URL_MASTER: str
     POSTGRES_URL_SLAVE: str
@@ -34,10 +32,10 @@ class Config(BaseSettings):
     ACCESS_TOKEN: str
     REFRESH_TOKEN: str
     ALGORITHM: str
-    SELF_URL: str = ''
-    API_KEY: str = ''
-    ACCOUNT_SID: str = ''
-    AUTH_TOKEN: str = ''
+    SELF_URL: str = ""
+    API_KEY: str = ""
+    ACCOUNT_SID: str = ""
+    AUTH_TOKEN: str = ""
     S3_BUCKET: str
     S3_KEY: str
     S3_SECRET: str

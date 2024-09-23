@@ -1,21 +1,13 @@
-import json
 from datetime import date, datetime, time, timedelta
-from math import e
-from typing import Annotated, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    field_serializer,
-    field_validator,
-    model_validator,
     validator,
 )
-from starlette.datastructures import UploadFile
-from typing_extensions import Any, Literal
-
-from src.enum import AppointmentModelStatus
+from typing_extensions import Literal
 
 
 class DoctorSchema(BaseModel):
@@ -122,9 +114,20 @@ class DailySchedule(BaseModel):
 
 
 class RequestDoctorWorkScheduleNextWeek(BaseModel):
-    doctor_id: Optional[int] = None
-    work_schedule: List[DailySchedule]
-    examination_type: Literal["online", "offline"]
+    doctor_id: Optional[int] = Field(
+        default=None,
+        description="If role login is ADMIN then doctor_id is required",
+        examples=[1],
+    )
+    work_schedule: List[DailySchedule] = Field(
+        ...,
+        description="List of daily schedules for the next week",
+        examples=["will be added"],
+    )
+    examination_type: Literal["online", "offline"] = Field(
+        description="is type of examination, online or offline",
+        examples=["online", "offline"],
+    )
 
     # @validator('work_schedule')
     # def validate_work_schedule(cls, v):
@@ -200,12 +203,10 @@ class RequestDoctorPatientSchema(BaseModel):
     page_size: Optional[int] = Field(
         default=10, description="Number of items per page.", examples=["10"]
     )
-    appointment_status: Optional[Literal["approved", "completed", "processing"]] = (
-        Field(
-            default=None,
-            description="If value is None, then get all appointments.",
-            examples=["approved", "completed", "processing", " None"],
-        )
+    appointment_status: Optional[Literal["approved", "completed", "processing"]] = Field(
+        default=None,
+        description="If value is None, then get all appointments.",
+        examples=["approved", "completed", "processing", " None"],
     )
     status_order: Optional[Tuple[str, ...]] = Field(
         default=("approved", "processing", "completed"),

@@ -1,13 +1,10 @@
-from datetime import datetime
 from enum import Enum as PyEnum
 from typing import TYPE_CHECKING, List
 
-from pyexpat.errors import messages
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String
+from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
-from src.models import conversation_model
 
 if TYPE_CHECKING:
     from src.models.conversation_model import ConversationUserModel
@@ -35,12 +32,19 @@ class UserModel(Model):
     role: Mapped[str] = mapped_column(String, nullable=False, default=Role.PATIENT.value)
 
     doctor: Mapped["DoctorModel"] = relationship(
-        "DoctorModel", uselist=False, back_populates="user", lazy="joined"
+        "DoctorModel",
+        uselist=False,
+        back_populates="user",
+        lazy="joined",
+        foreign_keys="[DoctorModel.id]",
     )
     patient: Mapped["PatientModel"] = relationship(
-        "PatientModel", uselist=False, back_populates="user", lazy="joined"
+        "PatientModel",
+        uselist=False,
+        back_populates="user",
+        lazy="joined",
+        foreign_keys="[PatientModel.id]",
     )
-
     notifications: Mapped[List["NotificationModel"]] = relationship(
         "NotificationModel", back_populates="user"
     )

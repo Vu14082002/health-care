@@ -1,4 +1,3 @@
-from src.core.exception import BadRequest, InternalServer
 from src.repositories.message_repository import MessageRepository
 
 

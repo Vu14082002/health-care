@@ -1,8 +1,6 @@
-from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List
 
-from sqlalchemy import JSON, Boolean, Column, ForeignKey, Integer, String
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
@@ -15,14 +13,19 @@ if TYPE_CHECKING:
 class ConversationModel(Model):
     __tablename__ = "conversation"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
 
     messages: Mapped[List["MessageModel"]] = relationship(
-        "MessageModel", back_populates="conversation"
+        "MessageModel",
+        back_populates="conversation",
+        order_by="desc(MessageModel.created_at)",
     )
     users: Mapped[List["ConversationUserModel"]] = relationship(
         "ConversationUserModel", back_populates="conversation"
     )
+
+    @property
+    def latest_message(self) -> "MessageModel | None":
+        return self.messages[0] if self.examination_prices else None
 
 
 class ConversationUserModel(Model):
@@ -30,7 +33,9 @@ class ConversationUserModel(Model):
     conversation_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("conversation.id"), primary_key=True
     )
+
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"), primary_key=True)
+
     conversation: Mapped[ConversationModel] = relationship(
         "ConversationModel", back_populates="users"
     )

@@ -4,15 +4,13 @@ import jwt
 
 from src.config import config
 from src.core.cache.redis_backend import RedisBackend
-from src.core.database.postgresql import Transactional
 from src.core.exception import Unauthorized
 from src.core.security.authentication import JsonWebToken
 from src.core.security.password import PasswordHandler
 from src.enum import CACHE_ACCESS_TOKEN, CACHE_REFRESH_TOKEN, ErrorCode, Role
-from src.models.patient_model import PatientModel
 from src.models.user_model import UserModel
 from src.repositories import UserRepository
-from src.schema.register import RequestAdminRegisterSchema, RequestLoginSchema
+from src.schema.register import RequestAdminRegisterSchema
 
 redis = RedisBackend(config.REDIS_URL)
 
@@ -38,11 +36,14 @@ class UserHelper:
     async def _authenticate_user(self, phone_number: str, password: str) -> UserModel:
         user = await self.user_repository.get_one({"phone_number": phone_number})
         if user is None:
-            raise Unauthorized(msg="Phone number is not registered",
-                               error_code=ErrorCode.UNAUTHORIZED.name)
+            raise Unauthorized(
+                msg="Phone number is not registered",
+                error_code=ErrorCode.UNAUTHORIZED.name,
+            )
         if not PasswordHandler.verify(user.password_hash, plain_password=password):
-            raise Unauthorized(msg="Password is incorrect",
-                               error_code=ErrorCode.UNAUTHORIZED.name)
+            raise Unauthorized(
+                msg="Password is incorrect", error_code=ErrorCode.UNAUTHORIZED.name
+            )
         return user
 
     # def _generate_token_for_role(self, user: UserModel) -> Dict[str, str]:
@@ -73,8 +74,9 @@ class UserHelper:
         }
 
     async def logout(self, token: str, *args: Any, **kwargs: dict[str, Any]):
-        _decode = jwt.decode(jwt=token, key=config.ACCESS_TOKEN,
-                             algorithms=[config.ALGORITHM])
+        _decode = jwt.decode(
+            jwt=token, key=config.ACCESS_TOKEN, algorithms=[config.ALGORITHM]
+        )
         payload = _decode.get("payload", {})
         phone_number = payload.get("phone_number")
         if phone_number:

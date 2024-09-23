@@ -1,5 +1,5 @@
 import logging as log
-from datetime import date, datetime, time, timedelta
+from datetime import datetime, time
 
 from src.core import HTTPEndpoint
 from src.core.exception import BadRequest, Forbidden, InternalServer

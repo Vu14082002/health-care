@@ -1,10 +1,7 @@
-
 # -*- coding: utf-8 -*-
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, Union
 
-from sqlalchemy import (Float, Integer, and_, asc, cast, desc, func, not_, or_,
-                        select, text)
-from sqlalchemy.sql.elements import UnaryExpression
+from sqlalchemy import and_, asc, desc, func, not_, or_, text
 from sqlalchemy.sql.expression import between
 
 from src.core.database.postgresql import Model
@@ -20,7 +17,7 @@ def destruct_where(model_class: Model, where: Dict[str, Any]) -> Union[Any, None
     Returns:
         _type_: _description_
     """
-    if where is not {}:
+    if where != {}:
         return process_condition(model_class, where)
     return None
 
@@ -41,12 +38,10 @@ def process_condition(model_class: Model, condition):
     conditions = []
     for key, value in condition.items():
         if key == "$or":
-            or_conditions: Any = [process_condition(
-                model_class, cond) for cond in value]
+            or_conditions: Any = [process_condition(model_class, cond) for cond in value]
             conditions.append(or_(*or_conditions))
         elif key == "$and":
-            and_conditions: Any = [process_condition(
-                model_class, cond) for cond in value]
+            and_conditions: Any = [process_condition(model_class, cond) for cond in value]
             conditions.append(and_(*and_conditions))
         elif key.startswith("$"):
             conditions.append(process_operator(model_class, key, value))
@@ -57,7 +52,11 @@ def process_condition(model_class: Model, condition):
             else:
                 conditions.append(column == value)
 
-    return and_(*conditions) if len(conditions) > 1 else conditions[0] if conditions else True
+    return (
+        and_(*conditions)
+        if len(conditions) > 1
+        else conditions[0] if conditions else True
+    )
 
 
 def process_column_operators(column, operators):
@@ -143,11 +142,12 @@ def process_operator(model_class, operator, value):
         return func.mod(getattr(model_class, column), divisor) == remainder
     elif operator == "$text":
         # Simplified text search
-        return func.to_tsvector('english', getattr(model_class, value['$search'])).match(value['$search'])
+        return func.to_tsvector("english", getattr(model_class, value["$search"])).match(
+            value["$search"]
+        )
     elif operator == "$where":
         # This would require more complex handling and might be a security risk
-        raise NotImplementedError(
-            "$where is not implemented for security reasons")
+        raise NotImplementedError("$where is not implemented for security reasons")
     else:
         raise ValueError(f"Unsupported operator: {operator}")
 

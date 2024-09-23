@@ -1,4 +1,3 @@
-from src.lib.logger import logger
 import socketio
 import engineio
 
@@ -34,7 +33,7 @@ class SocketIoServer:
     def route(
         self,
         path: str = "test",
-        name_space = _BaseAsyncNameSpace,
+        name_space=_BaseAsyncNameSpace,
         *args,
         **kwargs,
     ) -> None:

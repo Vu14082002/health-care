@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict
@@ -49,37 +49,33 @@ class MedicalHistorySchema(BaseModel):
     mine: MedicalHistoryMine
     family: str | None
 
+
 # lich su kham benh
 
 
 class MedicalRecordModel(Model):
     __tablename__ = "medical_record"
 
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
-    patient_id: Mapped[int] = mapped_column(
-        ForeignKey("patient.id"), nullable=False)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patient.id"), nullable=False)
 
-    doctor_create_id: Mapped[int] = mapped_column(
-        ForeignKey("doctor.id"), nullable=False)
+    doctor_create_id: Mapped[int] = mapped_column(ForeignKey("doctor.id"), nullable=False)
 
-    doctor_read_id: Mapped[int] = mapped_column(
-        ForeignKey("doctor.id"), nullable=False)
+    doctor_read_id: Mapped[int] = mapped_column(ForeignKey("doctor.id"), nullable=False)
 
     appointment_id: Mapped[int] = mapped_column(
-        ForeignKey("appointment.id"), nullable=False, unique=True)
+        ForeignKey("appointment.id"), nullable=False, unique=True
+    )
 
     # ly do kham benh
     reason: Mapped[str] = mapped_column(Text, nullable=True)
 
     # Vao ngay thu may cua benh: null True boi vi co the chi di kham suc khoe
-    quantity_day_medical: Mapped[int] = mapped_column(
-        Integer, nullable=True)
+    quantity_day_medical: Mapped[int] = mapped_column(Integer, nullable=True)
 
     # tien su benh
-    medical_history: Mapped[MedicalHistorySchema] = mapped_column(
-        JSONB, nullable=False)
+    medical_history: Mapped[MedicalHistorySchema] = mapped_column(JSONB, nullable=False)
 
     # qua trinh benh ly
     pathological_process: Mapped[str] = mapped_column(Text, nullable=False)
@@ -94,10 +90,8 @@ class MedicalRecordModel(Model):
     clinical_tests: Mapped[str] = mapped_column(Text, nullable=True)
 
     main_defense: Mapped[str] = mapped_column(Text, nullable=False, default="")
-    secondary_diseases: Mapped[str] = mapped_column(
-        Text, nullable=False, default="")
-    treatment_results: Mapped[str] = mapped_column(
-        Text, nullable=False, default="")
+    secondary_diseases: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    treatment_results: Mapped[str] = mapped_column(Text, nullable=False, default="")
     #  tom tat benh
     medical_summary: Mapped[str] = mapped_column(Text, nullable=True)
 
@@ -105,32 +99,32 @@ class MedicalRecordModel(Model):
     treatment_plan: Mapped[str] = mapped_column(Text, nullable=True)
 
     # ngat ket thuc dieu tri
-    end_date_treatment: Mapped[date] = mapped_column(
-        Date, nullable=False)
+    end_date_treatment: Mapped[date] = mapped_column(Date, nullable=False)
 
     # don thuoc
-    prescription: Mapped[PrescriptionSchema] = mapped_column(
-        JSONB, nullable=True)
+    prescription: Mapped[PrescriptionSchema] = mapped_column(JSONB, nullable=True)
 
     # One to One
     appointment: Mapped["AppointmentModel"] = relationship(
-        "AppointmentModel", back_populates="medical_record", lazy="joined")
+        "AppointmentModel", back_populates="medical_record", lazy="joined"
+    )
 
     # Many to one
     patient: Mapped["PatientModel"] = relationship(
-        "PatientModel", back_populates="medical_records", lazy="joined")
+        "PatientModel", back_populates="medical_records", lazy="joined"
+    )
 
     # Many to one
     doctor_create: Mapped["DoctorModel"] = relationship(
         "DoctorModel",
         back_populates="medical_records_create",
         lazy="joined",
-        foreign_keys=[doctor_create_id]
+        foreign_keys=[doctor_create_id],
     )
 
     doctor_read: Mapped["DoctorModel"] = relationship(
         "DoctorModel",
         back_populates="medical_records_read",
         lazy="joined",
-        foreign_keys=[doctor_read_id]
+        foreign_keys=[doctor_read_id],
     )

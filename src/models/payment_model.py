@@ -1,7 +1,7 @@
 import enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
@@ -25,18 +25,19 @@ class PaymentMethod(enum.Enum):
 class PaymentModel(Model):
     __tablename__ = "payment"
 
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     appointment_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey('appointment.id'), nullable=False)
+        Integer, ForeignKey("appointment.id"), nullable=False
+    )
 
     amount: Mapped[float] = mapped_column(Float, nullable=False)
 
     payment_time: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
 
     payment_method: Mapped[str] = mapped_column(
-        String, nullable=False, default=PaymentMethod.CASH.value)
+        String, nullable=False, default=PaymentMethod.CASH.value
+    )
 
     appointment: Mapped["AppointmentModel"] = relationship(
         "AppointmentModel", back_populates="payment"

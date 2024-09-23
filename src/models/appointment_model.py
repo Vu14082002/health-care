@@ -8,8 +8,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.core.database.postgresql import Model
 
 if TYPE_CHECKING:
-    from . import (DoctorModel, MedicalRecordModel, PatientModel, PaymentModel,
-                   WorkScheduleModel)
+    from . import (
+        DoctorModel,
+        MedicalRecordModel,
+        PatientModel,
+        PaymentModel,
+        WorkScheduleModel,
+    )
 
 from sqlalchemy import event
 
@@ -30,52 +35,56 @@ class AppointmentModelTypeStatus(enum.Enum):
 class AppointmentModel(Model):
     __tablename__ = "appointment"
 
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
-    patient_id: Mapped[int] = mapped_column(
-        ForeignKey("patient.id"), nullable=False)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patient.id"), nullable=False)
 
-    doctor_id: Mapped[int] = mapped_column(
-        ForeignKey("doctor.id"), nullable=False)
+    doctor_id: Mapped[int] = mapped_column(ForeignKey("doctor.id"), nullable=False)
 
     work_schedule_id: Mapped[int] = mapped_column(
-        ForeignKey("work_schedule.id"), nullable=False)
+        ForeignKey("work_schedule.id"), nullable=False
+    )
 
-    appointment_status: Mapped[str] = mapped_column(
-        String(50), nullable=False)
+    appointment_status: Mapped[str] = mapped_column(String(50), nullable=False)
 
-    link_appointment: Mapped[str] = mapped_column(
-        Text, nullable=True, default=None)
+    link_appointment: Mapped[str] = mapped_column(Text, nullable=True, default=None)
 
-    pre_examination_notes: Mapped[str |
-                                  None] = mapped_column(Text, nullable=True)
+    pre_examination_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     patient: Mapped["PatientModel"] = relationship(
-        "PatientModel", back_populates="appointments", lazy="joined")
+        "PatientModel", back_populates="appointments", lazy="joined"
+    )
 
     doctor: Mapped["DoctorModel"] = relationship(
-        "DoctorModel", back_populates="appointments", lazy="joined")
+        "DoctorModel", back_populates="appointments", lazy="joined"
+    )
 
     payment: Mapped["PaymentModel"] = relationship(
-        "PaymentModel", back_populates="appointment", lazy="joined")
+        "PaymentModel", back_populates="appointment", lazy="joined"
+    )
 
     medical_record: Mapped["MedicalRecordModel"] = relationship(
-        back_populates="appointment", uselist=False, lazy="joined")
+        back_populates="appointment", uselist=False, lazy="joined"
+    )
 
     work_schedule: Mapped["WorkScheduleModel"] = relationship(
-        "WorkScheduleModel", back_populates="appointment", lazy="joined")
+        "WorkScheduleModel", back_populates="appointment", lazy="joined"
+    )
 
     @staticmethod
     async def set_before_insert(mapper, connection, target):
         target.appointment_status = AppointmentModelStatus.PENDING.value
-        if target.appointment_status not in [AppointmentModelStatus.PENDING.value, AppointmentModelStatus.APPROVED.value, AppointmentModelStatus.REJECTED.value, AppointmentModelStatus.COMPLETED.value]:
+        if target.appointment_status not in [
+            AppointmentModelStatus.PENDING.value,
+            AppointmentModelStatus.APPROVED.value,
+            AppointmentModelStatus.REJECTED.value,
+            AppointmentModelStatus.COMPLETED.value,
+        ]:
+            logging.error("From set_before_insert appointment status is invalid")
             logging.error(
-                "From set_before_insert appointment status is invalid")
-            logging.error(
-                "target.appointment_status must is in ['pending', 'approved', 'rejected', 'completed']")
-            raise ValueError("Invalid appointment status",
-                             target.appointment_status)
+                "target.appointment_status must is in ['pending', 'approved', 'rejected', 'completed']"
+            )
+            raise ValueError("Invalid appointment status", target.appointment_status)
 
 
 # Attach event listeners

@@ -19,7 +19,8 @@ default_avatar = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSn5k7ItL
 class PatientModel(Model):
     __tablename__ = "patient"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    # id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"), primary_key=True)
 
     doctor_manage_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("doctor.id"), nullable=True, default=None
@@ -45,8 +46,6 @@ class PatientModel(Model):
 
     emergancy_contact_number: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
-
     blood_type: Mapped[str] = mapped_column(String, nullable=True)
 
     allergies: Mapped[str] = mapped_column(Text, nullable=True)
@@ -66,7 +65,10 @@ class PatientModel(Model):
     branch_name: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     user: Mapped["UserModel"] = relationship(
-        "UserModel", uselist=False, back_populates="patient"
+        "UserModel",
+        uselist=False,
+        back_populates="patient",
+        foreign_keys=[id],
     )
 
     appointments: Mapped[list["AppointmentModel"]] = relationship(
@@ -87,7 +89,7 @@ class PatientModel(Model):
     )
 
     doctor_manage: Mapped["DoctorModel"] = relationship(
-        "DoctorModel", back_populates="patients"
+        "DoctorModel", back_populates="patients", foreign_keys=[doctor_manage_id]
     )
 
     def __repr__(self):

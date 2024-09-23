@@ -25,9 +25,7 @@ class S3Service(object):
             ),
         )
 
-    async def upload_file_from_form(
-        self, file: UploadFile, bucket_name=config.S3_BUCKET
-    ):
+    async def upload_file_from_form(self, file: UploadFile, bucket_name=config.S3_BUCKET):
         month = "{:02d}".format(datetime.now(timezone.utc).month)
         day = "{:02d}".format(datetime.now(timezone.utc).day)
         year = datetime.now(timezone.utc).year

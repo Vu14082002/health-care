@@ -1,18 +1,15 @@
 import logging
 import math
-from typing import Any, Dict
+from typing import Any
 
-from sqlalchemy import and_, exists, insert, select, update
-from sqlalchemy.orm import joinedload
+from sqlalchemy import and_, insert, select, update
 
-from src.core.database.postgresql import PostgresRepository, Transactional
+from src.core.database.postgresql import PostgresRepository
 from src.core.exception import BadRequest, InternalServer
-from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode, Role
 from src.models.appointment_model import AppointmentModel, AppointmentModelStatus
 from src.models.medical_records_model import MedicalRecordModel
 from src.repositories.global_func import destruct_where, process_orderby
-from src.schema.medical_records_schema import RequestCreateMedicalRecordsSchema
 
 
 class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):

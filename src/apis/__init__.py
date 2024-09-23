@@ -10,6 +10,7 @@ from src.apis.auth import (
     PatientRegisterApi,
 )
 from src.apis.bot_ai import BotServiceApi
+from src.apis.conversation_api import ConversationApi
 from src.apis.docter_api import (
     DoctorGetPatientsApi,
     DoctorGetPatientsByIdApi,
@@ -25,6 +26,8 @@ from src.apis.medical_records_api import (
     MedicalRecordsApiGET,
     MedicalRecordsApiPOST,
 )
+from src.apis.patient_api import PatientApi
+from src.apis.socket import MessageSocket
 from src.apis.working_time_api import (
     CreateDoctorWorkingTimeApi,
     DoctorEmptyWorkingSchedulingTimeApi,
@@ -33,6 +36,9 @@ from src.apis.working_time_api import (
     DoctorWorkingTimeOrderedApi,
 )
 from src.core.route import RouteSwagger
+
+from starlette.routing import WebSocketRoute
+
 
 routes = [
     RouteSwagger("/health_check", HealthCheck, methods=["GET"], tags=["USER"]),
@@ -60,7 +66,7 @@ routes = [
         tags=["ADMIN"],
     ),
     RouteSwagger(
-        f"/auth/doctor/verify/foreign/{{doctor_id}}",
+        "/auth/doctor/verify/foreign/{doctor_id}",
         DoctorOtherVerifyApiPut,
         methods=["PUT"],
         tags=["ADMIN"],
@@ -70,6 +76,13 @@ routes = [
     ),
     RouteSwagger(
         "/auth/logout", LogoutApi, methods=["POST"], tags=["ADMIN", "PATIENT", "DOCTOR"]
+    ),
+    # ADMIN
+    RouteSwagger(
+        "/admin/patients",
+        PatientApi,
+        methods=["GET"],
+        tags=["ADMIN"],
     ),
     # Doctor api
     RouteSwagger(
@@ -85,19 +98,17 @@ routes = [
         tags=["ADMIN", "DOCTOR"],
     ),
     RouteSwagger(
-        f"/doctor/working-time/{{id}}",
+        "/doctor/working-time/{id}",
         DoctorWorkingTimeByIdApi,
         methods=["GET"],
         tags=["ADMIN", "DOCTOR"],
     ),
-    #  day la api lay danh sach gio lam viec con trong cua bac si trong tuan
     RouteSwagger(
         "/doctor/empty-working-hours",
         DoctorEmptyWorkingSchedulingTimeApi,
         methods=["GET"],
         tags=["DOCTOR", "ADMIN"],
     ),
-    # day la api lay danh cac lioc lam viec cua bac si da dc order
     RouteSwagger(
         "/doctor/working-time/ordered",
         DoctorWorkingTimeOrderedApi,
@@ -117,7 +128,7 @@ routes = [
         tags=["ADMIN", "DOCTOR"],
     ),
     RouteSwagger(
-        f"/doctor/patient/{{patient_id}}",
+        "/doctor/patient/{patient_id}",
         DoctorGetPatientsByIdApi,
         methods=["GET"],
         tags=["ADMIN", "DOCTOR"],
@@ -143,7 +154,7 @@ routes = [
         tags=["PATIENT", "ADMIN", "DOCTOR"],
     ),
     RouteSwagger(
-        f"/appointment/{{appointment_id}}/medical-record",
+        "/appointment/{appointment_id}/medical-record",
         GetMedicalRecordByAppointId,
         methods=["GET"],
         tags=["PATIENT", "ADMIN", "DOCTOR"],
@@ -173,4 +184,18 @@ routes = [
         tags=["USER", "PATIENT", "DOCTOR", "ADMIN"],
     ),
     # message
+    RouteSwagger(
+        "/conversation",
+        ConversationApi,
+        methods=["GET", "POST"],
+        tags=["PATIENT", "DOCTOR", "ADMIN"],
+    ),
+    RouteSwagger(
+        "/conversation",
+        ConversationApi,
+        methods=["GET", "POST"],
+        tags=["PATIENT", "DOCTOR", "ADMIN"],
+    ),
+    WebSocketRoute("/ws/notify", MessageSocket, name="notify"),
+    WebSocketRoute("/ws/message", MessageSocket, name="ws"),
 ]

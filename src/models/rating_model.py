@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Float, ForeignKey, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
@@ -13,22 +13,21 @@ if TYPE_CHECKING:
 class RatingModel(Model):
     __tablename__ = "rating"
 
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     doctor_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey('doctor.id'), nullable=False)
+        Integer, ForeignKey("doctor.id"), nullable=False
+    )
 
     patient_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey('patient.id'), nullable=False)
+        Integer, ForeignKey("patient.id"), nullable=False
+    )
 
     rating: Mapped[float] = mapped_column(Float, nullable=False)
 
     comment: Mapped[str] = mapped_column(Text, nullable=True)
 
-    doctor: Mapped["DoctorModel"] = relationship(
-        "DoctorModel", back_populates="ratings"
-    )
+    doctor: Mapped["DoctorModel"] = relationship("DoctorModel", back_populates="ratings")
 
     patient: Mapped["PatientModel"] = relationship(
         "PatientModel", back_populates="ratings"

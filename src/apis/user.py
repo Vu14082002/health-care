@@ -1,4 +1,3 @@
-
 import logging as log
 
 from src.core import HTTPEndpoint
@@ -18,4 +17,5 @@ class PatientRegisterApi(HTTPEndpoint):
             log.error("Error on PatientRegisterApi: %s", e)
             raise InternalServer(
                 msg=f"An error occurred while trying to register the user: {e}",
-                error_code=ErrorCode.SERVER_ERROR.name) from e
+                error_code=ErrorCode.SERVER_ERROR.name,
+            ) from e

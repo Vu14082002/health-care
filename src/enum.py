@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -36,6 +36,7 @@ class ErrorCode(Enum):
     YOU_HAVE_NOT_COMPLETE_OTHER_APPOINTMENT = "YOU_HAVE_NOT_COMPLETE_OTHER_APPOINTMENT"
     INVALID_MEDICAL_RECORD = "INVALID_MEDICAL_RECORD"
     PATIENT_NOT_FOUND = "PATIENT_NOT_FOUND"
+    DATABASE_ERROR = "DATABASE_ERROR"
 
 
 CACHE_REFRESH_TOKEN = 60 * 60 * 5

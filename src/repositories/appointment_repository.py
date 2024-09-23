@@ -1,15 +1,8 @@
 import logging as log
-from datetime import date, datetime
+from datetime import date
 
 from sqlalchemy import (
-    Result,
-    Row,
     and_,
-    asc,
-    case,
-    delete,
-    desc,
-    exists,
     func,
     or_,
     select,
@@ -18,7 +11,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import joinedload
 
 from src.core.database.postgresql import PostgresRepository
-from src.core.exception import BadRequest, InternalServer
+from src.core.exception import BadRequest
 from src.enum import AppointmentModelStatus, ErrorCode
 from src.models.appointment_model import AppointmentModel
 from src.models.doctor_model import DoctorExaminationPriceModel, DoctorModel
@@ -38,7 +31,6 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         pre_examination_notes: str | None = None,
     ):
         try:
-
             # first check exist appointment with doctor is approved
             appointment_exist = await self.session.execute(
                 select(AppointmentModel).where(

@@ -40,14 +40,13 @@ class RouteSwagger(Route):
     def swagger_generate(
         self, signature: inspect.Signature, summary: str = "Document API"
     ):
-
         """
-         Generate Swagger documentation for a request. This is a helper method to generate a Swagger document based on information provided by the client.
+        Generate Swagger documentation for a request. This is a helper method to generate a Swagger document based on information provided by the client.
 
-         @param signature - The signature of the request. Must be annotated with
-         @param summary - A description of the request. Defaults to " Document API "
+        @param signature - The signature of the request. Must be annotated with
+        @param summary - A description of the request. Defaults to " Document API "
 
-         @return A dictionary of the form { " doc " : {
+        @return A dictionary of the form { " doc " : {
         """
         _inputs = signature.parameters.values()
         _inputs_dict = {_input.name: _input.annotation for _input in _inputs}
@@ -124,9 +123,7 @@ class RouteSwagger(Route):
                 "200": {
                     "description": "Successful response",
                     "content": {
-                        "application/json": {
-                            "schema": _response_type.model_json_schema()
-                        }
+                        "application/json": {"schema": _response_type.model_json_schema()}
                     },
                 }
             }
@@ -136,10 +133,10 @@ class RouteSwagger(Route):
     @property
     def mapping_type(self):
         """
-         Returns the type of the data. This is used to determine how values are converted to the database's column types.
+        Returns the type of the data. This is used to determine how values are converted to the database's column types.
 
 
-         @return A dictionary mapping column types to their data types ( strings ). The keys of the dictionary are the column names the values are the column types
+        @return A dictionary mapping column types to their data types ( strings ). The keys of the dictionary are the column names the values are the column types
         """
         return {
             str: "string",

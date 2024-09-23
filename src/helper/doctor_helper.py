@@ -2,18 +2,15 @@ import logging
 import logging as log
 import math
 from datetime import date, datetime, time, timedelta
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal
 
 from sqlalchemy.exc import NoResultFound
 
-from src.core.exception import BadRequest, InternalServer
-from src.enum import ErrorCode
-from src.models.doctor_model import DoctorModel, TypeOfDisease
-from src.models.work_schedule_model import WorkScheduleModel
+from src.core.exception import BadRequest, Forbidden, InternalServer
+from src.enum import TypeOfDisease
+from src.models.doctor_model import DoctorModel
 from src.repositories.doctor_repository import DoctorRepository
-from src.schema.doctor_schema import (DoctorSchema, ReponseGetAllDoctorsSchema,
-                                      RequestDoctorWorkScheduleNextWeek)
-from src.schema.register import RequestRegisterDoctorSchema
+from src.schema.doctor_schema import RequestDoctorWorkScheduleNextWeek
 
 
 class DoctorHelper:
@@ -138,11 +135,9 @@ class DoctorHelper:
         try:
             response = await self.doctor_repository.add_workingschedule(doctor_id, data)
             return response
-        except BadRequest as e:
-            logging.error(f"Error in create_doctor_work_schedule: {e}")
+        except (BadRequest, Forbidden, InternalServer) as e:
             raise e
         except Exception as ex:
-            logging.error(f"Error in create_doctor_work_schedule: {ex}")
             raise ex
 
     async def verify_doctor(self, doctor_id: int) -> bool:

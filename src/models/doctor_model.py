@@ -1,24 +1,19 @@
-import enum
-from datetime import date, datetime, time
+from datetime import date
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import (
     Boolean,
     Date,
-    DateTime,
     Float,
     ForeignKey,
     Integer,
     String,
     Text,
-    Time,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.orm.properties import MappedColumn
 
 from src.core.database.postgresql import Model
-from src.enum import TypeOfDisease
 
 default_avatar = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQS0iv-HzCTjY2RQ7JLiYe23Rw2Osp-n9PqUg&s"
 
