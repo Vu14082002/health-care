@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from src.models.medical_records_model import MedicalRecordModel
     from src.models.rating_model import RatingModel
     from src.models.user_model import UserModel
-
+    from src.models.daily_health_check_model import DailyHealCheckModel
 default_avatar = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSn5k7ItLSv5Rd7mdIOYQyPuvfr26Q5cdjk2AMGgw3wnBLmZ5LTOUsXh0jQ92RgRGx8G6g&usqp=CAU"
 
 
@@ -86,6 +86,10 @@ class PatientModel(Model):
     # one to many
     medical_records: Mapped[list["MedicalRecordModel"]] = relationship(
         "MedicalRecordModel", back_populates="patient"
+    )
+
+    daily_health_checks: Mapped[list["DailyHealCheckModel"]] = relationship(
+        "DailyHealCheckModel", back_populates="patient"
     )
 
     doctor_manage: Mapped["DoctorModel"] = relationship(

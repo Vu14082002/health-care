@@ -37,6 +37,8 @@ class ErrorCode(Enum):
     INVALID_MEDICAL_RECORD = "INVALID_MEDICAL_RECORD"
     PATIENT_NOT_FOUND = "PATIENT_NOT_FOUND"
     DATABASE_ERROR = "DATABASE_ERROR"
+    INVALID_FILE_TYPE = "INVALID_FILE_TYPE"
+    INVALID_REQUEST = "INVALID_REQUEST"
 
 
 CACHE_REFRESH_TOKEN = 60 * 60 * 5
@@ -69,8 +71,11 @@ class MessageContentSchema(BaseModel):
     content: str
 
 
-class FileMessageSchema(BaseModel):
-    file_name: str
-    file_size: int
-    file_type: str
-    file_url: str
+class ImageDailyHealthCheck(BaseModel):
+    image_url: str
+    image_name: str | None = None
+    image_size: float | None = None
+
+
+class ArrayImageDailyHealthCheck(BaseModel):
+    images: list[ImageDailyHealthCheck]

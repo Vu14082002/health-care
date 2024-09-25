@@ -6,6 +6,7 @@ from src.helper.message_helper import MessageHelper
 from src.helper.patient_helper import PatientHelper
 from src.helper.time_helper import TimeHelper
 from src.helper.user_repository import UserHelper
+from src.helper.daily_health_check_helper import DailyHealthCheckHelper
 
 __all__ = [
     "AppointmentHelper",
@@ -16,4 +17,5 @@ __all__ = [
     "PatientHelper",
     "TimeHelper",
     "UserHelper",
+    "DailyHealthCheckHelper",
 ]

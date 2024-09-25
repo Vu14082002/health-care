@@ -7,8 +7,8 @@
 # from sqlalchemy.sql import text
 
 # from src.config import config
-from src.core.database.postgresql import Model, get_session
-from src.core.database.postgresql.repository import Base
+# from src.core.database.postgresql import Model, get_session
+# from src.core.database.postgresql.repository import Base
 from src.models.appointment_model import AppointmentModel
 from src.models.conversation_model import ConversationModel, ConversationUserModel
 from src.models.doctor_model import DoctorModel
@@ -20,6 +20,7 @@ from src.models.payment_model import PaymentModel
 from src.models.rating_model import RatingModel
 from src.models.user_model import UserModel
 from src.models.work_schedule_model import WorkScheduleModel
+from src.models.daily_health_check_model import DailyHealCheckModel
 
 __all__ = [
     "AppointmentModel",
@@ -34,6 +35,7 @@ __all__ = [
     "UserModel",
     "WorkScheduleModel",
     "ConversationUserModel",
+    "DailyHealCheckModel",
 ]
 # async def manage_database():
 #     engine = create_async_engine(config.POSTGRES_URL_MASTER, echo=True)

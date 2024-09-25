@@ -11,6 +11,7 @@ from src.apis.auth import (
 )
 from src.apis.bot_ai import BotServiceApi
 from src.apis.conversation_api import ConversationApi
+from src.apis.daily_health_check_api import DailyDealthCheckApi
 from src.apis.docter_api import (
     DoctorGetPatientsApi,
     DoctorGetPatientsByIdApi,
@@ -186,6 +187,12 @@ routes = [
     RouteSwagger(
         "/conversation",
         ConversationApi,
+        methods=["GET", "POST"],
+        tags=["PATIENT", "DOCTOR", "ADMIN"],
+    ),
+    RouteSwagger(
+        "/patient/daily-health-check",
+        DailyDealthCheckApi,
         methods=["GET", "POST"],
         tags=["PATIENT", "DOCTOR", "ADMIN"],
     ),

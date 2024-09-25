@@ -1,5 +1,6 @@
 from functools import partial
 
+
 from src.core.database.postgresql import get_session
 from src.helper import (
     AppointmentHelper,
@@ -9,6 +10,7 @@ from src.helper import (
     MessageHelper,
     PatientHelper,
     UserHelper,
+    DailyHealthCheckHelper,
 )
 from src.models import (
     AppointmentModel,
@@ -18,6 +20,7 @@ from src.models import (
     MessageModel,
     PatientModel,
     UserModel,
+    DailyHealCheckModel,
 )
 from src.repositories import (
     AppointmentRepository,
@@ -27,6 +30,7 @@ from src.repositories import (
     MessageRepository,
     PatientRepository,
     UserRepository,
+    DailyHealthCheckRepository,
 )
 
 
@@ -40,6 +44,9 @@ class Factory:
     medical_records_repository = partial(MedicalRecordsRepository, MedicalRecordModel)
     conversation_repository = partial(ConversationRepoitory, ConversationModel)
     message_repository = partial(MessageRepository, MessageModel)
+    daily_health_check_repository = partial(
+        DailyHealthCheckRepository, DailyHealCheckModel
+    )
 
     async def get_patient_helper(self) -> PatientHelper:
         async with get_session() as session:
@@ -81,4 +88,12 @@ class Factory:
         async with get_session() as session:
             return MessageHelper(
                 message_repository=self.message_repository(db_session=session)
+            )
+
+    async def get_daily_health_check_helper(self) -> DailyHealthCheckHelper:
+        async with get_session() as session:
+            return DailyHealthCheckHelper(
+                daily_detail_repository=self.daily_health_check_repository(
+                    db_session=session
+                )
             )
