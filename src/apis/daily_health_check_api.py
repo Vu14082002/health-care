@@ -14,6 +14,7 @@ from src.helper.s3_helper import S3Service
 from src.schema.daily_health_check_schema import (
     DailyHealthCheckSchema,
     RequestCreateHealthCheckSchema,
+    RequestGetAllDailyHealthSchema,
 )
 
 
@@ -47,6 +48,7 @@ class DailyDealthCheckApi(HTTPEndpoint):
                 assessment=form_data.assessment,
                 describe_health=form_data.describe_health,
                 link_image_data=images,
+                date_create=form_data.date_create,
             )
             helper: DailyHealthCheckHelper = (
                 await Factory().get_daily_health_check_helper()
@@ -62,8 +64,36 @@ class DailyDealthCheckApi(HTTPEndpoint):
                 errors={"message": "Internal server error"},
             )
 
-    async def get(self, auth: JsonWebToken):
-        return {"message": "Hello World"}
+    async def get(self, query_params: RequestGetAllDailyHealthSchema, auth: JsonWebToken):
+        try:
+            user_role = auth.get("role")
+            if user_role not in [Role.ADMIN.name, Role.PATIENT.name, Role.DOCTOR.name]:
+                return BadRequest(
+                    error_code=ErrorCode.UNAUTHORIZED.name,
+                    errors={"message": "You are not authorized to access this resource"},
+                )
+            patient_id = (
+                auth.get("id")
+                if user_role == Role.PATIENT.name
+                else query_params.patient_id
+            )
+            doctor_id = auth.get("id") if user_role == Role.DOCTOR.name else None
+            if patient_id is None:
+                raise BadRequest(
+                    error_code=ErrorCode.INVALID_REQUEST.name,
+                    errors={"message": "patient_id: patient is required"},
+                )
+            helper = await Factory().get_daily_health_check_helper()
+            result = await helper.get_all_daily_health_check(query_params, doctor_id)
+            return result
+        except (Forbidden, BadRequest) as e:
+            raise e
+        except Exception as e:
+            logging.error(f"Error: {e}")
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": "Internal server error"},
+            )
 
     def _is_authorized(self, auth: JsonWebToken) -> bool:
         return auth.get("role") in [Role.ADMIN.name, Role.PATIENT.name]

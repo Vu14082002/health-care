@@ -1,3 +1,5 @@
+from starlette.routing import WebSocketRoute
+
 from src.apis.appointment import AppointmentApi, AppointmentApiGET
 from src.apis.auth import (
     AdminRegisterApi,
@@ -37,9 +39,6 @@ from src.apis.working_time_api import (
     DoctorWorkingTimeOrderedApi,
 )
 from src.core.route import RouteSwagger
-
-from starlette.routing import WebSocketRoute
-
 
 routes = [
     RouteSwagger("/health_check", HealthCheck, methods=["GET"], tags=["USER"]),

@@ -1,10 +1,10 @@
-from sqlalchemy import Float, ForeignKey, Integer, String, Text, DateTime
+from sqlalchemy import Float, ForeignKey, Integer, String, Text, Date
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
 
 from src.core.database.postgresql import Model
 from typing import TYPE_CHECKING
-from datetime import datetime
+from datetime import date
 from src.enum import ImageDailyHealthCheck
 
 if TYPE_CHECKING:
@@ -28,4 +28,4 @@ class DailyHealCheckModel(Model):
     patient: Mapped["PatientModel"] = relationship(
         "PatientModel", back_populates="daily_health_checks", lazy="joined"
     )
-    time: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now)
+    date_create: Mapped[date] = mapped_column(Date, nullable=True, default=date.today())

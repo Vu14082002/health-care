@@ -1,8 +1,7 @@
-from datetime import date, datetime, time
-from email.policy import default
-from typing import List, Literal
+from datetime import date
+from typing import Literal
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 
 
 class RequestRegisterAppointment(BaseModel):
