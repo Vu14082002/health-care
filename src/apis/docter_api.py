@@ -169,6 +169,7 @@ class DoctorGetPatientsApi(HTTPEndpoint):
             status_order = query_params.status_order
             appointment_status = query_params.appointment_status
             examination_type = query_params.examination_type
+            text_search = query_params.text_search
 
             response = await doctor_helper.get_patient_by_doctor_id(
                 doctor_id=doctor_id,
@@ -177,6 +178,7 @@ class DoctorGetPatientsApi(HTTPEndpoint):
                 status_order=status_order,
                 appointment_status=appointment_status,
                 examination_type=examination_type,
+                text_search=text_search,
             )
             return response
         except (BadRequest, Forbidden) as e:

@@ -644,6 +644,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         appointment_status: str | None = None,
         status_order: tuple[str, ...] = ("approved", "processing", "completed"),
         examination_type: Literal["online", "offline"] | None = None,
+        text_search: str | None = None,
     ):
         try:
             query_patient = (
@@ -670,6 +671,21 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                     AppointmentModel.work_schedule
                 )
             )
+            if text_search is not None:
+                text_search = text_search.strip().lower()
+                data_text_search = text_search.split(" ")
+                query_patient = query_patient.where(
+                    or_(
+                        *[
+                            or_(
+                                self.model_class.first_name.ilike(f"%{name}%"),
+                                self.model_class.last_name.ilike(f"%{name}%"),
+                            )
+                            for name in data_text_search
+                        ],
+                        self.model_class.phone_number.ilike(f"%{text_search}%"),
+                    )
+                )
             # query_patient = query_patient.offset((current_page - 1) * page_size).limit(
             #     page_size
             # )

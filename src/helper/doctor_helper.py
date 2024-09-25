@@ -266,6 +266,7 @@ class DoctorHelper:
         appointment_status: str | None = None,
         status_order: tuple[str, ...] = ("approved", "processing", "completed"),
         examination_type: Literal["online", "offline"] | None = None,
+        text_search: str | None = None,
     ):
         try:
             return await self.doctor_repository.get_patient_by_doctor_id(
@@ -275,6 +276,7 @@ class DoctorHelper:
                 appointment_status=appointment_status,
                 status_order=status_order,
                 examination_type=examination_type,
+                text_search=text_search,
             )
         except (BadRequest, NoResultFound, InternalServer) as e:
             raise e
