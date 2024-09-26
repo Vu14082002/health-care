@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
-import uuid
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String
+from sqlalchemy import Boolean, ForeignKey, Integer
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,19 +12,15 @@ if TYPE_CHECKING:
     from src.models.user_model import UserModel
 
 
-def generate_uuid():
-    return str(uuid.uuid4())
-
-
 class MessageModel(Model):
     __tablename__ = "message"
 
-    id: Mapped[str] = mapped_column(String, primary_key=True, default=generate_uuid)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     sender_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"), nullable=False)
 
-    conversation_id: Mapped[str] = mapped_column(
-        String, ForeignKey("conversation.id"), nullable=False
+    conversation_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("conversation.id"), nullable=False
     )
 
     reply_id: Mapped[int | None] = mapped_column(
