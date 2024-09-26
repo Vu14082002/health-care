@@ -56,10 +56,18 @@ class DailyHealthCheckSchema(BaseModel):
 
 
 class RequestGetAllDailyHealthSchema(BaseModel):
+
     patient_id: int | None = Field(
         default=None,
         description="Patient ID, if role patient will get all, if role Admin or Doctor this value must assign",
         examples=[1],
+    )
+    appointment_id: int = Field(..., description="Appointment ID", examples=[1])
+
+    create_date: date | None = Field(
+        default=None,
+        description="Date of the create health check",
+        examples=["2021-01-01"],
     )
     start_date: date | None = Field(
         default=None,
@@ -75,7 +83,7 @@ class RequestGetAllDailyHealthSchema(BaseModel):
         default=1, description="Page number to get, starting from 1", examples=[1]
     )
     page_size: int = Field(
-        default=10, description="Number of items per page, default = 10", examples=[10]
+        default=20, description="Number of items per page, default = 10", examples=[10]
     )
 
     class Config:

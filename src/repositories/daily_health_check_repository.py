@@ -108,15 +108,22 @@ class DailyHealthCheckRepository(PostgresRepository[DailyHealCheckModel]):
                     error_code=ErrorCode.NOT_FOUND.name,
                     errors={"message": "Patient not found"},
                 )
+
             if doctor_id and data_result_patient_query.doctor_manage_id != doctor_id:
                 raise BadRequest(
                     error_code=ErrorCode.UNAUTHORIZED.name,
                     errors={"message": "You are not permitted to acticate this patient"},
                 )
-
+            # bs logic
             daily_query = select(DailyHealCheckModel).where(
-                DailyHealCheckModel.patient_id == query_params.patient_id
+                DailyHealCheckModel.patient_id == query_params.patient_id,
+                DailyHealCheckModel.appointment_id == query_params.appointment_id,
             )
+
+            if query_params.create_date:
+                daily_query = daily_query.where(
+                    DailyHealCheckModel.date_create == query_params.create_date
+                )
             if query_params.start_date:
                 daily_query = daily_query.where(
                     DailyHealCheckModel.date_create >= query_params.start_date
