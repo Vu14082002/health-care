@@ -43,6 +43,7 @@ class DailyDealthCheckApi(HTTPEndpoint):
             images = await self._process_images(img_arr)
 
             health_check_schema = DailyHealthCheckSchema(
+                appointment_id=form_data.appointment_id,
                 patient_id=patient_id,
                 temperature=form_data.temperature,
                 assessment=form_data.assessment,

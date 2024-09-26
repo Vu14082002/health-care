@@ -9,6 +9,8 @@ class RequestCreateHealthCheckSchema(BaseModel):
     patient_id: int | None = Field(
         ..., description="Patient ID, if role Admin this value must assign", examples=[1]
     )
+    appointment_id: int = Field(description="is id appointment", examples=[1])
+
     temperature: float = Field(
         ..., description="Temperature of the patient", examples=[36.5]
     )
@@ -35,6 +37,7 @@ class RequestCreateHealthCheckSchema(BaseModel):
 
 
 class DailyHealthCheckSchema(BaseModel):
+    appointment_id: int
     patient_id: int
     temperature: float
     assessment: str

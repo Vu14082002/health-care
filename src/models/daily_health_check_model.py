@@ -9,6 +9,7 @@ from src.enum import ImageDailyHealthCheck
 
 if TYPE_CHECKING:
     from src.models.patient_model import PatientModel
+    from src.models.appointment_model import AppointmentModel
 
 
 class DailyHealCheckModel(Model):
@@ -18,14 +19,18 @@ class DailyHealCheckModel(Model):
     patient_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("patient.id"), nullable=False
     )
-
+    appointment_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("appointment.id"), nullable=True
+    )
     temperature: Mapped[float] = mapped_column(Float, nullable=True, default=0)
-
     assessment: Mapped[str] = mapped_column(String, nullable=False)
-
     describe_health: Mapped[str] = mapped_column(Text, nullable=True)
     link_image_data: Mapped[ImageDailyHealthCheck] = mapped_column(JSONB, nullable=True)
+    date_create: Mapped[date] = mapped_column(Date, nullable=True, default=date.today())
+
     patient: Mapped["PatientModel"] = relationship(
         "PatientModel", back_populates="daily_health_checks", lazy="joined"
     )
-    date_create: Mapped[date] = mapped_column(Date, nullable=True, default=date.today())
+    appointment: Mapped["AppointmentModel"] = relationship(
+        "AppointmentModel", back_populates="daily_health_checks", lazy="joined"
+    )

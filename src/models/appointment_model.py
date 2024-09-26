@@ -14,6 +14,7 @@ if TYPE_CHECKING:
         PatientModel,
         PaymentModel,
         WorkScheduleModel,
+        DailyHealCheckModel,
     )
 
 from sqlalchemy import event
@@ -69,6 +70,10 @@ class AppointmentModel(Model):
 
     work_schedule: Mapped["WorkScheduleModel"] = relationship(
         "WorkScheduleModel", back_populates="appointment", lazy="joined"
+    )
+    daily_health_checks: Mapped[list["DailyHealCheckModel"]] = relationship(
+        "DailyHealCheckModel",
+        back_populates="appointment",
     )
 
     @staticmethod
