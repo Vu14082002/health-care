@@ -1,15 +1,18 @@
-import logging as log
+from collections import defaultdict
 
 from sqlalchemy import exists, func, select
 from sqlalchemy.orm import joinedload
 
 from src.core.database.postgresql import PostgresRepository
-from src.core.decorator.exception_decorator import catch_error_repository
-from src.core.exception import BadRequest, InternalServer
+from src.core.decorator.exception_decorator import (
+    catch_error_repository,
+    exception_handler,
+)
+from src.core.exception import BadRequest
 from src.enum import ErrorCode
-from src.models.conversation_model import (ConversationModel,
-                                           ConversationUserModel)
+from src.models.conversation_model import ConversationModel, ConversationUserModel
 from src.models.user_model import UserModel
+from src.schema.conversation_schema import RequestGetAllConversationSchema
 
 
 class ConversationRepoitory(PostgresRepository[ConversationModel]):
@@ -35,37 +38,50 @@ class ConversationRepoitory(PostgresRepository[ConversationModel]):
         result = await self.session.execute(query_conversation)
 
         conversation_model = result.scalar_one_or_none()
+
         if conversation_model:
-            return {"message": "ok"}
+            return {"conversation_id": conversation_model.id}
+        # create new conversation id not exist
         new_conversation = ConversationModel()
         self.session.add(new_conversation)
-        new_conversation.users.append(
-            ConversationUserModel(user_id=user_create))
-        new_conversation.users.append(
-            ConversationUserModel(user_id=participant_id))
+        new_conversation.users.append(ConversationUserModel(user_id=user_create))
+        new_conversation.users.append(ConversationUserModel(user_id=participant_id))
         await self.session.commit()
-        return {"message": "ok"}
+        return {"conversation_id": new_conversation.id}
 
-    async def get_conversation(self, user_id: int):
-        try:
-            query_conversation = (
-                select(ConversationModel)
-                .join(ConversationUserModel)
-                .filter(ConversationUserModel.user_id == user_id)
-                .options(joinedload(ConversationModel.users))
-                .options(joinedload(ConversationModel.messages))
+    @exception_handler
+    async def get_conversation(
+        self, user_id: int, query_params: RequestGetAllConversationSchema
+    ):
+        query_conversation = (
+            select(ConversationModel)
+            .join(ConversationUserModel)
+            .where(ConversationUserModel.user_id == user_id)
+            .options(joinedload(ConversationModel.messages))
+        )
+        result_query = await self.session.execute(query_conversation)
+
+        data_result_qurey = result_query.unique().scalars().all()
+
+        items = []
+        for item in data_result_qurey:
+            data_dict = defaultdict()
+            latest_message = item.latest_message
+            data_dict.update(
+                {
+                    "conversation_id": item.id,
+                    "latest_message": (
+                        latest_message.as_dict if latest_message else None
+                    ),
+                }
             )
-            result = await self.session.execute(query_conversation)
-            conversation = result.scalars().all()
-            return conversation
-        except (BadRequest, InternalServer) as e:
-            await self.session.rollback()
-            raise e
-        except Exception as e:
-            log.error(e)
-            raise InternalServer(
-                error_code=ErrorCode.SERVER_ERROR.name,
-                errors={
-                    "message": "Error when execute get conversation ,please try again later"
-                },
-            )
+            items.append(data_dict)
+        return items
+
+    async def get_users_from_conversation(self, conversation_id: int):
+        query_conversation = select(ConversationUserModel.user_id).where(
+            ConversationUserModel.id == conversation_id
+        )
+        result_query = await self.session.execute(query_conversation)
+        data_result_query = result_query.scalars().all()
+        return data_result_query

@@ -35,4 +35,6 @@ class MessageModel(Model):
         "ConversationModel", back_populates="messages"
     )
 
-    sender: Mapped["UserModel"] = relationship("UserModel", back_populates="messages")
+    sender: Mapped["UserModel"] = relationship(
+        "UserModel", back_populates="messages", lazy="joined"
+    )

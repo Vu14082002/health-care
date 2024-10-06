@@ -1,40 +1,110 @@
-import asyncio
-from typing import Dict, List
+from typing import Any
+from venv import logger
+
+import jwt
 from starlette.endpoints import WebSocketEndpoint
 from starlette.websockets import WebSocket
 
+from src.config import config, connect_manager
+from src.core.exception import Forbidden
+from src.enum import ErrorCode
+from src.factory import Factory
 
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: Dict[str, List[WebSocket]] = {}
 
-    async def connect(self, websocket: WebSocket, conversation_id: str):
-        await websocket.accept()
-        if conversation_id not in self.active_connections:
-            self.active_connections[conversation_id] = []
-        self.active_connections[conversation_id].append(websocket)
+class ValidateJsonWebToken:
+    def __init__(self) -> None:
+        self.access_key = config.ACCESS_TOKEN
+        self.refresh_key = config.ACCESS_TOKEN
+        self.algorithm = config.ALGORITHM
 
-    def disconnect(self, websocket: WebSocket, conversation_id: str):
-        self.active_connections[conversation_id].remove(websocket)
-        if not self.active_connections[conversation_id]:
-            del self.active_connections[conversation_id]
+    async def validate(self, _authorization: str):
+        _token = ""
+        try:
+            if not _authorization:
+                raise
+            _type, _token = _authorization.split()
 
-    async def broadcast(self, conversation_id: str, message: str):
-        if conversation_id in self.active_connections:
-            for connection in self.active_connections[conversation_id]:
-                await connection.send_text(message)
+            if _type.lower() != "bearer":
+                raise
+            _decode = jwt.decode(
+                _token, key=self.access_key, algorithms=[self.algorithm]
+            )
+            _payload = _decode.get("payload", {})
+            return _payload
+        except jwt.exceptions.ExpiredSignatureError:
+            raise Forbidden(
+                msg="Token is expired", error_code=ErrorCode.TOKEN_EXPIRED.name
+            )
+        except Exception as e:
+            logger.debug(e)
+            raise Forbidden(msg="Authen Fail", error_code=ErrorCode.AUTHEN_FAIL.name)
+
+
+validate_helper = ValidateJsonWebToken()
+
+
+class OpenConversation(WebSocketEndpoint):
+    # {"conversation_id": 1}
+    async def on_connect(self, websocket: WebSocket):
+        pass
+
+    async def on_receive(self, websocket: WebSocket, data):  # type: ignore
+        authorization = websocket.headers.get("authorization")
+        if authorization is None:
+            await websocket.close(code=1008)
+        auth: dict[str, Any] = await validate_helper.validate(authorization)  # type: ignore
+        user_id: int | None = auth.get("id", None)
+        if not user_id:
+            await websocket.close(code=1008)
+            raise Exception("User not found")
+        await connect_manager.connect(websocket, user_id)
+        conversation_helper = await Factory().get_conversation_helper()
+        conversation_id: int | None = data.get("conversation_id", None)
+
+        if not conversation_id:
+            await websocket.close(code=1008)
+            raise Exception("Conversation not found")
+
+        users_id = await conversation_helper.get_users_from_conversation(
+            conversation_id
+        )
+        await connect_manager.open_conversation(conversation_id, users_id)
+
+    async def on_disconnect(self, websocket: WebSocket, close_code):  # type: ignore
+        try:
+            pass
+        except Exception as e:
+            logger.error(e)
+            await websocket.close(code=1008)
 
 
 class MessageSocket(WebSocketEndpoint):
+    encoding = "json"
 
     async def on_connect(self, websocket: WebSocket):  # type: ignore
         await websocket.accept()
-        while True:
-            await websocket.send_text("Message text was:")
-            await asyncio.sleep(3)  # Sử dụng asyncio.sleep thay cho time.sleep
 
     async def on_receive(self, websocket: WebSocket, data):  # type: ignore
-        await websocket.send_text(f"Message text was: {data}")
+        try:
+            authorization = websocket.headers.get("authorization")
+            if authorization is None:
+                await websocket.close(code=1008)
+            auth: dict[str, Any] = await validate_helper.validate(authorization)  # type: ignore
+            user_id: int = auth.get("id", None)
+            if user_id is None:
+                await websocket.close(code=1008)
+            connect_manager.send_message(
+                conversation_id=data.get("conversation_id"),
+                user_send=user_id,
+                message=data,
+            )  # type: ignore
+        except Exception as e:
+            logger.error(e)
+            await websocket.close(code=1008)
 
     async def on_disconnect(self, websocket: WebSocket, close_code):  # type: ignore
-        pass
+        try:
+            pass
+        except Exception as e:
+            logger.error(e)
+            await websocket.close(code=1008)

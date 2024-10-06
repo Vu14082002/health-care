@@ -25,7 +25,7 @@ class ConversationModel(Model):
 
     @property
     def latest_message(self) -> "MessageModel | None":
-        return self.messages[0] if self.examination_prices else None
+        return self.messages[0] if len(self.messages) else None
 
 
 class ConversationUserModel(Model):

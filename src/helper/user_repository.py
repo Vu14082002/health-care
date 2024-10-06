@@ -27,7 +27,7 @@ class UserHelper:
         return await self.user_repository.insert_user(user)
 
     async def login(self, phone_number: str, password: str) -> Dict[str, Any]:
-        user: UserModel = await self._authenticate_user(phone_number, password)
+        user = await self._authenticate_user(phone_number, password)
         user_all = self._scalar_user(user)
         token = self._gen_token(user_all)
         await redis.set(token["access_token"], phone_number, CACHE_ACCESS_TOKEN)

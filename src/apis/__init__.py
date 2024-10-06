@@ -29,8 +29,8 @@ from src.apis.medical_records_api import (
     MedicalRecordsApiGET,
     MedicalRecordsApiPOST,
 )
-from src.apis.patient_api import PatientApi
-from src.apis.socket import MessageSocket
+from src.apis.message_api import MessageApi
+from src.apis.socket import MessageSocket, OpenConversation
 from src.apis.working_time_api import (
     CreateDoctorWorkingTimeApi,
     DoctorEmptyWorkingSchedulingTimeApi,
@@ -126,7 +126,9 @@ routes = [
         methods=["GET"],
         tags=["ADMIN", "DOCTOR"],
     ),
-    RouteSwagger("/doctor/local", GetAllDoctorLocalAPi, methods=["GET"], tags=["ADMIN"]),
+    RouteSwagger(
+        "/doctor/local", GetAllDoctorLocalAPi, methods=["GET"], tags=["ADMIN"]
+    ),
     RouteSwagger(
         "/doctor/foreign", GetAllDoctorForeignAPi, methods=["GET"], tags=["ADMIN"]
     ),
@@ -184,17 +186,27 @@ routes = [
         tags=["PATIENT", "DOCTOR", "ADMIN"],
     ),
     RouteSwagger(
+        "/patient/daily-health-check",
+        DailyDealthCheckApi,
+        methods=["GET", "POST"],
+        tags=["PATIENT", "DOCTOR", "ADMIN"],
+    ),
+    RouteSwagger(
         "/conversation",
         ConversationApi,
         methods=["GET", "POST"],
         tags=["PATIENT", "DOCTOR", "ADMIN"],
     ),
     RouteSwagger(
-        "/patient/daily-health-check",
-        DailyDealthCheckApi,
+        "/message",
+        MessageApi,
         methods=["GET", "POST"],
         tags=["PATIENT", "DOCTOR", "ADMIN"],
     ),
-    WebSocketRoute("/ws/notify", MessageSocket, name="notify"),
-    WebSocketRoute("/ws/message", MessageSocket, name="ws"),
+    # websocker
+    WebSocketRoute(
+        "/ws/conversation",
+        OpenConversation,
+    ),
+    WebSocketRoute("/ws/message", MessageSocket),
 ]

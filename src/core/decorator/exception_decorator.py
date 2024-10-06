@@ -49,3 +49,23 @@ def catch_error_repository(func: Callable[..., Awaitable]):  # type: ignore
             )
 
     return wrapper
+
+
+def exception_handler(func):
+    async def wrapper(*args, **kwargs):
+        self = args[0]  # Giả sử self là argument đầu tiên
+        try:
+            return await func(*args, **kwargs)
+        except (BadRequest, InternalServer) as e:
+            logging.error(e)
+            await self.session.rollback()
+            raise e
+        except Exception as e:
+            await self.session.rollback()
+            logging.error(e)
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": f"Error: {str(e)}, please try again later"},
+            )
+
+    return wrapper

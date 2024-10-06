@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Literal
 
 from pydantic import BaseModel
 
@@ -39,6 +38,7 @@ class ErrorCode(Enum):
     DATABASE_ERROR = "DATABASE_ERROR"
     INVALID_FILE_TYPE = "INVALID_FILE_TYPE"
     INVALID_REQUEST = "INVALID_REQUEST"
+    VALIDATION_ERROR = "VALIDATION_ERROR"
 
 
 CACHE_REFRESH_TOKEN = 60 * 60 * 5
@@ -67,8 +67,9 @@ class AppointmentModelStatus(Enum):
 
 
 class MessageContentSchema(BaseModel):
-    type: Literal["img", "text", "video"]
-    content: str
+    media: str | bytes | None
+    image: str | bytes | None
+    content: str | None
 
 
 class ImageDailyHealthCheck(BaseModel):

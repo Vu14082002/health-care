@@ -5,15 +5,22 @@ from src.core.exception import BadRequest, Forbidden, InternalServer
 from src.core.security.authentication import JsonWebToken
 from src.enum import ErrorCode
 from src.factory import Factory
-from src.schema.conversation_schema import RequestCreateConvertsationSchema
+from src.schema.conversation_schema import (
+    RequestCreateConvertsationSchema,
+    RequestGetAllConversationSchema,
+)
 
 
 class ConversationApi(HTTPEndpoint):
 
-    async def get(self, auth: JsonWebToken):
+    async def get(
+        self, query_params: RequestGetAllConversationSchema, auth: JsonWebToken
+    ):
         try:
             conversation_service = await Factory().get_conversation_helper()
-            conversation = await conversation_service.get_conversation(auth.get("id"))
+            conversation = await conversation_service.get_conversation(
+                auth.get("id"), query_params
+            )
             return conversation
         except (BadRequest, Forbidden, InternalServer) as e:
             raise e
