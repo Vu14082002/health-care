@@ -80,7 +80,7 @@ class ConversationRepoitory(PostgresRepository[ConversationModel]):
 
     async def get_users_from_conversation(self, conversation_id: int):
         query_conversation = select(ConversationUserModel.user_id).where(
-            ConversationUserModel.id == conversation_id
+            ConversationUserModel.conversation_id == conversation_id
         )
         result_query = await self.session.execute(query_conversation)
         data_result_query = result_query.scalars().all()

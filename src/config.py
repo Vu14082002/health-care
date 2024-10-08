@@ -56,12 +56,12 @@ class ConnectionManager:
         self.active_rooms: Dict[int, Dict[int, WebSocket]] = {}
 
     async def connect(self, websocket: WebSocket, client_id: int):
-        if client_id not in self.active_connections_online:
+        if self.active_connections_online.get(client_id, None) is None:
             await websocket.accept()
             self.active_connections_online[client_id] = websocket
 
     def disconnect(self, *, websocket: WebSocket, client_id: int):
-        if client_id in self.active_connections_online:
+        if self.active_connections_online.get(client_id, None) is not None:
             _ = self.active_connections_online.pop(client_id)
 
     async def open_conversation(self, conversation_id: int, users: List[int]):
@@ -79,7 +79,7 @@ class ConnectionManager:
         user_send: int,
         message: Dict[str, Any],
     ):
-        if conversation_id not in self.active_rooms:
+        if self.active_rooms.get(conversation_id, None) is None:
             raise Exception("Conversation not found")
         user_in_rooms = self.active_rooms[conversation_id]
         for user_id, user_socket in user_in_rooms.items():

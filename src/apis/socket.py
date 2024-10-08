@@ -44,34 +44,61 @@ validate_helper = ValidateJsonWebToken()
 
 
 class OpenConversation(WebSocketEndpoint):
+    encoding = "json"
+
     # {"conversation_id": 1}
     async def on_connect(self, websocket: WebSocket):
-        pass
+        try:
+            authorization = websocket.headers.get("authorization")
+            if authorization is None:
+                await websocket.close(code=1008)
+                return
+            auth: dict[str, Any] = await validate_helper.validate(authorization)  # type: ignore
+            user_id: int | None = auth.get("id")
+            if not user_id:
+                await websocket.close(code=1008)
+                return
+            await connect_manager.connect(websocket, user_id)
+            await websocket.send_json({"message": "Connected"})
+        except Exception as e:
+            logger.error(e)
+            await websocket.send_json({"message": "Can't connect"})
+            await websocket.close(code=1008)
 
-    async def on_receive(self, websocket: WebSocket, data):  # type: ignore
+    async def on_receive(self, websocket: WebSocket, data):
         authorization = websocket.headers.get("authorization")
         if authorization is None:
             await websocket.close(code=1008)
-        auth: dict[str, Any] = await validate_helper.validate(authorization)  # type: ignore
-        user_id: int | None = auth.get("id", None)
-        if not user_id:
-            await websocket.close(code=1008)
-            raise Exception("User not found")
-        await connect_manager.connect(websocket, user_id)
-        conversation_helper = await Factory().get_conversation_helper()
-        conversation_id: int | None = data.get("conversation_id", None)
+            return
+        try:
+            conversation_helper = await Factory().get_conversation_helper()
+            conversation_id: int | None = data.get("conversation_id", None)
+            if not conversation_id:
+                await websocket.close(code=1008)
+                return
 
-        if not conversation_id:
+            users_id = await conversation_helper.get_users_from_conversation(
+                conversation_id
+            )
+            await connect_manager.open_conversation(conversation_id, users_id)
+            await websocket.send_json({"message": "open conversation success"})
+            print(connect_manager.active_rooms)
+        except Forbidden as f:
+            logger.error(f)
+            await websocket.send_json(
+                {"message": "open conversation fail, authen fail"}
+            )
+            await websocket.close(code=1008)  # Đóng kết nối khi gặp lỗi auth
+        except Exception as e:
+            logger.error(e)
+            await websocket.send_json(
+                {"message": "open conversation fail, server error"}
+            )
             await websocket.close(code=1008)
-            raise Exception("Conversation not found")
-
-        users_id = await conversation_helper.get_users_from_conversation(
-            conversation_id
-        )
-        await connect_manager.open_conversation(conversation_id, users_id)
 
     async def on_disconnect(self, websocket: WebSocket, close_code):  # type: ignore
         try:
+            # Xử lý ngắt kết nối nếu cần
             pass
         except Exception as e:
             logger.error(e)
@@ -85,6 +112,7 @@ class MessageSocket(WebSocketEndpoint):
         await websocket.accept()
 
     async def on_receive(self, websocket: WebSocket, data):  # type: ignore
+        await websocket.accept()
         try:
             authorization = websocket.headers.get("authorization")
             if authorization is None:
