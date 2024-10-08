@@ -30,7 +30,7 @@ from src.apis.medical_records_api import (
     MedicalRecordsApiPOST,
 )
 from src.apis.message_api import MessageApi
-from src.apis.socket import MessageSocket, OpenConversation
+from src.apis.socket import MessageSocket, OnlineUser, OpenConversation
 from src.apis.working_time_api import (
     CreateDoctorWorkingTimeApi,
     DoctorEmptyWorkingSchedulingTimeApi,
@@ -204,6 +204,10 @@ routes = [
         tags=["PATIENT", "DOCTOR", "ADMIN"],
     ),
     # websocker
+    WebSocketRoute(
+        "/ws/online",
+        OnlineUser,
+    ),
     WebSocketRoute(
         "/ws/conversation",
         OpenConversation,

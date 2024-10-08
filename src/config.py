@@ -50,31 +50,48 @@ config = Config()
 
 class ConnectionManager:
     def __init__(self):
-        # {user_id: websocket}
         self.active_connections_online: Dict[int, WebSocket] = {}
-        # {conversation_id: {user_id: websocket}}}
         self.active_rooms: Dict[int, Dict[int, WebSocket]] = {}
 
-    async def connect(self, websocket: WebSocket, client_id: int):
-        if client_id not in self.active_connections_online:
-            await websocket.accept()
-            self.active_connections_online[client_id] = websocket
-        else:
-            pass
+    # online logic
+    async def connect_online(self, websocket: WebSocket, client_id: int):
+        self.active_connections_online[client_id] = websocket
+        await websocket.accept()
+        await self.broadcast_system({"message": f"user {client_id} has been online"})
 
-    async def disconnect(self, *, client_id: int):
+    async def disconnect_user_online(self, *, client_id: int):
         websocket = self.active_connections_online.pop(client_id, None)
         if websocket is not None:
+            await self.broadcast_system(
+                {"message": f"user {client_id} has been logged out"}
+            )
             await websocket.close()
 
-    async def open_conversation(self, conversation_id: int, users: List[int]):
-        if conversation_id not in self.active_rooms:
+    # conversation logic
+    async def open_conversation(
+        self, websocket: WebSocket, conversation_id: int, users: List[int], user_id: int
+    ):
+        if self.active_rooms.get(conversation_id, None) is None:
             self.active_rooms[conversation_id] = {}
-        for user_id in users:
-            user_online_socket = self.active_connections_online.get(user_id)
-            if not user_online_socket:
-                continue
-            self.active_rooms[conversation_id][user_id] = user_online_socket
+        self.active_rooms.get(conversation_id).update({user_id: websocket})  # type: ignore
+        await websocket.accept()
+        # for user_id in users:
+        #     user_room = self.active_rooms[conversation_id]
+        #     if user_room.get(user_id, None) is None:
+        #         self.active_rooms[conversation_id][user_id] = websocket
+        #         await websocket.accept()
+        #     else:
+        #         _ = self.active_rooms[conversation_id].pop(user_id)
+        #         self.active_rooms[conversation_id][user_id] = websocket
+        #         await websocket.accept()
+        #         break
+
+    async def close_conversation(self, user_id: int):
+        for conversation_id, user_in_rooms in self.active_rooms.items():
+            if user_id in user_in_rooms:
+                _ = user_in_rooms.pop(user_id)
+                if len(user_in_rooms) == 0:
+                    _ = self.active_rooms.pop(conversation_id)
 
     async def send_message(
         self,

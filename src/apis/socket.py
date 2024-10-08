@@ -43,7 +43,7 @@ class ValidateJsonWebToken:
 validate_helper = ValidateJsonWebToken()
 
 
-class OpenConversation(WebSocketEndpoint):
+class OnlineUser(WebSocketEndpoint):
     encoding = "json"
 
     # {"conversation_id": 1}
@@ -58,43 +58,59 @@ class OpenConversation(WebSocketEndpoint):
             if not user_id:
                 await websocket.close(code=1008)
                 return
-            await connect_manager.connect(websocket, user_id)
-            await websocket.send_json({"message": "Connected"})
+            await connect_manager.connect_online(websocket, user_id)
         except Exception as e:
             logger.error(e)
             await websocket.send_json({"message": "Can't connect"})
             await websocket.close(code=1008)
 
     async def on_receive(self, websocket: WebSocket, data):
-        authorization = websocket.headers.get("authorization")
-        if authorization is None:
-            await websocket.close(code=1008)
-            return
+        pass
+
+    async def on_disconnect(self, websocket: WebSocket, close_code):  # type: ignore
         try:
-            conversation_helper = await Factory().get_conversation_helper()
-            conversation_id: int | None = data.get("conversation_id", None)
-            if not conversation_id:
+            _ = await connect_manager.disconnect_user_online(client_id=1)
+        except Exception as e:
+            logger.error(e)
+            await websocket.close(code=1008)
+
+
+class OpenConversation(WebSocketEndpoint):
+    encoding = "json"
+
+    async def on_connect(self, websocket: WebSocket):
+        try:
+            authorization = websocket.headers.get("authorization")
+            conversation_id = websocket.headers.get("conversation_id", None)
+            if authorization is None:
+                await websocket.close(code=1008)
+                return
+            if conversation_id is None:
+                await websocket.close(code=1008)
+                return
+            auth: dict[str, Any] = await validate_helper.validate(authorization)  # type: ignore
+            user_id: int | None = auth.get("id")
+            if not user_id:
                 await websocket.close(code=1008)
                 return
 
+            # logic open conversation
+            conversation_helper = await Factory().get_conversation_helper()
             users_id = await conversation_helper.get_users_from_conversation(
-                conversation_id
+                int(conversation_id)
             )
-            await connect_manager.open_conversation(conversation_id, users_id)
+            await connect_manager.open_conversation(
+                websocket, int(conversation_id), users_id, user_id=user_id
+            )
             await websocket.send_json({"message": "open conversation success"})
             print(connect_manager.active_rooms)
-        except Forbidden as f:
-            logger.error(f)
-            await websocket.send_json(
-                {"message": "open conversation fail, authen fail"}
-            )
-            await websocket.close(code=1008)  # Đóng kết nối khi gặp lỗi auth
         except Exception as e:
             logger.error(e)
-            await websocket.send_json(
-                {"message": "open conversation fail, server error"}
-            )
+            await websocket.send_json({"message": "Can't connect"})
             await websocket.close(code=1008)
+
+    async def on_receive(self, websocket: WebSocket, data):
+        pass
 
     async def on_disconnect(self, websocket: WebSocket, close_code):  # type: ignore
         try:
@@ -107,7 +123,7 @@ class OpenConversation(WebSocketEndpoint):
             if not user_id:
                 await websocket.close(code=1008)
                 return
-            _ = connect_manager.disconnect(client_id=user_id)
+            _ = await connect_manager.close_conversation(user_id == user_id)
         except Exception as e:
             logger.error(e)
             await websocket.close(code=1008)
@@ -142,7 +158,7 @@ class MessageSocket(WebSocketEndpoint):
             conversation_id: int | None = data.get("conversation_id", None)
             if conversation_id is None:
                 raise Exception("conversation_id is required")
-            _ = await connect_manager.send_message(
+            await connect_manager.send_message(
                 conversation_id=conversation_id,
                 user_send=user_id,
                 message=data,
