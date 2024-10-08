@@ -107,7 +107,7 @@ class OpenConversation(WebSocketEndpoint):
             if not user_id:
                 await websocket.close(code=1008)
                 return
-            await connect_manager.disconnect(client_id=user_id)
+            _ = connect_manager.disconnect(client_id=user_id)
         except Exception as e:
             logger.error(e)
             await websocket.close(code=1008)
@@ -131,6 +131,7 @@ class MessageSocket(WebSocketEndpoint):
 
     async def on_receive(self, websocket: WebSocket, data):
         try:
+            print("Vao day")
             authorization = websocket.headers.get("authorization")
             if authorization is None:
                 await websocket.close(code=1008)
@@ -138,13 +139,17 @@ class MessageSocket(WebSocketEndpoint):
             user_id: int = auth.get("id", None)
             if user_id is None:
                 await websocket.close(code=1008)
-            connect_manager.send_message(
-                conversation_id=data.get("conversation_id"),
+            conversation_id: int | None = data.get("conversation_id", None)
+            if conversation_id is None:
+                raise Exception("conversation_id is required")
+            _ = await connect_manager.send_message(
+                conversation_id=conversation_id,
                 user_send=user_id,
                 message=data,
             )  # type: ignore
         except Exception as e:
             logger.error(e)
+            await websocket.send_json({"message": f"{e}"})
             await websocket.close(code=1008)
 
     async def on_disconnect(self, websocket: WebSocket, close_code):  # type: ignore
@@ -158,7 +163,7 @@ class MessageSocket(WebSocketEndpoint):
             if not user_id:
                 await websocket.close(code=1008)
                 return
-            await connect_manager.disconnect(client_id=user_id)
+            _ = connect_manager.disconnect(client_id=user_id)
         except Exception as e:
             logger.error(e)
             await websocket.close(code=1008)
