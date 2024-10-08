@@ -98,8 +98,16 @@ class OpenConversation(WebSocketEndpoint):
 
     async def on_disconnect(self, websocket: WebSocket, close_code):  # type: ignore
         try:
-            # Xử lý ngắt kết nối nếu cần
-            pass
+            authorization = websocket.headers.get("authorization")
+            if authorization is None:
+                await websocket.close(code=1008)
+                return
+            auth: dict[str, Any] = await validate_helper.validate(authorization)  # type: ignore
+            user_id: int | None = auth.get("id", None)
+            if not user_id:
+                await websocket.close(code=1008)
+                return
+            await connect_manager.disconnect(client_id=user_id)
         except Exception as e:
             logger.error(e)
             await websocket.close(code=1008)
@@ -109,10 +117,19 @@ class MessageSocket(WebSocketEndpoint):
     encoding = "json"
 
     async def on_connect(self, websocket: WebSocket):  # type: ignore
-        await websocket.accept()
+        try:
+            await websocket.accept()
+            authorization = websocket.headers.get("authorization")
+            if authorization is None:
+                await websocket.close(code=1008)
+                return
+            await websocket.send_json({"message": "message ws connected"})
+        except Exception as e:
+            logger.error(e)
+            await websocket.send_json({"message": "message ws can't connect"})
+            await websocket.close(code=1008)
 
-    async def on_receive(self, websocket: WebSocket, data):  # type: ignore
-        await websocket.accept()
+    async def on_receive(self, websocket: WebSocket, data):
         try:
             authorization = websocket.headers.get("authorization")
             if authorization is None:
@@ -132,7 +149,16 @@ class MessageSocket(WebSocketEndpoint):
 
     async def on_disconnect(self, websocket: WebSocket, close_code):  # type: ignore
         try:
-            pass
+            authorization = websocket.headers.get("authorization")
+            if authorization is None:
+                await websocket.close(code=1008)
+                return
+            auth: dict[str, Any] = await validate_helper.validate(authorization)  # type: ignore
+            user_id: int | None = auth.get("id", None)
+            if not user_id:
+                await websocket.close(code=1008)
+                return
+            await connect_manager.disconnect(client_id=user_id)
         except Exception as e:
             logger.error(e)
             await websocket.close(code=1008)

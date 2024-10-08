@@ -60,7 +60,7 @@ class ConnectionManager:
             await websocket.accept()
             self.active_connections_online[client_id] = websocket
 
-    def disconnect(self, *, websocket: WebSocket, client_id: int):
+    def disconnect(self, *, client_id: int):
         if self.active_connections_online.get(client_id, None) is not None:
             _ = self.active_connections_online.pop(client_id)
 
