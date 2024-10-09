@@ -26,6 +26,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
     async def create_appointment(
         self,
         patient_id: int,
+        name: str,
         doctor_id: int,
         work_schedule_id: int,
         pre_examination_notes: str | None = None,
@@ -75,6 +76,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             #     return {"message": "Create appointment successfully"}
             # FXIME: check logic for payment id bank
             appointment.appointment_status = "approved"
+            appointment.name = name
             appointment.patient = patient_model
             appointment.doctor = work_schedule_model.doctor
             appointment.work_schedule_id = work_schedule_id
@@ -259,7 +261,9 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                     self.model_class.doctor.has(
                         DoctorModel.first_name.ilike(f"%{part}%")
                     ),
-                    self.model_class.doctor.has(DoctorModel.last_name.ilike(f"%{part}%")),
+                    self.model_class.doctor.has(
+                        DoctorModel.last_name.ilike(f"%{part}%")
+                    ),
                 )
                 for part in name_parts
             ]
@@ -275,7 +279,9 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         #     joinedload(self.model_class.doctor),
         #     joinedload(self.model_class.patient)
         # )
-        total_count = await self.session.execute(select(func.count()).select_from(query))
+        total_count = await self.session.execute(
+            select(func.count()).select_from(query)
+        )
         query = query.offset((current_page - 1) * page_size).limit(page_size)
 
         result = await self.session.execute(query)

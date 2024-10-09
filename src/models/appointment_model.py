@@ -39,6 +39,8 @@ class AppointmentModel(Model):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
+    name: Mapped[str] = mapped_column(String, nullable=True)
+
     patient_id: Mapped[int] = mapped_column(ForeignKey("patient.id"), nullable=False)
 
     doctor_id: Mapped[int] = mapped_column(ForeignKey("doctor.id"), nullable=False)

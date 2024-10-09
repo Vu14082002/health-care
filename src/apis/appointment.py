@@ -13,7 +13,9 @@ from src.schema.appointment_schema import (
 
 
 class AppointmentApiGET(HTTPEndpoint):
-    async def get(self, query_params: RequestGetAllAppointmentSchema, auth: JsonWebToken):
+    async def get(
+        self, query_params: RequestGetAllAppointmentSchema, auth: JsonWebToken
+    ):
         try:
             appointment_helper: AppointmentHelper = (
                 await Factory().get_appointment_helper()
@@ -70,7 +72,9 @@ class AppointmentApi(HTTPEndpoint):
                 raise Forbidden(
                     msg="Unauthorized access",
                     error_code=ErrorCode.UNAUTHORIZED.name,
-                    errors={"message": "Only patients or admins can create appointments"},
+                    errors={
+                        "message": "Only patients or admins can create appointments"
+                    },
                 )
 
             if user_role == "ADMIN" and not form_data.patient_id:
@@ -93,6 +97,7 @@ class AppointmentApi(HTTPEndpoint):
             )
             response_data = await appointment_helper.create_appointment(
                 patient_id,
+                form_data.name,
                 form_data.doctor_id,
                 form_data.work_schedule_id,
                 form_data.pre_examination_notes,

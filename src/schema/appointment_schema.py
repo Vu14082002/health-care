@@ -6,9 +6,15 @@ from pydantic import BaseModel, Field
 
 class RequestRegisterAppointment(BaseModel):
     patient_id: int | None = None
+    name: str = Field(..., description="name of appointment", examples=["Kham Thuong"])
     doctor_id: int
     work_schedule_id: int
     pre_examination_notes: str | None = None
+
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
+        extra = "forbid"
 
 
 class RequestGetAllAppointmentSchema(BaseModel):

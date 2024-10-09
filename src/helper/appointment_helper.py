@@ -9,13 +9,14 @@ class AppointmentHelper:
     async def create_appointment(
         self,
         patient_id: int,
+        name: str,
         doctor_id: int,
         work_schedule_id: int,
         pre_examination_notes: str | None = "",
     ):
         try:
             return await self.appointment_repository.create_appointment(
-                patient_id, doctor_id, work_schedule_id, pre_examination_notes
+                patient_id, name, doctor_id, work_schedule_id, pre_examination_notes
             )
         except BadRequest as e:
             raise e
