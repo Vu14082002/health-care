@@ -48,9 +48,6 @@ class UserModel(Model):
     notifications: Mapped[List["NotificationModel"]] = relationship(
         "NotificationModel", back_populates="user"
     )
-    conversations: Mapped[List["ConversationUserModel"]] = relationship(
-        "ConversationUserModel", back_populates="user"
-    )
     messages: Mapped[List["MessageModel"]] = relationship(
         "MessageModel", back_populates="sender"
     )

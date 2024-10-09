@@ -10,10 +10,10 @@ class ConversationHelper:
     def __init__(self, conversation_repository: ConversationRepoitory):
         self.conversation_repository = conversation_repository
 
-    async def create_conversation(self, user_create: int, participant_id: int):
+    async def create_conversation(self, user_create: int, appointment_id: int):
         try:
             conversation = await self.conversation_repository.create_conversation(
-                user_create, participant_id
+                user_create, appointment_id
             )
             return conversation
         except (BadRequest, InternalServer) as e:

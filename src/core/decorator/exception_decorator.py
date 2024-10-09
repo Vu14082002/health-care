@@ -1,6 +1,8 @@
 import logging
 from typing import Awaitable, Callable
+
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+
 from src.core.exception import BadRequest, Forbidden, InternalServer
 from src.enum import ErrorCode
 
@@ -15,7 +17,9 @@ def catch_error_repository(func: Callable[..., Awaitable]):  # type: ignore
             logging.error(f"Error during rollback: {rollback_error}")
 
     async def wrapper(self, *args, **kwargs):
-        logging.info(f"Executing {func.__name__} with args: {args} and kwargs: {kwargs}")
+        logging.info(
+            f"Executing {func.__name__} with args: {args} and kwargs: {kwargs}"
+        )
         try:
             result = await func(self, *args, **kwargs)
             logging.info(f"{func.__name__} executed successfully")

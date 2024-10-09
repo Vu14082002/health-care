@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, ForeignKey, Integer
+from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,10 +17,12 @@ class MessageModel(Model):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
-    sender_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"), nullable=False)
+    sender_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("user.id"), nullable=False
+    )
 
-    conversation_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("conversation.id"), nullable=False
+    conversation_id: Mapped[str] = mapped_column(
+        String, ForeignKey("conversation.id"), nullable=False
     )
 
     reply_id: Mapped[int | None] = mapped_column(

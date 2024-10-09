@@ -9,12 +9,13 @@ from src.core.database.postgresql import Model
 
 if TYPE_CHECKING:
     from . import (
+        ConversationModel,
+        DailyHealCheckModel,
         DoctorModel,
         MedicalRecordModel,
         PatientModel,
         PaymentModel,
         WorkScheduleModel,
-        DailyHealCheckModel,
     )
 
 from sqlalchemy import event
@@ -74,6 +75,9 @@ class AppointmentModel(Model):
     daily_health_checks: Mapped[list["DailyHealCheckModel"]] = relationship(
         "DailyHealCheckModel",
         back_populates="appointment",
+    )
+    conversation: Mapped["ConversationModel"] = relationship(
+        "ConversationModel", back_populates="appointment", uselist=False
     )
 
     @staticmethod

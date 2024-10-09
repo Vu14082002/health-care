@@ -33,16 +33,13 @@ class ConversationApi(HTTPEndpoint):
                 },
             )
 
-    async def post(self, form_data: RequestCreateConvertsationSchema, auth: JsonWebToken):
+    async def post(
+        self, form_data: RequestCreateConvertsationSchema, auth: JsonWebToken
+    ):
         try:
-            if auth.get("id") == form_data.participant_id:
-                raise BadRequest(
-                    error_code=ErrorCode.BAD_REQUEST.name,
-                    errors={"message": "You can not create conversation with yourself"},
-                )
             conversation_service = await Factory().get_conversation_helper()
             conversation = await conversation_service.create_conversation(
-                user_create=auth.get("id"), participant_id=form_data.participant_id
+                user_create=auth.get("id"), appointment_id=form_data.appointment_id
             )
             return conversation
         except (BadRequest, Forbidden, InternalServer) as e:

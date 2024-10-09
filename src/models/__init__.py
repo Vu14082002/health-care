@@ -10,9 +10,11 @@
 # from src.core.database.postgresql import Model, get_session
 # from src.core.database.postgresql.repository import Base
 from src.models.appointment_model import AppointmentModel
-from src.models.conversation_model import ConversationModel, ConversationUserModel
+from src.models.conversation_model import ConversationModel
+from src.models.daily_health_check_model import DailyHealCheckModel
 from src.models.doctor_model import DoctorModel
 from src.models.medical_records_model import MedicalRecordModel
+
 from src.models.message_model import MessageModel
 from src.models.notification_model import NotificationModel
 from src.models.patient_model import PatientModel
@@ -20,7 +22,6 @@ from src.models.payment_model import PaymentModel
 from src.models.rating_model import RatingModel
 from src.models.user_model import UserModel
 from src.models.work_schedule_model import WorkScheduleModel
-from src.models.daily_health_check_model import DailyHealCheckModel
 
 __all__ = [
     "AppointmentModel",
@@ -34,7 +35,6 @@ __all__ = [
     "RatingModel",
     "UserModel",
     "WorkScheduleModel",
-    "ConversationUserModel",
     "DailyHealCheckModel",
 ]
 # async def manage_database():

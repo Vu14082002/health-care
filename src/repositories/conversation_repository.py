@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from sqlalchemy import exists, func, select
+from sqlalchemy import and_, exists, or_, select
 from sqlalchemy.orm import joinedload
 
 from src.core.database.postgresql import PostgresRepository
@@ -10,44 +10,101 @@ from src.core.decorator.exception_decorator import (
 )
 from src.core.exception import BadRequest
 from src.enum import ErrorCode
-from src.models.conversation_model import ConversationModel, ConversationUserModel
-from src.models.user_model import UserModel
+from src.models.appointment_model import AppointmentModel
+from src.models.conversation_model import ConversationModel
 from src.schema.conversation_schema import RequestGetAllConversationSchema
 
 
 class ConversationRepoitory(PostgresRepository[ConversationModel]):
 
     @catch_error_repository
-    async def create_conversation(self, user_create: int, participant_id: int):
-        user_exist = select(exists().where(UserModel.id == participant_id))
-        result_user_exist = await self.session.execute(user_exist)
-        data = result_user_exist.scalar()
-        if not data:
+    async def create_conversation(self, user_create: int, appointment_id: int):
+        # check appointment_id exist
+        query_appointment = select(
+            exists().where(
+                and_(
+                    AppointmentModel.id == appointment_id,
+                    or_(
+                        AppointmentModel.doctor_id == user_create,
+                        AppointmentModel.patient_id == user_create,
+                    ),
+                )
+            )
+        )
+        result = await self.session.execute(query_appointment)
+        is_exist = result.scalar_one_or_none()
+        if not is_exist:
             raise BadRequest(
-                error_code=ErrorCode.BAD_REQUEST.name,
-                errors={"message": "Not found user you want to create conversation"},
+                error_code=ErrorCode.NOT_FOUND.name,
+                errors={
+                    "message": "Appointment not found or you are not permission to create conversation this appointment"
+                },
             )
 
-        query_conversation = (
+        query_find_conversation = (
             select(ConversationModel)
-            .join(ConversationUserModel)
-            .filter(ConversationUserModel.user_id.in_([user_create, participant_id]))
-            .group_by(ConversationModel.id)
-            .having(func.count(ConversationUserModel.user_id) == 2)
+            .where(ConversationModel.appointment_id == appointment_id)
+            .options(
+                joinedload(ConversationModel.appointment),
+                joinedload(ConversationModel.messages),
+            )
         )
-        result = await self.session.execute(query_conversation)
+        result_query_find_conversation = await self.session.execute(
+            query_find_conversation
+        )
 
-        conversation_model = result.scalar_one_or_none()
-
+        conversation_model = (
+            result_query_find_conversation.unique().scalar_one_or_none()
+        )
         if conversation_model:
-            return {"conversation_id": conversation_model.id}
-        # create new conversation id not exist
+            data = self._get_conversation_details(conversation_model, user_create)
+            return data
+        # create new conversation id not exist\
+        appointment = await self.session.get(AppointmentModel, appointment_id)
         new_conversation = ConversationModel()
+        new_conversation.appointment = appointment
         self.session.add(new_conversation)
-        new_conversation.users.append(ConversationUserModel(user_id=user_create))
-        new_conversation.users.append(ConversationUserModel(user_id=participant_id))
         await self.session.commit()
-        return {"conversation_id": new_conversation.id}
+        return self._get_conversation_details(
+            conversation_model, user_create, appointment
+        )
+
+    def _get_conversation_details(
+        self,
+        conversation_model: ConversationModel,
+        user_create: int,
+        appointment: AppointmentModel | None = None,
+    ):
+        appointment = conversation_model.appointment if not appointment else appointment
+        participant = (
+            appointment.doctor
+            if appointment.doctor_id != user_create
+            else appointment.patient
+        )
+        participant = (
+            appointment.doctor
+            if appointment.doctor_id != user_create
+            else appointment.patient
+        )
+
+        latest_message = None
+        unread = 0
+        for message in conversation_model.messages:
+            if message.sender_id != user_create and not message.is_read:
+                unread += 1
+            if not latest_message or message.created_at > message.created_at:
+                latest_message = message
+        data = {
+            **conversation_model.as_dict,
+            "users": [
+                appointment.doctor_id,
+                appointment.patient_id,
+            ],
+            "participant": {**participant.as_dict},
+            "latest_message": {**latest_message.as_dict} if latest_message else {},
+            "unread": unread,
+        }
+        return data
 
     @exception_handler
     async def get_conversation(
