@@ -86,25 +86,27 @@ class MessageRepository(PostgresRepository[MessageModel]):
     async def create_message(
         self,
         sender_id: int,
-        conversation_id: int,
+        conversation_id: str,
         reply_id: int | None,
         message: MessageContentSchema,
     ):
         if reply_id:
             check_message_exist = select(exists().where(MessageModel.id == reply_id))
-            result = await self.session.execute(check_message_exist)
-            data_result = result.scalar()
-            if not data_result:
+            result_check_message_exist = await self.session.execute(check_message_exist)
+            data_result_check_message_exist = result_check_message_exist.scalar_one()
+            if not data_result_check_message_exist:
                 raise BadRequest(
                     error_code=ErrorCode.NOT_FOUND.name,
                     errors={"message": "Reply message not found"},
                 )
         # check conversation exist
-        check_conversation_exist = select(
-            exists().where(ConversationModel.id == conversation_id)
+        conversation = (
+            select(ConversationModel)
+            .where(ConversationModel.id == conversation_id)
+            .options(joinedload(ConversationModel.appointment))
         )
-        result_conversation = await self.session.execute(check_conversation_exist)
-        data_result_conversation = result_conversation.scalar()
+        result_conversation = await self.session.execute(conversation)
+        data_result_conversation = result_conversation.scalar_one_or_none()
         if not data_result_conversation:
             raise BadRequest(
                 error_code=ErrorCode.NOT_FOUND.name,
@@ -119,5 +121,8 @@ class MessageRepository(PostgresRepository[MessageModel]):
         )
         _ = self.session.add(message_data)
         await self.session.commit()
-        data = message_data.as_dict
-        return message_data.as_dict
+        appointment = data_result_conversation.appointment
+        return {
+            **message_data.as_dict,
+            "users": [appointment.doctor_id, appointment.patient_id],
+        }

@@ -14,7 +14,7 @@ class MessageHelper:
     async def create_message(
         self,
         sender_id: int,
-        conversation_id: int,
+        conversation_id: str,
         reply_id: int | None,
         message: MessageContentSchema,
     ):

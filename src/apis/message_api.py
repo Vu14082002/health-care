@@ -1,6 +1,7 @@
 import logging
 
 from starlette.datastructures import UploadFile
+from starlette.requests import Request
 
 from src.core.endpoint import HTTPEndpoint
 from src.core.exception import BadRequest, InternalServer
@@ -25,11 +26,16 @@ class MessageApi(HTTPEndpoint):
         except Exception as e:
             logging.error(e)
 
-    async def post(self, form_data: RequestCreateMessageSchema, auth: JsonWebToken):
+    async def post(
+        self,
+        request: Request,
+        form_data: RequestCreateMessageSchema,
+        auth: JsonWebToken,
+    ):
         try:
             if all(
                 item is None
-                for item in [form_data.content, form_data.media, form_data.image]
+                for item in [form_data.content, form_data.media, form_data.images]
             ):
                 raise BadRequest(
                     error_code=ErrorCode.VALIDATION_ERROR.name,
@@ -44,7 +50,7 @@ class MessageApi(HTTPEndpoint):
                 )
             s3_service = S3Service()
             media = None
-            image = None
+            images = None
             content = form_data.content
             if form_data.media:
                 if isinstance(form_data.media, UploadFile):
@@ -59,19 +65,21 @@ class MessageApi(HTTPEndpoint):
                 if media is None:
                     raise BadRequest(error_code=ErrorCode.S)
             # Upload image file if provided
-            if form_data.image:
-                if isinstance(form_data.image, UploadFile):
-                    upload_file: UploadFile = form_data.image
-                    await upload_file.seek(0)
+            form_request = await request.form()
+            images = []
+            images_form = form_request.getlist("images")
+            for image in images_form:
+                if isinstance(image, UploadFile):
+                    upload_file: UploadFile = image
                     image = await s3_service.upload_file_from_form(upload_file)
-                elif isinstance(form_data.image, bytes):
-                    image = await s3_service.upload_file_from_bytes(
-                        form_data.image, "image.jpg"
-                    )
+                    images.append(image)
+                elif isinstance(image, bytes):
+                    image = await s3_service.upload_file_from_bytes(image, "image.jpg")
+                    images.append(image)
                 else:
                     raise ValueError("image must be UploadFile or bytes")
             message_content = MessageContentSchema(
-                media=media, image=image, content=content
+                media=media, images=images, content=content
             )
             message_helper = await Factory().get_message_helper()
             result = await message_helper.create_message(
@@ -84,6 +92,7 @@ class MessageApi(HTTPEndpoint):
         except (ValueError, BadRequest, InternalServer) as e:
             raise e
         except Exception as e:
+            logging.error(e)
             raise InternalServer(
                 msg="Internal server error", error_code=ErrorCode.SERVER_ERROR.name
             ) from e

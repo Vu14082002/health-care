@@ -68,7 +68,7 @@ class AppointmentModelStatus(Enum):
 
 class MessageContentSchema(BaseModel):
     media: str | bytes | None
-    image: str | bytes | None
+    images: list[str] | list[bytes] | None
     content: str | None
 
 
