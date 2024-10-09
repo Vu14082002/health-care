@@ -43,7 +43,7 @@ class MessageRepository(PostgresRepository[MessageModel]):
                     )
                     result_query_message = await self.session.execute(query_get_user)
                     data_result_query_message = result_query_message.scalar_one()
-
+                    sender_dict = {}
                     if data_result_query_message.doctor:
                         sender_dict = {
                             "first_name": data_result_query_message.doctor.first_name,
@@ -55,16 +55,17 @@ class MessageRepository(PostgresRepository[MessageModel]):
                         sender_dict = {
                             "first_name": data_result_query_message.patient.first_name,
                             "last_name": data_result_query_message.patient.last_name,
-                            "avatar": data_result_query_message.avatar,
+                            "avatar": data_result_query_message.patient.avatar,
                             "phone_number": data_result_query_message.phone_number,
                         }
-                    else:
-                        sender_dict = {
-                            "first_name": "Quan Tri",
-                            "last_name": "Vien",
-                            "avatar": img_admin,
-                            "phone_number": data_result_query_message.phone_number,
-                        }
+                    # for role admin
+                    # else:
+                    #     sender_dict = {
+                    #         "first_name": "Quan Tri",
+                    #         "last_name": "Vien",
+                    #         "avatar": img_admin,
+                    #         "phone_number": data_result_query_message.phone_number,
+                    #     }
                     items_users[sender_id_str] = sender_dict
                 item = {
                     "sender": items_users.get(sender_id_str),
