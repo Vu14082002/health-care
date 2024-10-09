@@ -64,7 +64,7 @@ class ConversationRepoitory(PostgresRepository[ConversationModel]):
         self.session.add(new_conversation)
         await self.session.commit()
         return self._get_conversation_details(
-            conversation_model, user_create, appointment
+            new_conversation, user_create, appointment, True
         )
 
     def _get_conversation_details(
@@ -72,6 +72,7 @@ class ConversationRepoitory(PostgresRepository[ConversationModel]):
         conversation_model: ConversationModel,
         user_create: int,
         appointment: AppointmentModel | None = None,
+        is_new: bool = False,
     ):
         appointment = conversation_model.appointment if not appointment else appointment
         participant = (
@@ -87,11 +88,12 @@ class ConversationRepoitory(PostgresRepository[ConversationModel]):
 
         latest_message = None
         unread = 0
-        for message in conversation_model.messages:
-            if message.sender_id != user_create and not message.is_read:
-                unread += 1
-            if not latest_message or message.created_at > message.created_at:
-                latest_message = message
+        if not is_new:
+            for message in conversation_model.messages:
+                if message.sender_id != user_create and not message.is_read:
+                    unread += 1
+                if not latest_message or message.created_at > message.created_at:
+                    latest_message = message
         data = {
             **conversation_model.as_dict,
             "users": [
