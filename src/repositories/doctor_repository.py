@@ -482,9 +482,11 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             await self.session.commit()
             return {"message": "Work schedule updated successfully"}
         except BadRequest as e:
+            logging.error("Error in add_workingschedule: %s", e)
             await self.session.rollback()
             raise e
-        except Exception:
+        except Exception as e:
+            logging.error("Error in add_workingschedule: %s", e)
             await self.session.rollback()
             raise InternalServer(
                 error_code=ErrorCode.SERVER_ERROR.name,
