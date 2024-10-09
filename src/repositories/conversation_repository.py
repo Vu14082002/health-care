@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 from sqlalchemy import and_, exists, or_, select
 from sqlalchemy.orm import joinedload
 
@@ -110,35 +108,40 @@ class ConversationRepoitory(PostgresRepository[ConversationModel]):
     async def get_conversation(
         self, user_id: int, query_params: RequestGetAllConversationSchema
     ):
-        query_conversation = (
-            select(ConversationModel)
-            .join(ConversationUserModel)
-            .where(ConversationUserModel.user_id == user_id)
-            .options(joinedload(ConversationModel.messages))
+        query_appointment = (
+            select(AppointmentModel)
+            .where(
+                or_(
+                    AppointmentModel.doctor_id == user_id,
+                    AppointmentModel.patient_id == user_id,
+                )
+            )
+            .options(
+                joinedload(AppointmentModel.conversation).joinedload(
+                    ConversationModel.messages
+                )
+            )
+            .order_by(AppointmentModel.created_at.desc())
         )
-        result_query = await self.session.execute(query_conversation)
-
-        data_result_qurey = result_query.unique().scalars().all()
-
+        result_query_appointment = await self.session.execute(query_appointment)
+        data_result_query_appointment = (
+            result_query_appointment.unique().scalars().all()
+        )
         items = []
-        for item in data_result_qurey:
-            data_dict = defaultdict()
-            latest_message = item.latest_message
-            data_dict.update(
+        for appointment in data_result_query_appointment:
+            if appointment.conversation is None:
+                continue
+            name_conversation = f"{appointment.name} - {appointment.work_schedule.examination_type} - {appointment.work_schedule.work_date}"
+            data = self._get_conversation_details(
+                appointment.conversation, user_id, appointment
+            )
+            items.append(
                 {
-                    "conversation_id": item.id,
-                    "latest_message": (
-                        latest_message.as_dict if latest_message else None
-                    ),
+                    "name": name_conversation,
+                    **data,
                 }
             )
-            items.append(data_dict)
         return items
 
     async def get_users_from_conversation(self, conversation_id: int):
-        query_conversation = select(ConversationUserModel.user_id).where(
-            ConversationUserModel.conversation_id == conversation_id
-        )
-        result_query = await self.session.execute(query_conversation)
-        data_result_query = result_query.scalars().all()
-        return data_result_query
+        return [1, 2, 3, 4]
