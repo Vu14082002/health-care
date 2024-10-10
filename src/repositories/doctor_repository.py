@@ -3,7 +3,19 @@ import math
 from datetime import date, datetime, time, timedelta
 from typing import Any, Dict, List, Literal, Optional, Tuple
 
-from sqlalchemy import Result, Row, and_, asc, case, desc, exists, func, not_, or_, select
+from sqlalchemy import (
+    Result,
+    Row,
+    and_,
+    asc,
+    case,
+    desc,
+    exists,
+    func,
+    not_,
+    or_,
+    select,
+)
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 
@@ -266,6 +278,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             raise BadRequest(
                 msg="User has already been registered",
                 error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
+                errors={"phone_number": "Phone number has already been registered"},
             )
 
     async def _check_existing_doctor(self, email: str, license_number: str) -> None:
@@ -277,10 +290,14 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 )
             )
         )
-        if doctor_exists:
+        # check if email or license number has already been registered as patient
+        query_patient_exists = select(exists().where(PatientModel.email == email))
+        result = await self.session.execute(query_patient_exists)
+        patient_exists = result.scalar_one()
+        if doctor_exists or patient_exists:
             raise BadRequest(
-                msg="Doctor with this email or license number has already been registered",
                 error_code=ErrorCode.EMAIL_OR_LICENSE_NUMBER_HAVE_BEEN_REGISTERED.name,
+                errors={"email": "Email or license number has already been registered"},
             )
 
     def _create_user_model(self, data: dict[str, Any]) -> UserModel:
@@ -348,19 +365,21 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 .limit(1)
             )
 
-            result: Result[Tuple[DoctorModel, Any, Any, DoctorExaminationPriceModel]] = (
-                await self.session.execute(query)
-            )
-            row: Row[Tuple[DoctorModel, Any, Any, DoctorExaminationPriceModel]] | None = (
-                result.first()
-            )
+            result: Result[
+                Tuple[DoctorModel, Any, Any, DoctorExaminationPriceModel]
+            ] = await self.session.execute(query)
+            row: (
+                Row[Tuple[DoctorModel, Any, Any, DoctorExaminationPriceModel]] | None
+            ) = result.first()
 
             if row is None:
                 return None
 
             doctor, avg_rating, comments, latest_price = row
             doctor_dict = doctor.as_dict
-            doctor_dict["avg_rating"] = float(avg_rating) if avg_rating is not None else 0
+            doctor_dict["avg_rating"] = (
+                float(avg_rating) if avg_rating is not None else 0
+            )
             doctor_dict["comments"] = [
                 comment for comment in comments if comment is not None
             ]
@@ -396,7 +415,9 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             if data_check_model.verify_status != 2:
                 raise BadRequest(
                     error_code=ErrorCode.DOCTOR_NOT_FOUND.name,
-                    errors={"message": "doctor is not verify, pls varyfi and try again"},
+                    errors={
+                        "message": "doctor is not verify, pls varyfi and try again"
+                    },
                 )
             if data_check_model.type_of_disease != "both":
                 if data_check_model.type_of_disease != data.examination_type:
@@ -578,7 +599,9 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                     WorkScheduleModel.work_date.between(start_date, end_date)
                 )
             if examination_type:
-                conditions.append(WorkScheduleModel.examination_type == examination_type)
+                conditions.append(
+                    WorkScheduleModel.examination_type == examination_type
+                )
             if ordered is not None:
                 conditions.append(WorkScheduleModel.ordered == ordered)
             if conditions:
