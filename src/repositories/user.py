@@ -2,7 +2,7 @@ import logging
 import logging as log
 from typing import Any, Dict
 
-from sqlalchemy import and_, exists, select
+from sqlalchemy import and_, exists, select, update
 
 from src.core.database.postgresql import PostgresRepository
 from src.core.decorator.exception_decorator import exception_handler
@@ -157,3 +157,22 @@ class UserRepository(PostgresRepository[UserModel]):
         is_patient_email_exists = result_query_check_patient_email.scalar_one()
 
         return is_doctor_email_exists or is_patient_email_exists
+
+    async def reset_pwd(self, user_id: int, password_hash: str):
+        update_statement = (
+            update(UserModel)
+            .where(UserModel.id == user_id)
+            .values(password_hash=password_hash)
+            .returning(UserModel)  # Return the ID (or another column)
+        )
+        result_update_statement = await self.session.execute(update_statement)
+        await self.session.commit()
+
+        # Fetch the updated value
+        data_update_statement = result_update_statement.scalars().first()
+        if not data_update_statement:
+            raise BadRequest(
+                error_code=ErrorCode.NOT_FOUND.name,
+                errors={"message": "Something went wrong when updating password"},
+            )
+        return data_update_statement.as_dict

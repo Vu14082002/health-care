@@ -5,7 +5,11 @@ from src.core.exception import BadRequest, InternalServer
 from src.core.security.authentication import JsonWebToken
 from src.enum import ErrorCode, Role
 from src.factory import Factory
-from src.schema.register import RequestRegisterPatientSchema, RequestUpdateUserSchema
+from src.schema.register import (
+    RequestRegisterPatientSchema,
+    RequestResetPasswordSchema,
+    RequestUpdateUserSchema,
+)
 
 
 class PatientRegisterApi(HTTPEndpoint):
@@ -23,7 +27,6 @@ class PatientRegisterApi(HTTPEndpoint):
 
 
 class UserProfile(HTTPEndpoint):
-
     async def put(self, form_data: RequestUpdateUserSchema, auth: JsonWebToken):
         try:
             if auth.get("role") == Role.ADMIN.value:
@@ -31,6 +34,24 @@ class UserProfile(HTTPEndpoint):
             user_helper = await Factory().get_user_helper()
             user_saved = await user_helper.update_profile(
                 user_id=auth.get("id"), data=form_data.model_dump()
+            )
+            return user_saved
+        except (BadRequest, InternalServer) as e:
+            raise e
+        except Exception as e:
+            log.error("Error on PatientRegisterApi: %s", e)
+            raise InternalServer(
+                msg=f"An error occurred while trying to register the user: {e}",
+                error_code=ErrorCode.SERVER_ERROR.name,
+            ) from e
+
+
+class ResetPassword(HTTPEndpoint):
+    async def put(self, form_data: RequestResetPasswordSchema, auth: JsonWebToken):
+        try:
+            user_helper = await Factory().get_user_helper()
+            user_saved = await user_helper.reset_pwd(
+                user_id=auth.get("id"), password=form_data.password
             )
             return user_saved
         except (BadRequest, InternalServer) as e:

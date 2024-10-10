@@ -311,3 +311,7 @@ class RequestUpdateUserSchema(BaseModel):
                 data = Diploma(data=json_data.get("data"))
                 return data
             raise ValueError("Invalid diploma data")
+
+
+class RequestResetPasswordSchema(BaseModel):
+    password: str = Field(alias="password")
