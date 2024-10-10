@@ -1,3 +1,5 @@
+import datetime
+
 from sqlalchemy import and_, exists, or_, select
 from sqlalchemy.orm import joinedload
 
@@ -10,6 +12,8 @@ from src.core.exception import BadRequest
 from src.enum import ErrorCode
 from src.models.appointment_model import AppointmentModel
 from src.models.conversation_model import ConversationModel
+from src.models.doctor_model import DoctorModel
+from src.models.patient_model import PatientModel
 from src.schema.conversation_schema import RequestGetAllConversationSchema
 
 
@@ -55,7 +59,7 @@ class ConversationRepoitory(PostgresRepository[ConversationModel]):
             result_query_find_conversation.unique().scalar_one_or_none()
         )
         if conversation_model:
-            data = self._get_conversation_details(conversation_model, user_create)
+            data = await self._get_conversation_details(conversation_model, user_create)
             return data
             # create new conversation id not exist\
         query_appointment = (
@@ -73,11 +77,11 @@ class ConversationRepoitory(PostgresRepository[ConversationModel]):
         new_conversation.name = name_conversation
         self.session.add(new_conversation)
         await self.session.commit()
-        return self._get_conversation_details(
+        return await self._get_conversation_details(
             new_conversation, user_create, appointment, True
         )
 
-    def _get_conversation_details(
+    async def _get_conversation_details(
         self,
         conversation_model: ConversationModel,
         user_create: int,
@@ -104,6 +108,51 @@ class ConversationRepoitory(PostgresRepository[ConversationModel]):
                     unread += 1
                 if not latest_message or message.created_at > message.created_at:
                     latest_message = message
+        if latest_message:
+            user_sender_query = await self.session.execute(
+                select(PatientModel).where(PatientModel.id == latest_message.sender_id)
+            )
+            result_user_sender_query = user_sender_query.unique().scalar_one_or_none()
+            if not result_user_sender_query:
+                user_sender_query = await self.session.execute(
+                    select(DoctorModel).where(
+                        DoctorModel.id == latest_message.sender_id
+                    )
+                )
+                result_user_sender_query = (
+                    user_sender_query.unique().scalar_one_or_none()
+                )
+                exclue_fields = [
+                    "certification",
+                    "verify_status",
+                    "is_local_person",
+                    "diploma",
+                    "type_of_disease",
+                    "hopital_address_work",
+                    "address",
+                    "description",
+                    "license_number",
+                    "education",
+                    "account_number",
+                    "bank_name",
+                    "beneficiary_name",
+                    "branch_name",
+                    "created_at",
+                    "updated_at",
+                    "is_deleted",
+                ]
+                create_at = datetime.datetime.fromtimestamp(
+                    latest_message.created_at, datetime.timezone.utc
+                )
+                latest_message = {
+                    **latest_message.as_dict,
+                    "sender": {
+                        k: v
+                        for k, v in result_user_sender_query.as_dict.items()
+                        if k not in exclue_fields
+                    },
+                    "created_at": create_at.isoformat(),
+                }
         data = {
             **conversation_model.as_dict,
             "users": [
@@ -111,7 +160,7 @@ class ConversationRepoitory(PostgresRepository[ConversationModel]):
                 appointment.patient_id,
             ],
             "participant": {**participant.as_dict},
-            "latest_message": {**latest_message.as_dict} if latest_message else {},
+            "latest_message": latest_message if latest_message else {},
             "unread": unread,
         }
         return data
@@ -144,7 +193,7 @@ class ConversationRepoitory(PostgresRepository[ConversationModel]):
             if appointment.conversation is None:
                 continue
             # name_conversation = f"{appointment.name} - {appointment.work_schedule.examination_type} - {appointment.work_schedule.work_date}"
-            data = self._get_conversation_details(
+            data = await self._get_conversation_details(
                 appointment.conversation, user_id, appointment
             )
             items.append(
