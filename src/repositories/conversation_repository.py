@@ -57,10 +57,20 @@ class ConversationRepoitory(PostgresRepository[ConversationModel]):
         if conversation_model:
             data = self._get_conversation_details(conversation_model, user_create)
             return data
-        # create new conversation id not exist\
+            # create new conversation id not exist\
+        query_appointment = (
+            select(AppointmentModel)
+            .where(AppointmentModel.id == appointment_id)
+            .options(joinedload(AppointmentModel.work_schedule))
+        )
+        result_query_appointment = await self.session.execute(query_appointment)
+        data_query_appointment = result_query_appointment.unique().scalar_one()
+
+        name_conversation = f"{data_query_appointment.name} - {data_query_appointment.work_schedule.examination_type} - {data_query_appointment.work_schedule.work_date}"
         appointment = await self.session.get(AppointmentModel, appointment_id)
         new_conversation = ConversationModel()
         new_conversation.appointment = appointment
+        new_conversation.name = name_conversation
         self.session.add(new_conversation)
         await self.session.commit()
         return self._get_conversation_details(
@@ -133,13 +143,12 @@ class ConversationRepoitory(PostgresRepository[ConversationModel]):
         for appointment in data_result_query_appointment:
             if appointment.conversation is None:
                 continue
-            name_conversation = f"{appointment.name} - {appointment.work_schedule.examination_type} - {appointment.work_schedule.work_date}"
+            # name_conversation = f"{appointment.name} - {appointment.work_schedule.examination_type} - {appointment.work_schedule.work_date}"
             data = self._get_conversation_details(
                 appointment.conversation, user_id, appointment
             )
             items.append(
                 {
-                    "name": name_conversation,
                     **data,
                 }
             )

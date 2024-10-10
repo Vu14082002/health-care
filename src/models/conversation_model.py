@@ -20,6 +20,7 @@ class ConversationModel(Model):
     __tablename__ = "conversation"
     # appointment_id
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_random_uuid)
+    name: Mapped[str] = mapped_column(String, nullable=True, default="")
 
     appointment_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("appointment.id"), nullable=False, unique=True

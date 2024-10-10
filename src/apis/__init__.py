@@ -217,15 +217,15 @@ routes = [
         methods=["GET", "POST"],
         tags=["PATIENT", "DOCTOR", "ADMIN"],
     ),
-    # websocker
-    WebSocketRoute(
-        "/ws/online",
-        OnlineUser,
-    ),
-    WebSocketRoute(
-        "/ws/conversation",
-        OpenConversation,
-    ),
-    WebSocketRoute("/ws/message", MessageSocket),
+    # # websocker
+    # WebSocketRoute(
+    #     "/ws/online",
+    #     OnlineUser,
+    # ),
+    # WebSocketRoute(
+    #     "/ws/conversation",
+    #     OpenConversation,
+    # ),
+    # WebSocketRoute("/ws/message", MessageSocket),
     # WebSocketRoute("/ws/call", MessageSocket),
 ]
