@@ -7,7 +7,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.core.database.postgresql import Model
 
 if TYPE_CHECKING:
-    from src.models.conversation_model import ConversationUserModel
     from src.models.doctor_model import DoctorModel
     from src.models.message_model import MessageModel
     from src.models.notification_model import NotificationModel
@@ -29,7 +28,9 @@ class UserModel(Model):
 
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
 
-    role: Mapped[str] = mapped_column(String, nullable=False, default=Role.PATIENT.value)
+    role: Mapped[str] = mapped_column(
+        String, nullable=False, default=Role.PATIENT.value
+    )
 
     doctor: Mapped["DoctorModel"] = relationship(
         "DoctorModel",

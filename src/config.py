@@ -43,6 +43,12 @@ class Config(BaseSettings):
     REGION: str
     S3_ENDPOINT: str
     BOT_SERVICE_URL: str = ""
+    SMTP_MAIL: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_USERNAME: str = ""
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = ""
+    LINK_VERIFY_EMAIL: str = "localhost:8000/v1/admin/auth/verify-email"
 
 
 config = Config()

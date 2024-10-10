@@ -125,9 +125,7 @@ class DoctorHelper:
         except Exception as e:
             raise e
 
-    async def create_doctor(
-        self, data: dict[str, Any], *args: Any, **kwargs: Any
-    ) -> Any:
+    async def create_doctor(self, data: dict[str, Any], *args: Any, **kwargs: Any):
         try:
             doctor = await self.doctor_repository.insert(data)
             return doctor

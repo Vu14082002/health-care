@@ -2,8 +2,10 @@ import logging as log
 from typing import Any, Dict
 
 from sqlalchemy.exc import NoResultFound
+from starlette.background import BackgroundTask
 from starlette.datastructures import UploadFile
 from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from src.core import HTTPEndpoint
 from src.core.exception import BadRequest, Forbidden, InternalServer
@@ -65,7 +67,9 @@ class DoctorOtherVerifyApi(HTTPEndpoint):
             if auth.get("role") != Role.ADMIN.name:
                 raise Forbidden(
                     error_code=ErrorCode.UNAUTHORIZED.name,
-                    errors={"message": "You are not authorized to access this resource"},
+                    errors={
+                        "message": "You are not authorized to access this resource"
+                    },
                 )
 
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
@@ -155,7 +159,9 @@ class DoctorForeignRegisterApi(HTTPEndpoint):
 
 
 class DoctorLocalRegisterApi(HTTPEndpoint):
-    async def post(self, form_data: RequestRegisterDoctorLocalSchema, auth: JsonWebToken):
+    async def post(
+        self, form_data: RequestRegisterDoctorLocalSchema, auth: JsonWebToken
+    ):
         try:
             if auth.get("role", "") != Role.ADMIN.name:
                 raise BadRequest(
@@ -174,8 +180,11 @@ class DoctorLocalRegisterApi(HTTPEndpoint):
             doctor_helper = await Factory().get_doctor_helper()
             data = form_data.model_dump()
             data["verify_status"] = 2
-            result: DoctorModel = await doctor_helper.create_doctor(data)
-            return result.as_dict  # type: ignore
+            result: tuple[DoctorModel, BackgroundTask] = (
+                await doctor_helper.create_doctor(data)
+            )
+            reponse = {"data": result[0].as_dict, "errors": None, "error_code": None}
+            return JSONResponse(content=reponse, status_code=200, background=result[1])
         except (BadRequest, InternalServer) as e:
             log.error(f"Error: {e}")
             raise e
@@ -210,7 +219,9 @@ class AdminRegisterApi(HTTPEndpoint):
 class LoginApi(HTTPEndpoint):
     async def post(self, form_data: RequestLoginSchema) -> Dict[str, Any]:
         user_helper: UserHelper = await Factory().get_user_helper()
-        reponse_json = await user_helper.login(form_data.phone_number, form_data.password)
+        reponse_json = await user_helper.login(
+            form_data.phone_number, form_data.password
+        )
         return reponse_json
 
 
