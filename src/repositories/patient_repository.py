@@ -1,11 +1,14 @@
 import logging
 from typing import Any
-from sqlalchemy.orm import joinedload
+
 from sqlalchemy import exists, func, select
+from sqlalchemy.orm import joinedload
+
 from src.core.database.postgresql import PostgresRepository
 from src.core.exception import BadRequest, InternalServer
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
+from src.models.doctor_model import DoctorModel
 from src.models.patient_model import PatientModel
 from src.models.user_model import Role, UserModel
 from src.schema.register import RequestRegisterPatientSchema
@@ -70,18 +73,21 @@ class PatientRepository(PostgresRepository[PatientModel]):
             )
             if user_exists:
                 raise BadRequest(
-                    msg="User has already been registered",
                     error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
+                    errors={"message": "Phone number has been used by another user"},
                 )
 
             # Check if patient exists by email
             patient_exists = await self.session.scalar(
                 select(exists().where(PatientModel.email == data.email))
             )
-            if patient_exists:
+            doctor_email_exists = await self.session.scalar(
+                select(exists().where(DoctorModel.email == data.email))
+            )
+            if patient_exists or doctor_email_exists:
                 raise BadRequest(
-                    msg="Patient with this email has already been registered",
                     error_code=ErrorCode.EMAIL_HAVE_BEEN_REGISTERED.name,
+                    errors={"message": "Email has been used by another user"},
                 )
 
             # Create user and patient models
