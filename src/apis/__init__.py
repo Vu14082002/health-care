@@ -31,6 +31,7 @@ from src.apis.medical_records_api import (
 )
 from src.apis.message_api import MessageApi
 from src.apis.socket import MessageSocket, OnlineUser, OpenConversation
+from src.apis.user import UserProfile
 from src.apis.working_time_api import (
     CreateDoctorWorkingTimeApi,
     DoctorEmptyWorkingSchedulingTimeApi,
@@ -76,6 +77,13 @@ routes = [
     ),
     RouteSwagger(
         "/auth/logout", LogoutApi, methods=["POST"], tags=["ADMIN", "PATIENT", "DOCTOR"]
+    ),
+    # user detail
+    RouteSwagger(
+        "/user_settings/profile",
+        UserProfile,
+        methods=["PUT"],
+        tags=["PATIENT", "DOCTOR"],
     ),
     # Doctor api
     RouteSwagger(

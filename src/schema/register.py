@@ -105,7 +105,9 @@ class RequestRegisterDoctorLocalSchema(RequestRegisterDoctorSchema):
     offline_price: Optional[float] = None
     online_price: Optional[float] = None
     type_of_disease: Literal[
-        TypeOfDisease.BOTH.value, TypeOfDisease.OFFLINE.value, TypeOfDisease.ONLINE.value
+        TypeOfDisease.BOTH.value,
+        TypeOfDisease.OFFLINE.value,
+        TypeOfDisease.ONLINE.value,
     ]
 
     is_local_person: bool
@@ -143,7 +145,9 @@ class RequestRegisterDoctorLocalSchema(RequestRegisterDoctorSchema):
                 or online_price is None
                 or online_price <= 0
             ):
-                raise ValueError("Missing or invalid offline/online price for both types")
+                raise ValueError(
+                    "Missing or invalid offline/online price for both types"
+                )
 
         return v
 
@@ -151,7 +155,9 @@ class RequestRegisterDoctorLocalSchema(RequestRegisterDoctorSchema):
     def check_is_local_person(cls, v, values):
         type_of_disease = values.get("type_of_disease")
         if v == False and type_of_disease == TypeOfDisease.OFFLINE.value:
-            raise ValueError("Offline type of disease is not allowed for foreign doctor")
+            raise ValueError(
+                "Offline type of disease is not allowed for foreign doctor"
+            )
         return v
 
 
@@ -225,7 +231,7 @@ class ReponseDoctorSchema(BaseModel):
     gender: Literal["male", "female", "other"]
     specialization: str
     certification: str | None = None
-    hospital_address_work: Optional[str] = None
+    hopital_address_work: Optional[str] = None
     address: str
     avatar: str
     description: Optional[str] = None
@@ -250,3 +256,58 @@ class ReponseAdminSchema(BaseModel):
 class RequestLoginSchema(BaseModel):
     phone_number: str
     password: str
+
+
+class RequestUpdateUserSchema(BaseModel):
+    # Common fields
+    first_name: str | None = None
+    last_name: str | None = None
+    date_of_birth: date | None = None
+    gender: Literal["male", "female", "other"] | None = None
+    email: str | None = None
+    phone_number: str | None = None
+    address: str | None = None
+    avatar: Any | None = None
+    occupation: str | None = None
+    emergancy_contact_number: str | None = None
+    blood_type: str | None = None
+    allergies: str | None = None
+    chronic_conditions: str | None = None
+    height: float | None = None
+    weight: float | None = None
+    account_number: str | None = None
+    bank_name: str | None = None
+    beneficiary_name: str | None = None
+    branch_name: str | None = None
+    # field for doctor
+    specialization: str | None = None
+    diploma: Diploma | None = None
+    hopital_address_work: str | None = None
+    description: str | None = None
+    license_number: str | None = None
+    education: Education | None = None
+    certifications: str | None = None
+
+    # Original Config
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
+        extra = "forbid"
+
+    @validator("education", pre=True)
+    def check_education(cls, v):
+        if isinstance(v, str):
+            json_data = json.loads(v)
+            if json_data.get("data"):
+                data = Education(data=json_data.get("data"))
+                return data
+            raise ValueError("Invalid education data")
+
+    @validator("diploma", pre=True)
+    def check_diploma(cls, v):
+        if isinstance(v, str):
+            json_data = json.loads(v)
+            if json_data.get("data"):
+                data = Diploma(data=json_data.get("data"))
+                return data
+            raise ValueError("Invalid diploma data")

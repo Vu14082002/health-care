@@ -50,6 +50,9 @@ class UserHelper:
     #     self._scalar_user(user)
     #     return self._gen_token(payload)
 
+    async def update_profile(self, user_id: int, data: dict[str, Any]):
+        return await self.user_repository.update_profile(user_id, data)
+
     def _scalar_user(self, user: UserModel) -> Dict[str, str]:
         role_name = user.role
         if role_name == Role.ADMIN.value:

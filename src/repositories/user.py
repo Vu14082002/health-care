@@ -2,12 +2,15 @@ import logging
 import logging as log
 from typing import Any, Dict
 
-from sqlalchemy import exists, select
+from sqlalchemy import and_, exists, select
 
 from src.core.database.postgresql import PostgresRepository
+from src.core.decorator.exception_decorator import exception_handler
 from src.core.exception import BadRequest
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
+from src.models.doctor_model import DoctorModel
+from src.models.patient_model import PatientModel
 from src.models.user_model import Role, UserModel
 from src.repositories.global_func import destruct_where
 from src.schema.register import RequestAdminRegisterSchema
@@ -46,8 +49,7 @@ class UserRepository(PostgresRepository[UserModel]):
     async def insert_user(self, data: dict[str, Any]):
         pass
 
-    async def get_by_id(self, user_id: int) -> UserModel | None:
-
+    async def get_by_id(self, user_id: int):
         return await self.get_by("id", user_id)
 
     async def get_one(self, where: Dict[str, Any]):
@@ -63,3 +65,95 @@ class UserRepository(PostgresRepository[UserModel]):
             logging.error("ERROR")
             logging.info(e)
             raise e
+
+    @exception_handler
+    async def update_profile(self, user_id: int, data: dict[str, Any]):
+        user_model = await self.get_one({"id": user_id})
+        if user_model is None:
+            raise BadRequest(
+                error_code=ErrorCode.NOT_FOUND.name,
+                msg="User not found",
+            )
+        model: PatientModel | DoctorModel = (
+            user_model.patient
+            if user_model.role == Role.PATIENT.value
+            else user_model.doctor
+        )
+        value_update = {
+            k: v for k, v in data.items() if k in model.as_dict and v is not None
+        }
+        # check value_update phone_number or email exists
+        value_check = {
+            k: v for k, v in value_update.items() if k in ["phone_number", "email"]
+        }
+
+        if value_check.get("phone_number", None) is not None:
+            is_phone_exists = await self._is_phone_exist(
+                value_check.get("phone_number"), user_id
+            )
+            if is_phone_exists:
+                raise BadRequest(
+                    error_code=ErrorCode.INVALID_PARAMETER.name,
+                    errors={
+                        "message": "This phone number has been used by another user"
+                    },
+                )
+        if value_check.get("email", None) is not None:
+            is_email_exists = await self._is_email_exist(
+                value_check.get("email"), user_id
+            )
+            if is_email_exists:
+                raise BadRequest(
+                    error_code=ErrorCode.INVALID_PARAMETER.name,
+                    msg="You can't update email to an existing one",
+                    errors={"message": "This email has been used by another user"},
+                )
+
+        if value_update:
+            for key, value in value_update.items():
+                setattr(model, key, value)
+
+            await self.session.commit()
+        return model.as_dict
+
+    async def _is_phone_exist(self, phone_number: str, user_id: int):
+        query_check_phone = select(
+            exists().where(
+                and_(
+                    UserModel.phone_number == phone_number,
+                    UserModel.id != user_id,
+                )
+            )
+        )
+        resukt_query_check_phone = await self.session.execute(query_check_phone)
+        return resukt_query_check_phone.scalar_one()
+
+    async def _is_email_exist(self, email: str, user_id: int):
+        query_check_doctor_email = select(
+            exists().where(
+                and_(
+                    DoctorModel.email == email,
+                    DoctorModel.id != user_id,
+                )
+            )
+        )
+        resukt_query_check_doctor_email = await self.session.execute(
+            query_check_doctor_email
+        )
+
+        is_doctor_email_exists = resukt_query_check_doctor_email.scalar_one()
+
+        query_check_patient_email = select(
+            exists().where(
+                and_(
+                    PatientModel.email == email,
+                    PatientModel.id != user_id,
+                )
+            )
+        )
+        result_query_check_patient_email = await self.session.execute(
+            query_check_patient_email
+        )
+        is_patient_email_exists = result_query_check_patient_email.scalar_one()
+
+        return is_doctor_email_exists or is_patient_email_exists
