@@ -86,6 +86,10 @@ class UserHelper:
             await redis.delete(phone_number)
         return {"message": "Logged out successfully"}
 
-    async def reset_pwd(self, user_id: int, password: str):
+    async def reset_pwd(
+        self, user_id: int, phone_number: str, password: str, old_password: str
+    ):
         password_hash = PasswordHandler.hash(password)
-        return await self.user_repository.reset_pwd(user_id, password_hash)
+        return await self.user_repository.reset_pwd(
+            user_id, password_hash, old_password
+        )

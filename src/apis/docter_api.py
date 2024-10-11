@@ -1,6 +1,5 @@
 import logging as log
 
-
 from src.core import HTTPEndpoint
 from src.core.exception import BadRequest, Forbidden, InternalServer
 from src.core.security import JsonWebToken
@@ -61,10 +60,6 @@ class GetAllDoctorApi(HTTPEndpoint):
 class GetAllDoctorLocalAPi(HTTPEndpoint):
     async def get(self, query_params: RequestGetAllDoctorsSchema, auth: JsonWebToken):
         try:
-            # if auth.get("role") != Role.ADMIN.name:
-            #     raise Forbidden(msg="Permission denied",
-            #                     error_code=ErrorCode.FORBIDDEN.name,
-            #                     errors={"message": "You don't have permission to access this resource"})
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             current_page = query_params.current_page if query_params.current_page else 0
             page_size = query_params.page_size if query_params.page_size else 10
@@ -192,7 +187,9 @@ class DoctorGetPatientsApi(HTTPEndpoint):
 
 class DoctorGetPatientsByIdApi(HTTPEndpoint):
 
-    async def get(self, path_params: RequestDoctorPatientByIdSchema, auth: JsonWebToken):
+    async def get(
+        self, path_params: RequestDoctorPatientByIdSchema, auth: JsonWebToken
+    ):
         try:
             user_role = auth.get("role")
             if user_role not in [Role.ADMIN.name, Role.DOCTOR.name]:

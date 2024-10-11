@@ -97,8 +97,9 @@ class RequestRegisterDoctorSchema(BaseModel):
             raise ValueError("Invalid diploma data")
 
 
-class RequestRegisterDoctorForeignSchema(RequestRegisterDoctorSchema):
+class RequestRegisterDoctorForeignSchema:
     online_price: float
+    doctor_id: int
 
 
 class RequestRegisterDoctorLocalSchema(RequestRegisterDoctorSchema):
@@ -179,8 +180,8 @@ class RequestGetAllDoctorsNotVerifySchema(BaseModel):
     )
     verify_status: Optional[int] = Field(
         default=None,
-        description="0: not verify, 1: verified step 1, if not assign, return all",
-        examples=[0, 1, None],
+        description="0: not verify, 1: verified step 1, -1: is reject verify , if not assign, return all",
+        examples=[0, 1, -1, None],
     )
 
     @validator("verify_status", pre=True)
@@ -314,4 +315,5 @@ class RequestUpdateUserSchema(BaseModel):
 
 
 class RequestResetPasswordSchema(BaseModel):
+    old_password: str = Field(alias="old_password")
     password: str = Field(alias="password")

@@ -23,8 +23,8 @@ from src.schema.register import (
     RequestAdminRegisterSchema,
     RequestGetAllDoctorsNotVerifySchema,
     RequestLoginSchema,
-    RequestRegisterDoctorForeignSchema,
     RequestRegisterDoctorLocalSchema,
+    RequestRegisterDoctorSchema,
     RequestRegisterPatientSchema,
     RequestVerifyDoctorSchema,
 )
@@ -77,7 +77,7 @@ class DoctorOtherVerifyApi(HTTPEndpoint):
             page_size = query_params.page_size
             where = {}
             if query_params.verify_status is None:
-                where.update({"verify_status": {"$in": [0, 1]}})
+                where.update({"verify_status": {"$in": [0, 1, -1]}})
             else:
                 where.update({"verify_status": query_params.verify_status})
 
@@ -100,6 +100,39 @@ class DoctorOtherVerifyApi(HTTPEndpoint):
             ) from e
 
 
+class DoctorOtherRejectApiPut(HTTPEndpoint):
+    async def put(self, path_params: RequestVerifyDoctorSchema, auth: JsonWebToken):
+        try:
+            if auth.get("role", "") != Role.ADMIN.name:
+                raise Forbidden(
+                    msg="Unauthorized access",
+                    error_code=ErrorCode.UNAUTHORIZED.name,
+                    errors={"message": "only admin can access"},
+                )
+
+            doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
+            result = await doctor_helper.verify_doctor(
+                doctor_id=path_params.doctor_id, verify_status=-1
+            )
+            if result:
+                return {"message": "Doctor verified successfully on status -1"}
+            else:
+                raise BadRequest(
+                    msg="Doctor not found or already verified",
+                    error_code=ErrorCode.NOT_FOUND.name,
+                    errors={
+                        "message": "Doctor not found or already verified on status -1"
+                    },
+                )
+        except (Forbidden, BadRequest, NoResultFound) as e:
+            raise e
+        except Exception as e:
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": "Error when verify doctor"},
+            ) from e
+
+
 class DoctorOtherVerifyApiPut(HTTPEndpoint):
     async def put(self, path_params: RequestVerifyDoctorSchema, auth: JsonWebToken):
         try:
@@ -111,14 +144,18 @@ class DoctorOtherVerifyApiPut(HTTPEndpoint):
                 )
 
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
-            result = await doctor_helper.verify_doctor(path_params.doctor_id)
+            result = await doctor_helper.verify_doctor(
+                doctor_id=path_params.doctor_id, verify_status=1, online_price=None
+            )
             if result:
-                return {"message": "Doctor verified successfully"}
+                return {"message": "Doctor verified successfully on status 1"}
             else:
                 raise BadRequest(
                     msg="Doctor not found or already verified",
                     error_code=ErrorCode.NOT_FOUND.name,
-                    errors={"message": "Doctor not found or already verified"},
+                    errors={
+                        "message": "Doctor not found or already verified on status 1"
+                    },
                 )
         except (Forbidden, BadRequest, NoResultFound) as e:
             raise e
@@ -130,7 +167,8 @@ class DoctorOtherVerifyApiPut(HTTPEndpoint):
 
 
 class DoctorForeignRegisterApi(HTTPEndpoint):
-    async def post(self, form_data: RequestRegisterDoctorForeignSchema):
+
+    async def post(self, form_data: RequestRegisterDoctorSchema):
         try:
             avatar = None
             if isinstance(form_data.avatar, UploadFile):
@@ -144,8 +182,9 @@ class DoctorForeignRegisterApi(HTTPEndpoint):
             data["verify_status"] = 0
             data["is_local_person"] = False
             data["type_of_disease"] = TypeOfDisease.ONLINE.value
-            result: DoctorModel = await doctor_helper.create_doctor(data)
-            return result.as_dict  # type: ignore
+            result = await doctor_helper.create_doctor(data)
+            reponse = {"data": result[0].as_dict, "errors": None, "error_code": None}
+            return JSONResponse(content=reponse, status_code=200, background=result[1])
         except (BadRequest, InternalServer) as e:
             log.error(f"Error: {e}")
             raise e
@@ -234,3 +273,54 @@ class LogoutApi(HTTPEndpoint):
             return reponse_json
         else:
             raise BadRequest(msg="Bad request", error_code=ErrorCode.BAD_REQUEST.name)
+
+
+class DoctorOtherVerifyFinalApiPut(HTTPEndpoint):
+    async def put(self, request: Request, auth: JsonWebToken):
+        try:
+            if auth.get("role", "") != Role.ADMIN.name:
+                raise Forbidden(
+                    msg="Unauthorized access",
+                    error_code=ErrorCode.UNAUTHORIZED.name,
+                    errors={"message": "only admin can access"},
+                )
+            form_data = await request.form()
+            if not form_data:
+                form_data = await request.json()
+
+            if form_data.get("doctor_id") is None:
+                raise BadRequest(
+                    msg="Bad request",
+                    error_code=ErrorCode.BAD_REQUEST.name,
+                    errors={"message": "doctor_id is required"},
+                )
+            if form_data.get("online_price") is None:
+                raise BadRequest(
+                    msg="Bad request",
+                    error_code=ErrorCode.BAD_REQUEST.name,
+                    errors={"message": "online_price is required"},
+                )
+
+            doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
+            result = await doctor_helper.verify_doctor(
+                doctor_id=form_data.get("doctor_id"),
+                verify_status=2,
+                online_price=form_data.get("online_price"),
+            )
+            if result:
+                return {"message": "Doctor verified successfully on status 2"}
+            else:
+                raise BadRequest(
+                    msg="Doctor not found or ",
+                    error_code=ErrorCode.NOT_FOUND.name,
+                    errors={
+                        "message": "Doctor not found or already verified on status 2"
+                    },
+                )
+        except (Forbidden, BadRequest, NoResultFound) as e:
+            raise e
+        except Exception as e:
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": "Error when verify doctor"},
+            ) from e

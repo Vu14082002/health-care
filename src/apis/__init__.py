@@ -7,6 +7,7 @@ from src.apis.auth import (
     DoctorLocalRegisterApi,
     DoctorOtherVerifyApi,
     DoctorOtherVerifyApiPut,
+    DoctorOtherVerifyFinalApiPut,
     LoginApi,
     LogoutApi,
     PatientRegisterApi,
@@ -44,31 +45,48 @@ from src.core.route import RouteSwagger
 routes = [
     RouteSwagger("/health_check", HealthCheck, methods=["GET"], tags=["USER"]),
     # auth
+    RouteSwagger("/auth/admin/register", AdminRegisterApi, tags=["ADMIN"]),
     RouteSwagger(
         "/auth/patient/register", PatientRegisterApi, methods=["POST"], tags=["PATIENT"]
     ),
+    # api will set verify_status = 0
     RouteSwagger(
         "/auth/doctor/register/foreign",
         DoctorForeignRegisterApi,
         methods=["POST"],
         tags=["DOCTOR"],
     ),
+    # api will set verify_status = 2
     RouteSwagger(
         "/auth/doctor/register",
         DoctorLocalRegisterApi,
         methods=["POST"],
         tags=["ADMIN"],
     ),
-    RouteSwagger("/auth/admin/register", AdminRegisterApi, tags=["ADMIN"]),
     RouteSwagger(
         "/auth/doctor/verify/foreign",
         DoctorOtherVerifyApi,
         methods=["GET"],
         tags=["ADMIN"],
     ),
+    # change status verify doctor from 0 to -1
+    RouteSwagger(
+        "/auth/doctor/reject/foreign/{doctor_id}",
+        DoctorOtherVerifyApiPut,
+        methods=["PUT"],
+        tags=["ADMIN"],
+    ),
+    # change status verify doctor from 0 to 1
     RouteSwagger(
         "/auth/doctor/verify/foreign/{doctor_id}",
         DoctorOtherVerifyApiPut,
+        methods=["PUT"],
+        tags=["ADMIN"],
+    ),
+    # change status verify doctor from 1 to 2
+    RouteSwagger(
+        "/auth/doctor/verify/final",
+        DoctorOtherVerifyFinalApiPut,
         methods=["PUT"],
         tags=["ADMIN"],
     ),
@@ -80,13 +98,13 @@ routes = [
     ),
     # user detail
     RouteSwagger(
-        "/user_settings/profile",
+        "/user-settings/profile",
         UserProfile,
         methods=["PUT"],
         tags=["PATIENT", "DOCTOR"],
     ),
     RouteSwagger(
-        "/user_settings/reset-password",
+        "/user-settings/reset-password",
         ResetPassword,
         methods=["PUT"],
         tags=["PATIENT", "DOCTOR"],

@@ -51,7 +51,10 @@ class ResetPassword(HTTPEndpoint):
         try:
             user_helper = await Factory().get_user_helper()
             user_saved = await user_helper.reset_pwd(
-                user_id=auth.get("id"), password=form_data.password
+                user_id=auth.get("id"),
+                phone_number=auth.get("phone_number"),
+                password=form_data.password,
+                old_password=form_data.old_password,
             )
             return user_saved
         except (BadRequest, InternalServer) as e:

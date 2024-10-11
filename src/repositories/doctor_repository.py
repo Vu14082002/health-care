@@ -21,10 +21,11 @@ from sqlalchemy.orm import joinedload
 from starlette.background import BackgroundTask
 
 from src.core.database.postgresql import PostgresRepository
+from src.core.decorator.exception_decorator import catch_error_repository
 from src.core.exception import BadRequest, InternalServer
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
-from src.helper.email_helper import send_mail_register_success
+from src.helper.email_helper import send_helloword
 from src.models.appointment_model import AppointmentModel
 from src.models.doctor_model import DoctorExaminationPriceModel, DoctorModel
 from src.models.patient_model import PatientModel
@@ -234,6 +235,19 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             logging.error(f"Error in get_all: {e}")
             raise
 
+    async def get_one(self, where: Dict[str, Any], join_: Optional[set[str]] = None):
+        try:
+            condition = destruct_where(self.model_class, where)
+            query = select(self.model_class)
+            if condition is not None:
+                query = query.where(condition)
+            result = await self.session.execute(query)
+            doctor = result.scalar_one_or_none()
+            return doctor
+        except SQLAlchemyError as e:
+            logging.error(f"Error in get_one: {e}")
+            raise
+
     async def insert(self, data: dict[str, Any], *args: Any, **kwargs: Any):
         try:
             await self._check_existing_user(data.get("phone_number", ""))
@@ -252,7 +266,8 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             self.session.add(examination_price)
 
             await self.session.commit()
-            task = BackgroundTask(send_mail_register_success, email=data.get("email"))
+            # task = BackgroundTask(send_mail_register_success, email=data.get("email"))
+            task = BackgroundTask(send_helloword, email=data.get("email"))
             return (doctor_model, task)
         except BadRequest as e:
             logging.error(f"BadRequest error in insert: {e}")
@@ -811,3 +826,15 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 error_code=ErrorCode.SERVER_ERROR.name,
                 errors={"message": "Unexpected error"},
             )
+
+    @catch_error_repository
+    async def update_doctor_model(
+        self,
+        doctor_model: DoctorModel,
+        examination_price: DoctorExaminationPriceModel | None,
+    ):
+        self.session.add(doctor_model)
+        if examination_price:
+            self.session.add(examination_price)
+        await self.session.commit()
+        return doctor_model

@@ -106,6 +106,10 @@ async def send_mail_password(email: str, token: str) -> str:
     return "success"
 
 
+async def send_helloword(email: str, *args, **kwargs):
+    print("hello")
+
+
 async def send_mail_register_success(email: str, *args, **kwargs) -> str:
     _subject = "Chúc mừng! Bạn đã đăng ký tài khoản Health Care System thành công"
     _to_mail = email

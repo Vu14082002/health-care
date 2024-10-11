@@ -7,7 +7,7 @@ from sqlalchemy.exc import NoResultFound
 
 from src.core.exception import BadRequest, Forbidden, InternalServer
 from src.enum import TypeOfDisease
-from src.models.doctor_model import DoctorModel
+from src.models.doctor_model import DoctorExaminationPriceModel, DoctorModel
 from src.repositories.doctor_repository import DoctorRepository
 from src.schema.doctor_schema import RequestDoctorWorkScheduleNextWeek
 
@@ -160,12 +160,29 @@ class DoctorHelper:
         except Exception as ex:
             raise ex
 
-    async def verify_doctor(self, doctor_id: int) -> bool:
+    async def verify_doctor(
+        self, doctor_id: int, verify_status: int, online_price: float | None
+    ) -> bool:
         try:
             doctor = await self.doctor_repository.get_by("id", doctor_id, unique=True)
-            if doctor and doctor.verify_status == 0:
-                updated_doctor: DoctorModel = await self.doctor_repository.update_one(
-                    doctor, {"verify_status": 1}
+            if doctor and doctor.verify_status in [0, 1, -1]:
+                if verify_status == 2 and doctor.verify_status != 1:
+                    raise BadRequest(
+                        error_code="DOCTOR_ALREADY_VERIFIED",
+                        errors={
+                            "message": "You must verify doctor with status  1 before verify with status 2"
+                        },
+                    )
+                doctor_examination_price = DoctorExaminationPriceModel(
+                    doctor_id=doctor_id,
+                    online_price=online_price,
+                    offline_price=0,
+                )
+                doctor.verify_status = verify_status
+                updated_doctor: DoctorModel = (
+                    await self.doctor_repository.update_doctor_model(
+                        doctor, doctor_examination_price
+                    )
                 )
                 return isinstance(updated_doctor, DoctorModel)
             return False

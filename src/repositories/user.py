@@ -6,7 +6,7 @@ from sqlalchemy import and_, exists, select, update
 
 from src.core.database.postgresql import PostgresRepository
 from src.core.decorator.exception_decorator import exception_handler
-from src.core.exception import BadRequest
+from src.core.exception import BadRequest, InternalServer
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
 from src.models.doctor_model import DoctorModel
@@ -158,21 +158,47 @@ class UserRepository(PostgresRepository[UserModel]):
 
         return is_doctor_email_exists or is_patient_email_exists
 
-    async def reset_pwd(self, user_id: int, password_hash: str):
-        update_statement = (
-            update(UserModel)
-            .where(UserModel.id == user_id)
-            .values(password_hash=password_hash)
-            .returning(UserModel)  # Return the ID (or another column)
-        )
-        result_update_statement = await self.session.execute(update_statement)
-        await self.session.commit()
-
-        # Fetch the updated value
-        data_update_statement = result_update_statement.scalars().first()
-        if not data_update_statement:
-            raise BadRequest(
-                error_code=ErrorCode.NOT_FOUND.name,
-                errors={"message": "Something went wrong when updating password"},
+    async def reset_pwd(self, user_id: int, password_hash: str, old_password: str):
+        try:
+            user_query = select(UserModel).where(UserModel.id == user_id)
+            result_user_query = await self.session.execute(user_query)
+            user = result_user_query.scalar_one_or_none()
+            if not user:
+                raise BadRequest(
+                    error_code=ErrorCode.NOT_FOUND.name,
+                    errors={"message": "User not found, something went wrong"},
+                )
+            if not PasswordHandler.verify(
+                user.password_hash, plain_password=old_password
+            ):
+                raise BadRequest(
+                    msg="Password is incorrect",
+                    error_code=ErrorCode.UNAUTHORIZED.name,
+                    errors={"message": "Old password is incorrect"},
+                )
+            update_statement = (
+                update(UserModel)
+                .where(UserModel.id == user_id)
+                .values(password_hash=password_hash)
+                .returning(UserModel)
             )
-        return data_update_statement.as_dict
+            result_update_statement = await self.session.execute(update_statement)
+            await self.session.commit()
+
+            # Fetch the updated value
+            data_update_statement = result_update_statement.scalars().first()
+            if not data_update_statement:
+                raise BadRequest(
+                    error_code=ErrorCode.NOT_FOUND.name,
+                    errors={"message": "Something went wrong when updating password"},
+                )
+            return data_update_statement.as_dict
+        except BadRequest as e:
+            raise e
+        except Exception as e:
+            logging.error("Error on reset_pwd: %s", e)
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                msg="Something went wrong when updating password",
+                errors={"message": "Something went wrong when updating password"},
+            ) from e
