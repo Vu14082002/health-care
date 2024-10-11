@@ -1,10 +1,13 @@
 import logging as log
 
+from starlette.datastructures import UploadFile
+
 from src.core import HTTPEndpoint
 from src.core.exception import BadRequest, InternalServer
 from src.core.security.authentication import JsonWebToken
 from src.enum import ErrorCode, Role
 from src.factory import Factory
+from src.helper.s3_helper import S3Service
 from src.schema.register import (
     RequestRegisterPatientSchema,
     RequestResetPasswordSchema,
@@ -32,6 +35,13 @@ class UserProfile(HTTPEndpoint):
             if auth.get("role") == Role.ADMIN.value:
                 return {"msg": "not implemented yet "}
             user_helper = await Factory().get_user_helper()
+            if form_data.avatar:
+                if isinstance(form_data.avatar, UploadFile):
+                    upload_file: UploadFile = form_data.avatar  # type: ignore
+                    s3_service = S3Service()
+                    await upload_file.seek(0)
+                    avatar = await s3_service.upload_file_from_form(upload_file)
+                    form_data.avatar = avatar
             user_saved = await user_helper.update_profile(
                 user_id=auth.get("id"), data=form_data.model_dump()
             )
