@@ -87,6 +87,10 @@ class MessageApi(HTTPEndpoint):
                 conversation_id=form_data.conversation_id,
                 reply_id=form_data.reply_id,
                 message=message_content,
+                first_name=auth.get("first_name", None),
+                last_name=auth.get("last_name", None),
+                avatar=auth.get("avatar", None),
+                phone_number=auth.get("phone_number", None),
             )
             return result
         except (ValueError, BadRequest, InternalServer) as e:

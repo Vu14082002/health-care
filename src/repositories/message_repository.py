@@ -90,6 +90,10 @@ class MessageRepository(PostgresRepository[MessageModel]):
         conversation_id: str,
         reply_id: int | None,
         message: MessageContentSchema,
+        first_name: str | None,
+        last_name: str | None,
+        avatar: str | None,
+        phone_number: str | None,
     ):
         if reply_id:
             check_message_exist = select(exists().where(MessageModel.id == reply_id))
@@ -126,4 +130,10 @@ class MessageRepository(PostgresRepository[MessageModel]):
         return {
             **message_data.as_dict,
             "users": [appointment.doctor_id, appointment.patient_id],
+            "sender": {
+                "first_name": first_name,
+                "last_name": last_name,
+                "avatar": avatar,
+                "phone_number": phone_number,
+            },
         }

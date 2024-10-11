@@ -17,7 +17,18 @@ class MessageHelper:
         conversation_id: str,
         reply_id: int | None,
         message: MessageContentSchema,
+        first_name: str | None,
+        last_name: str | None,
+        avatar: str | None,
+        phone_number: str | None,
     ):
         return await self.message_repository.create_message(
-            sender_id, conversation_id, reply_id, message
+            sender_id,
+            conversation_id,
+            reply_id,
+            message,
+            first_name,
+            last_name,
+            avatar,
+            phone_number,
         )
