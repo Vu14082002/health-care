@@ -7,7 +7,7 @@ from src.core.database.postgresql import PostgresRepository
 from src.core.decorator.exception_decorator import catch_error_repository
 from src.core.exception import BadRequest
 from src.core.security.password import PasswordHandler
-from src.enum import ErrorCode
+from src.enum import AppointmentModelStatus, ErrorCode
 from src.models.appointment_model import AppointmentModel
 from src.models.doctor_model import DoctorModel
 from src.models.patient_model import PatientModel
@@ -128,8 +128,8 @@ class PatientRepository(PostgresRepository[PatientModel]):
             exists(AppointmentModel).where(
                 AppointmentModel.patient_id == user_id,
                 AppointmentModel.doctor_id == data.doctor_id,
-                # AppointmentModel.appointment_status
-                # == AppointmentModelStatus.COMPLETED.value,
+                AppointmentModel.appointment_status
+                == AppointmentModelStatus.COMPLETED.value,
             )
         )
         result_exists_appointment = await self.session.execute(query_exist_appointment)
