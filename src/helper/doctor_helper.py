@@ -5,8 +5,9 @@ from typing import Any, Dict, List, Literal
 
 from sqlalchemy.exc import NoResultFound
 
+from src.core.decorator.exception_decorator import catch_error_helper
 from src.core.exception import BadRequest, Forbidden, InternalServer
-from src.enum import TypeOfDisease
+from src.enum import ErrorCode, TypeOfDisease
 from src.models.doctor_model import DoctorExaminationPriceModel, DoctorModel
 from src.repositories.doctor_repository import DoctorRepository
 from src.schema.doctor_schema import RequestDoctorWorkScheduleNextWeek
@@ -125,6 +126,7 @@ class DoctorHelper:
         except Exception as e:
             raise e
 
+    @catch_error_helper
     async def create_doctor(self, data: dict[str, Any], *args: Any, **kwargs: Any):
         try:
             doctor = await self.doctor_repository.insert(data)
@@ -160,6 +162,10 @@ class DoctorHelper:
         except Exception as ex:
             raise ex
 
+    @catch_error_helper
+    async def reject_doctor(self, doctor_id: int):
+        return await self.doctor_repository.reject_doctor(doctor_id)
+
     async def verify_doctor(
         self, doctor_id: int, verify_status: int, online_price: float | None
     ) -> bool:
@@ -168,9 +174,9 @@ class DoctorHelper:
             if doctor and doctor.verify_status in [0, 1, -1]:
                 if verify_status == 2 and doctor.verify_status != 1:
                     raise BadRequest(
-                        error_code="DOCTOR_ALREADY_VERIFIED",
+                        error_code=ErrorCode.BAD_REQUEST.name,
                         errors={
-                            "message": "You must verify doctor with status  1 before verify with status 2"
+                            "message": ErrorCode.msg_verify_step_one_befor_verify_two.value
                         },
                     )
                 doctor_examination_price = DoctorExaminationPriceModel(

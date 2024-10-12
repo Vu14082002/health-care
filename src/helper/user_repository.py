@@ -37,12 +37,18 @@ class UserHelper:
         user = await self.user_repository.get_one({"phone_number": phone_number})
         if user is None:
             raise Unauthorized(
-                msg="Phone number is not registered",
                 error_code=ErrorCode.UNAUTHORIZED.name,
+                errors={"message": ErrorCode.msg_phone_not_registered.value},
+            )
+        if user.is_deleted:
+            raise Unauthorized(
+                error_code=ErrorCode.UNAUTHORIZED.name,
+                errors={"message": ErrorCode.msg_delete_account_before.value},
             )
         if not PasswordHandler.verify(user.password_hash, plain_password=password):
             raise Unauthorized(
-                msg="Password is incorrect", error_code=ErrorCode.UNAUTHORIZED.name
+                error_code=ErrorCode.UNAUTHORIZED.name,
+                errors={"message": ErrorCode.msg_wrong_password.name},
             )
         return user
 

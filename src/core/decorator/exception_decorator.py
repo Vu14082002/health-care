@@ -3,7 +3,16 @@ from typing import Awaitable, Callable
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from src.core.exception import BadRequest, Forbidden, InternalServer
+from src.core.exception import (
+    BadRequest,
+    ConflictError,
+    Forbidden,
+    InternalServer,
+    MethodNotAllow,
+    NotFound,
+    SignatureVerifyFail,
+    Unauthorized,
+)
 from src.enum import ErrorCode
 
 
@@ -55,21 +64,82 @@ def catch_error_repository(func: Callable[..., Awaitable]):  # type: ignore
     return wrapper
 
 
-def exception_handler(func):
+def catch_error_helper(func: Callable[..., Awaitable]):  # type: ignore
+
     async def wrapper(*args, **kwargs):
-        self = args[0]  # Giả sử self là argument đầu tiên
+        logging.info(
+            f"Executing {func.__name__} with args: {args} and kwargs: {kwargs}"
+        )
         try:
-            return await func(*args, **kwargs)
-        except (BadRequest, InternalServer) as e:
-            logging.error(e)
-            await self.session.rollback()
+            result = await func(*args, **kwargs)
+            logging.info(f"{func.__name__} executed successfully")
+            return result
+        except (
+            BadRequest,
+            Forbidden,
+            InternalServer,
+            Forbidden,
+            NotFound,
+            MethodNotAllow,
+            ConflictError,
+            Unauthorized,
+            SignatureVerifyFail,
+        ) as e:
+            logging.error(f"Business logic error in {func.__name__}: {e}")
             raise e
+        except IntegrityError as e:
+            logging.error(f"Database integrity error in {func.__name__}: {e}")
+            raise BadRequest(
+                error_code=ErrorCode.DATABASE_ERROR.name,
+                errors={"message": "Database constraint violation"},
+            )
+        except SQLAlchemyError as e:
+            logging.error(f"SQLAlchemy error in {func.__name__}: {e}")
+            raise InternalServer(
+                error_code=ErrorCode.DATABASE_ERROR.name,
+                errors={"message": "Database error occurred"},
+            )
         except Exception as e:
-            await self.session.rollback()
-            logging.error(e)
+            logging.error(f"Unexpected error in {func.__name__}: {e}")
             raise InternalServer(
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": f"Error: {str(e)}, please try again later"},
+                errors={
+                    "message": "Server is currently unable to handle this request, please try again later."
+                },
+            )
+
+    return wrapper
+
+
+def catch_error_api(func: Callable[..., Awaitable]):
+    async def wrapper(*args, **kwargs):
+        logging.info(
+            f"Executing {func.__name__} with args: {args} and kwargs: {kwargs}"
+        )
+        try:
+            result = await func(*args, **kwargs)
+            logging.info(f"{func.__name__} executed successfully")
+            return result
+        except (
+            BadRequest,
+            Forbidden,
+            InternalServer,
+            Forbidden,
+            NotFound,
+            MethodNotAllow,
+            ConflictError,
+            Unauthorized,
+            SignatureVerifyFail,
+        ) as e:
+            logging.error(f"Business logic error in {func.__name__}: {e}")
+            raise e
+        except Exception as e:
+            logging.error(f"Unexpected error in {func.__name__}: {e}")
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={
+                    "message": "Server is currently unable to handle this request, please try again later."
+                },
             )
 
     return wrapper

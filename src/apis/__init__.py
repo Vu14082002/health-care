@@ -1,9 +1,9 @@
-from starlette.routing import WebSocketRoute
-
 from src.apis.appointment import AppointmentApi, AppointmentApiGET
 from src.apis.auth import (
+    AdminNotifyRegisterMail,
     AdminRegisterApi,
     DoctorForeignRegisterApi,
+    DoctorForeignRejectApi,
     DoctorLocalRegisterApi,
     DoctorOtherVerifyApi,
     DoctorOtherVerifyApiPut,
@@ -31,7 +31,6 @@ from src.apis.medical_records_api import (
     MedicalRecordsApiPOST,
 )
 from src.apis.message_api import MessageApi
-from src.apis.socket import MessageSocket, OnlineUser, OpenConversation
 from src.apis.user import ResetPassword, UserProfile
 from src.apis.working_time_api import (
     CreateDoctorWorkingTimeApi,
@@ -49,13 +48,7 @@ routes = [
     RouteSwagger(
         "/auth/patient/register", PatientRegisterApi, methods=["POST"], tags=["PATIENT"]
     ),
-    # api will set verify_status = 0
-    RouteSwagger(
-        "/auth/doctor/register/foreign",
-        DoctorForeignRegisterApi,
-        methods=["POST"],
-        tags=["DOCTOR"],
-    ),
+    # local or foreign doctor
     # api will set verify_status = 2
     RouteSwagger(
         "/auth/doctor/register",
@@ -63,16 +56,29 @@ routes = [
         methods=["POST"],
         tags=["ADMIN"],
     ),
+    # api will set verify_status = 0
+    RouteSwagger(
+        "/auth/doctor/register/foreign",
+        DoctorForeignRegisterApi,
+        methods=["POST"],
+        tags=["DOCTOR"],
+    ),
     RouteSwagger(
         "/auth/doctor/verify/foreign",
         DoctorOtherVerifyApi,
         methods=["GET"],
         tags=["ADMIN"],
     ),
+    RouteSwagger(
+        "/admin/notify-register-mail",
+        AdminNotifyRegisterMail,
+        methods=["POST"],
+        tags=["ADMIN"],
+    ),
     # change status verify doctor from 0 to -1
     RouteSwagger(
         "/auth/doctor/reject/foreign/{doctor_id}",
-        DoctorOtherVerifyApiPut,
+        DoctorForeignRejectApi,
         methods=["PUT"],
         tags=["ADMIN"],
     ),
@@ -235,15 +241,4 @@ routes = [
         methods=["GET", "POST"],
         tags=["PATIENT", "DOCTOR", "ADMIN"],
     ),
-    # # websocker
-    # WebSocketRoute(
-    #     "/ws/online",
-    #     OnlineUser,
-    # ),
-    # WebSocketRoute(
-    #     "/ws/conversation",
-    #     OpenConversation,
-    # ),
-    # WebSocketRoute("/ws/message", MessageSocket),
-    # WebSocketRoute("/ws/call", MessageSocket),
 ]

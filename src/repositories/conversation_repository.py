@@ -6,7 +6,6 @@ from sqlalchemy.orm import joinedload
 from src.core.database.postgresql import PostgresRepository
 from src.core.decorator.exception_decorator import (
     catch_error_repository,
-    exception_handler,
 )
 from src.core.exception import BadRequest
 from src.enum import ErrorCode
@@ -165,7 +164,7 @@ class ConversationRepoitory(PostgresRepository[ConversationModel]):
         }
         return data
 
-    @exception_handler
+    @catch_error_repository
     async def get_conversation(
         self, user_id: int, query_params: RequestGetAllConversationSchema
     ):

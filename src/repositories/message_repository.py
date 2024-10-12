@@ -6,7 +6,9 @@ from sqlalchemy import exists, select
 from sqlalchemy.orm import joinedload
 
 from src.core.database.postgresql import PostgresRepository
-from src.core.decorator.exception_decorator import exception_handler
+from src.core.decorator.exception_decorator import (
+    catch_error_repository,
+)
 from src.core.exception import BadRequest, InternalServer
 from src.enum import ErrorCode, MessageContentSchema
 from src.models.conversation_model import ConversationModel
@@ -83,7 +85,7 @@ class MessageRepository(PostgresRepository[MessageModel]):
                 errors={"message": "Internal server error"},
             )
 
-    @exception_handler
+    @catch_error_repository
     async def create_message(
         self,
         sender_id: int,

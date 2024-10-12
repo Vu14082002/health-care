@@ -9,12 +9,14 @@ from sqlalchemy import (
     and_,
     asc,
     case,
+    delete,
     desc,
     exists,
     func,
     not_,
     or_,
     select,
+    update,
 )
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
@@ -25,7 +27,11 @@ from src.core.decorator.exception_decorator import catch_error_repository
 from src.core.exception import BadRequest, InternalServer
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
-from src.helper.email_helper import send_helloword
+from src.helper.email_helper import (
+    send_mail_register_success_foreign,
+    send_mail_register_success_local,
+    send_mail_reject_register,
+)
 from src.models.appointment_model import AppointmentModel
 from src.models.doctor_model import DoctorExaminationPriceModel, DoctorModel
 from src.models.patient_model import PatientModel
@@ -38,7 +44,6 @@ from src.schema.doctor_schema import RequestDoctorWorkScheduleNextWeek
 
 
 class DoctorRepository(PostgresRepository[DoctorModel]):
-
     async def get_all(
         self,
         skip: int = 0,
@@ -248,46 +253,37 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             logging.error(f"Error in get_one: {e}")
             raise
 
+    @catch_error_repository
     async def insert(self, data: dict[str, Any], *args: Any, **kwargs: Any):
-        try:
-            await self._check_existing_user(data.get("phone_number", ""))
+        await self._check_existing_user(data.get("phone_number", ""))
 
-            await self._check_existing_doctor(
-                data.get("email", ""), data.get("license_number", "")
+        await self._check_existing_doctor(
+            data.get("email", ""), data.get("license_number", "")
+        )
+
+        user_model = self._create_user_model(data)
+        doctor_model = self._create_doctor_model(data, user_model)
+
+        self.session.add(doctor_model)
+        await self.session.flush()
+
+        examination_price = self._create_examination_price(data, doctor_model.id)
+        self.session.add(examination_price)
+
+        await self.session.commit()
+        # task = BackgroundTask(
+        #     send_mail_register_success_local, email=data.get("email")
+        # )
+        task = None
+        if data["is_local_person"]:
+            task = BackgroundTask(
+                send_mail_register_success_local, email=data.get("email")
             )
-
-            user_model = self._create_user_model(data)
-            doctor_model = self._create_doctor_model(data, user_model)
-
-            self.session.add(doctor_model)
-            await self.session.flush()
-
-            examination_price = self._create_examination_price(data, doctor_model.id)
-            self.session.add(examination_price)
-
-            await self.session.commit()
-            # task = BackgroundTask(send_mail_register_success, email=data.get("email"))
-            task = BackgroundTask(send_helloword, email=data.get("email"))
-            return (doctor_model, task)
-        except BadRequest as e:
-            logging.error(f"BadRequest error in insert: {e}")
-            await self.session.rollback()
-            raise e
-        except SQLAlchemyError as e:
-            logging.error(f"SQLAlchemy error in insert: {e}")
-            await self.session.rollback()
-            raise BadRequest(
-                error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": "Failed to register doctor"},
+        else:
+            task = BackgroundTask(
+                send_mail_register_success_foreign, email=data.get("email")
             )
-        except Exception as e:
-            logging.error(f"Unexpected error in insert: {e}")
-            await self.session.rollback()
-            raise BadRequest(
-                error_code=ErrorCode.SERVER_ERROR.name,
-                msg="Failed to register doctor: Unexpected error",
-                errors={"message": "Failed to register doctor: Unexpected error"},
-            )
+        return (doctor_model, task)
 
     async def _check_existing_user(self, phone_number: str) -> None:
         user_exists = await self.session.scalar(
@@ -838,3 +834,31 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             self.session.add(examination_price)
         await self.session.commit()
         return doctor_model
+
+    @catch_error_repository
+    async def reject_doctor(self, doctor_id: int):
+        update_user_query = (
+            update(UserModel).where(UserModel.id == doctor_id).values(is_deleted=True)
+        )
+        update_query = (
+            update(DoctorModel)
+            .where(DoctorModel.id == doctor_id, DoctorModel.verify_status != -1)
+            .values({"is_deleted": True, "verify_status": -1})
+        ).returning(DoctorModel.email)
+
+        _ = await self.session.execute(update_user_query)
+
+        result = await self.session.execute(update_query)
+        email = result.scalar_one_or_none()
+        task = None
+        if email:
+            task = BackgroundTask(send_mail_reject_register, email=email)
+        else:
+            await self.session.rollback()
+            raise BadRequest(
+                error_code=ErrorCode.DOCTOR_NOT_FOUND.name,
+                errors={"message": "Doctor not found, or already rejected"},
+            )
+        await self.session.commit()
+
+        return {"message": "Doctor has been rejected"}, task

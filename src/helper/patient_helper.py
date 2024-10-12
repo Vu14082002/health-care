@@ -1,5 +1,6 @@
 import logging
 
+from src.core.decorator.exception_decorator import catch_error_helper
 from src.core.exception import BadRequest, InternalServer
 from src.enum import ErrorCode
 from src.repositories.patient_repository import PatientRepository
@@ -10,11 +11,11 @@ class PatientHelper:
     def __init__(self, patient_repository: PatientRepository) -> None:
         self.patient_repository: PatientRepository = patient_repository
 
+    @catch_error_helper
     async def create_patient(self, data: RequestRegisterPatientSchema):
         try:
             result = await self.patient_repository.insert_patient(data)
-            # data_response = ResponsePatientSchema.model_validate(result)
-            return result
+            return result.as_dict
         except BadRequest as e:
             raise e
         except InternalServer as e:

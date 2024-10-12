@@ -13,16 +13,17 @@ from src.core.security.authentication import JsonWebToken
 from src.enum import ErrorCode, Role, TypeOfDisease
 from src.factory import Factory
 from src.helper.doctor_helper import DoctorHelper
+from src.helper.email_helper import send_mail_request_additional_info
 from src.helper.patient_helper import PatientHelper
 from src.helper.s3_helper import S3Service
 from src.helper.user_repository import UserHelper
 from src.models.doctor_model import DoctorModel
-from src.models.patient_model import PatientModel
 from src.schema.register import (
     ReponseAdminSchema,
     RequestAdminRegisterSchema,
     RequestGetAllDoctorsNotVerifySchema,
     RequestLoginSchema,
+    RequestNotifyMail,
     RequestRegisterDoctorLocalSchema,
     RequestRegisterDoctorSchema,
     RequestRegisterPatientSchema,
@@ -30,8 +31,56 @@ from src.schema.register import (
 )
 
 
+class AdminRegisterApi(HTTPEndpoint):
+    async def post(self, form_data: RequestAdminRegisterSchema):
+        """
+        This function is used to register admin
+        """
+        try:
+            _user_helper: UserHelper = await Factory().get_user_helper()
+            _result = await _user_helper.register_admin(form_data)
+            _reponse = ReponseAdminSchema(**_result.as_dict)
+            return _reponse.model_dump(mode="json")
+        except (BadRequest, InternalServer) as e:
+            log.error(f"Error: {e}")
+            raise e
+        except Exception as ex:
+            log.error(f"Error: {ex}")
+            raise InternalServer(
+                msg="Internal server error",
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.name},
+            ) from ex
+
+
+class AdminNotifyRegisterMail(HTTPEndpoint):
+
+    async def post(self, form_data: RequestNotifyMail, auth: JsonWebToken):
+        """
+        This function is used to request notify mail
+        """
+        if auth.get("role", "") != Role.ADMIN.name:
+            raise Forbidden(
+                msg="Unauthorized access",
+                error_code=ErrorCode.UNAUTHORIZED.name,
+                errors={"message": ErrorCode.msg_permission_denied.value},
+            )
+        task = BackgroundTask(
+            send_mail_request_additional_info, form_data.email, form_data.message
+        )
+        return JSONResponse(
+            content={"message": "Send mail request additional info success"},
+            status_code=200,
+            background=task,
+        )
+
+
 class PatientRegisterApi(HTTPEndpoint):
     async def post(self, form_data: RequestRegisterPatientSchema):
+        """
+        _summary_
+        This function is used to register patient
+        """
         try:
             avatar = None
             if isinstance(form_data.avatar, UploadFile):
@@ -41,17 +90,53 @@ class PatientRegisterApi(HTTPEndpoint):
                 avatar = await s3_service.upload_file_from_form(upload_file)
             form_data.avatar = avatar
             patient_helper: PatientHelper = await Factory().get_patient_helper()
-            response_data: PatientModel = await patient_helper.create_patient(
-                data=form_data
-            )
-            return response_data.as_dict
-        except BadRequest as e:
-            raise e
-        except InternalServer as e:
-            raise e
+            result_respone = await patient_helper.create_patient(data=form_data)
+            return result_respone
         except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
             raise InternalServer(
                 msg="Internal server error", error_code=ErrorCode.SERVER_ERROR.name
+            ) from e
+
+
+class DoctorLocalRegisterApi(HTTPEndpoint):
+    """
+    This function is used to register doctor local
+    """
+
+    async def post(
+        self, form_data: RequestRegisterDoctorLocalSchema, auth: JsonWebToken
+    ):
+        try:
+            if auth.get("role", "") != Role.ADMIN.name:
+                raise BadRequest(
+                    msg="Unauthorized access",
+                    error_code=ErrorCode.UNAUTHORIZED.name,
+                    errors={"message": "You are not have permission to access"},
+                )
+            avatar = None
+            if isinstance(form_data.avatar, UploadFile):
+                upload_file: UploadFile = form_data.avatar  # type: ignore
+                s3_service = S3Service()
+                await upload_file.seek(0)
+                avatar = await s3_service.upload_file_from_form(upload_file)
+            form_data.avatar = avatar
+            doctor_helper = await Factory().get_doctor_helper()
+            data = form_data.model_dump()
+            data["verify_status"] = 2
+            result: tuple[DoctorModel, BackgroundTask] = (
+                await doctor_helper.create_doctor(data)
+            )
+            reponse = {"data": result[0].as_dict, "errors": None, "error_code": None}
+            return JSONResponse(content=reponse, status_code=200, background=result[1])
+        except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
+            raise InternalServer(
+                msg="Internal server error",
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.name},
             ) from e
 
 
@@ -112,7 +197,7 @@ class DoctorOtherRejectApiPut(HTTPEndpoint):
 
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             result = await doctor_helper.verify_doctor(
-                doctor_id=path_params.doctor_id, verify_status=-1
+                doctor_id=path_params.doctor_id, verify_status=-1, online_price=0
             )
             if result:
                 return {"message": "Doctor verified successfully on status -1"}
@@ -167,14 +252,12 @@ class DoctorOtherVerifyApiPut(HTTPEndpoint):
 
 
 class DoctorForeignRegisterApi(HTTPEndpoint):
-
     async def post(self, form_data: RequestRegisterDoctorSchema):
         try:
             avatar = None
             if isinstance(form_data.avatar, UploadFile):
                 upload_file: UploadFile = form_data.avatar  # type: ignore
                 s3_service = S3Service()
-                await upload_file.seek(0)
                 avatar = await s3_service.upload_file_from_form(upload_file)
             form_data.avatar = avatar
             doctor_helper = await Factory().get_doctor_helper()
@@ -185,74 +268,37 @@ class DoctorForeignRegisterApi(HTTPEndpoint):
             result = await doctor_helper.create_doctor(data)
             reponse = {"data": result[0].as_dict, "errors": None, "error_code": None}
             return JSONResponse(content=reponse, status_code=200, background=result[1])
-        except (BadRequest, InternalServer) as e:
-            log.error(f"Error: {e}")
-            raise e
         except Exception as ex:
-            log.error(f"Error: {ex}")
+            if isinstance(ex, BaseException):
+                raise ex
             raise InternalServer(
-                msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
                 errors={"message": ErrorCode.msg_server_error.name},
-            ) from ex
+            )
 
 
-class DoctorLocalRegisterApi(HTTPEndpoint):
-    async def post(
-        self, form_data: RequestRegisterDoctorLocalSchema, auth: JsonWebToken
-    ):
+class DoctorForeignRejectApi(HTTPEndpoint):
+
+    async def put(self, path_params: RequestVerifyDoctorSchema, auth: JsonWebToken):
         try:
             if auth.get("role", "") != Role.ADMIN.name:
-                raise BadRequest(
-                    msg="Unauthorized access",
+                raise Forbidden(
                     error_code=ErrorCode.UNAUTHORIZED.name,
-                    errors={"message": "only admin can access"},
+                    errors={"message": ErrorCode.msg_permission_denied.value},
                 )
-            avatar = None
 
-            if isinstance(form_data.avatar, UploadFile):
-                upload_file: UploadFile = form_data.avatar  # type: ignore
-                s3_service = S3Service()
-                await upload_file.seek(0)
-                avatar = await s3_service.upload_file_from_form(upload_file)
-            form_data.avatar = avatar
-            doctor_helper = await Factory().get_doctor_helper()
-            data = form_data.model_dump()
-            data["verify_status"] = 2
-            result: tuple[DoctorModel, BackgroundTask] = (
-                await doctor_helper.create_doctor(data)
+            doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
+            result = await doctor_helper.reject_doctor(doctor_id=path_params.doctor_id)
+            return JSONResponse(
+                content=result[0], status_code=200, background=result[1]
             )
-            reponse = {"data": result[0].as_dict, "errors": None, "error_code": None}
-            return JSONResponse(content=reponse, status_code=200, background=result[1])
-        except (BadRequest, InternalServer) as e:
-            log.error(f"Error: {e}")
-            raise e
-        except Exception as ex:
-            log.error(f"Error: {ex}")
+        except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
             raise InternalServer(
-                msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
                 errors={"message": ErrorCode.msg_server_error.name},
-            ) from ex
-
-
-class AdminRegisterApi(HTTPEndpoint):
-    async def post(self, form_data: RequestAdminRegisterSchema):
-        try:
-            _user_helper: UserHelper = await Factory().get_user_helper()
-            _result = await _user_helper.register_admin(form_data)
-            _reponse = ReponseAdminSchema(**_result.as_dict)
-            return _reponse.model_dump(mode="json")
-        except (BadRequest, InternalServer) as e:
-            log.error(f"Error: {e}")
-            raise e
-        except Exception as ex:
-            log.error(f"Error: {ex}")
-            raise InternalServer(
-                msg="Internal server error",
-                error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": ErrorCode.msg_server_error.name},
-            ) from ex
+            ) from e
 
 
 class LoginApi(HTTPEndpoint):
@@ -266,8 +312,9 @@ class LoginApi(HTTPEndpoint):
 
 class LogoutApi(HTTPEndpoint):
     async def post(self, request: Request):
-        if request.headers.get("Authorization"):
-            token = request.headers.get("Authorization").split(" ")[1]
+        header = request.headers.get("Authorization")
+        if header:
+            token = header.split(" ")[1]
             user_helper: UserHelper = await Factory().get_user_helper()
             reponse_json = await user_helper.logout(token)
             return reponse_json

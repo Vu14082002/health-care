@@ -27,24 +27,7 @@ class RequestRegisterPatientSchema(BaseModel):
     class Config:
         from_attributes = True
         arbitrary_types_allowed = True
-
-
-class ResponsePatientSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: int
-    first_name: str
-    last_name: str
-    date_of_birth: date
-    gender: str
-    email: str
-    phone_number: str
-    address: str
-    avatar: str
-    occupation: str
-    emergancy_contact_number: str | None = None
-    blood_type: str | None = None
-    allergies: str | None = None
-    chronic_conditions: str | None = None
+        extra = "forbid"
 
 
 class Diploma(BaseModel):
@@ -56,7 +39,6 @@ class Education(BaseModel):
 
 
 class RequestRegisterDoctorSchema(BaseModel):
-    # model_config = ConfigDict(from_attributes=True, use_enum_values=True)
     first_name: str
     last_name: str
     phone_number: str
@@ -102,7 +84,9 @@ class RequestRegisterDoctorForeignSchema:
     doctor_id: int
 
 
+# day la ba si local dc kham online va offline, luc dk thi phai co gia online va offline
 class RequestRegisterDoctorLocalSchema(RequestRegisterDoctorSchema):
+    email: str
     offline_price: Optional[float] = None
     online_price: Optional[float] = None
     type_of_disease: Literal[
@@ -112,6 +96,9 @@ class RequestRegisterDoctorLocalSchema(RequestRegisterDoctorSchema):
     ]
 
     is_local_person: bool
+
+    class Config:
+        extra = "forbid"
 
     @validator("type_of_disease")
     def check_type_of_disease(cls, v, values):
@@ -197,52 +184,57 @@ class RequestGetAllDoctorsNotVerifySchema(BaseModel):
         return v
 
 
-class RequestRegisterDoctorOfflineSchema(RequestRegisterDoctorSchema):
-    is_local_person: bool = Field(default=True)
-    type_of_disease: Literal["offline"] = Field(default=TypeOfDisease.OFFLINE.value)
-    verify_status: int = Field(default=2)
-    offline_price: float
+# class RequestRegisterDoctorOfflineSchema(RequestRegisterDoctorSchema):
+#     is_local_person: bool = Field(default=True)
+#     type_of_disease: Literal["offline"] = Field(default=TypeOfDisease.OFFLINE.value)
+#     verify_status: int = Field(default=2)
+#     offline_price: float
 
-    class Config:
-        json_schema_extra = {
-            "exclude": ["is_local_person", "type_of_disease", "verify_status"]
-        }
-
-
-class RequestRegisterDoctorBothSchema(RequestRegisterDoctorSchema):
-    is_local_person: bool = Field(default=True)
-    type_of_disease: Literal["both"] = Field(default=TypeOfDisease.BOTH.value)
-    verify_status: int = Field(default=2)
-    offline_price: float
-    online_price: float
-
-    class Config:
-        json_schema_extra = {
-            "exclude": ["is_local_person", "type_of_disease", "verify_status"]
-        }
+#     class Config:
+#         json_schema_extra = {
+#             "exclude": ["is_local_person", "type_of_disease", "verify_status"]
+#         }
 
 
-class ReponseDoctorSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
-    id: int
-    first_name: str
-    last_name: str
-    phone_number: str
-    date_of_birth: date
-    gender: Literal["male", "female", "other"]
-    specialization: str
-    certification: str | None = None
-    hopital_address_work: Optional[str] = None
-    address: str
-    avatar: str
-    description: Optional[str] = None
-    license_number: str
-    education: Optional[str] = None
+# class RequestRegisterDoctorBothSchema(RequestRegisterDoctorSchema):
+#     is_local_person: bool = Field(default=True)
+#     type_of_disease: Literal["both"] = Field(default=TypeOfDisease.BOTH.value)
+#     verify_status: int = Field(default=2)
+#     offline_price: float
+#     online_price: float
+
+#     class Config:
+#         json_schema_extra = {
+#             "exclude": ["is_local_person", "type_of_disease", "verify_status"]
+#         }
+
+
+# class ReponseDoctorSchema(BaseModel):
+#     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
+#     id: int
+#     first_name: str
+#     last_name: str
+#     phone_number: str
+#     date_of_birth: date
+#     gender: Literal["male", "female", "other"]
+#     specialization: str
+#     certification: str | None = None
+#     hopital_address_work: Optional[str] = None
+#     address: str
+#     avatar: str
+#     description: Optional[str] = None
+#     license_number: str
+#     education: Optional[str] = None
 
 
 class RequestAdminRegisterSchema(BaseModel):
     phone_number: str
     password_hash: str = Field(alias="password")
+
+
+class RequestNotifyMail(BaseModel):
+    email: str = Field(..., description="email doctor will receive")
+    message: str = Field(..., description="message to send to email")
 
 
 class ReponseAdminSchema(BaseModel):
