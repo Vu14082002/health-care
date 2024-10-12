@@ -113,20 +113,14 @@ class DoctorHelper:
         except Exception as e:
             raise e
 
+    @catch_error_helper("Error sever when get doctor by id")
     async def get_doctor_by_id(self, doctor_id: int):
-        try:
-            doctor = await self.doctor_repository.get_doctor_with_ratings(
-                doctor_id=doctor_id
-            )
-            return doctor
-        except NoResultFound as e:
-            log.error(f"Doctor with id {doctor_id} not found")
-            log.debug(e)
-            return None
-        except Exception as e:
-            raise e
+        doctor = await self.doctor_repository.get_doctor_with_ratings(
+            doctor_id=doctor_id
+        )
+        return doctor
 
-    @catch_error_helper
+    @catch_error_helper(message="Server error when creating doctor")
     async def create_doctor(self, data: dict[str, Any], *args: Any, **kwargs: Any):
         try:
             doctor = await self.doctor_repository.insert(data)
@@ -134,35 +128,21 @@ class DoctorHelper:
         except Exception as e:
             raise e
 
+    @catch_error_helper("Server error when update doctor")
     async def update_doctor(self, doctor_id: int, data: dict[str, Any]):
-        try:
+        doctor_model = await self.doctor_repository.get_by("id", doctor_id, unique=True)
+        data = {k: v for k, v in data.items() if v is not None}
+        doctor = await self.doctor_repository.update(doctor_model, data)
+        return doctor
 
-            doctor_model = await self.doctor_repository.get_by(
-                "id", doctor_id, unique=True
-            )
-            data = {k: v for k, v in data.items() if v is not None}
-            doctor = await self.doctor_repository.update(doctor_model, data)
-            return doctor
-        except NoResultFound as e:
-            log.error(f"Doctor with id {doctor_id} not found")
-            log.debug(e)
-            return None
-        except Exception as e:
-            log.error(f"Error: {e}")
-            raise e
-
+    @catch_error_helper("Server error when create doctor working schedule")
     async def create_doctor_work_schedule(
         self, doctor_id: int, data: RequestDoctorWorkScheduleNextWeek
     ):
-        try:
-            response = await self.doctor_repository.add_workingschedule(doctor_id, data)
-            return response
-        except (BadRequest, Forbidden, InternalServer) as e:
-            raise e
-        except Exception as ex:
-            raise ex
+        response = await self.doctor_repository.add_workingschedule(doctor_id, data)
+        return response
 
-    @catch_error_helper
+    @catch_error_helper("Error sever when reject doctor")
     async def reject_doctor(self, doctor_id: int):
         return await self.doctor_repository.reject_doctor(doctor_id)
 

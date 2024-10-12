@@ -20,7 +20,7 @@ from src.schema.register import RequestAdminRegisterSchema
 
 class UserRepository(PostgresRepository[UserModel]):
 
-    @catch_error_repository
+    @catch_error_repository("Failed to register patient, please try again later")
     async def register_admin(self, data: RequestAdminRegisterSchema):
         where = destruct_where(UserModel, {"phone_number": data.phone_number})
         if where is None:
@@ -68,7 +68,7 @@ class UserRepository(PostgresRepository[UserModel]):
             logging.info(e)
             raise e
 
-    @catch_error_repository
+    @catch_error_repository("Failed to update profile, please try again later")
     async def update_profile(self, user_id: int, data: dict[str, Any]):
         user_model = await self.get_one({"id": user_id})
         if user_model is None:

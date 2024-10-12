@@ -1,4 +1,5 @@
 import logging
+
 from src.core import HTTPEndpoint
 from src.core.exception import BadRequest, Forbidden, InternalServer
 from src.core.security.authentication import JsonWebToken

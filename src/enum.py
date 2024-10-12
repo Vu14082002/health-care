@@ -28,7 +28,6 @@ class ErrorCode(Enum):
     INVALID_EXAMINATION_TYPE = "INVALID_EXAMINATION_TYPE"
     SCHEDULE_CONFLICT = "SCHEDULE_CONFLICT"
     ALLREADY_ORDERED = "ALLREADY_ORDERED"
-    msg_server_error = "Server is error, pls try later"
     INVALID_APPOINTMENT = "INVALID_APPOINTMENT"
     WORK_SCHEDULE_NOT_FOUND = "WORK_SCHEDULE_NOT_FOUND"
     MEDICAL_RECORD_EXIST = "MEDICAL_RECORD_EXIST"
@@ -42,6 +41,12 @@ class ErrorCode(Enum):
     msg_delete_account_before = "Your account has been deleted before, if you want to use this account, please contact the admin"
     msg_wrong_password = "Wrong password"
     msg_phone_not_registered = "Phone number is not registered"
+    msg_error_login = "Phone number or password is incorrect"
+    msg_server_error = "Server is error, pls try later"
+    msg_permission_rating = (
+        "You must have and done appointment with doctor before rating"
+    )
+
     msg_verify_step_one_befor_verify_two = (
         "You must verify doctor with status 1 before verify with status 2"
     )

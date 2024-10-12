@@ -27,7 +27,9 @@ class RatingModel(Model):
 
     comment: Mapped[str] = mapped_column(Text, nullable=True)
 
-    doctor: Mapped["DoctorModel"] = relationship("DoctorModel", back_populates="ratings")
+    doctor: Mapped["DoctorModel"] = relationship(
+        "DoctorModel", back_populates="ratings"
+    )
 
     patient: Mapped["PatientModel"] = relationship(
         "PatientModel", back_populates="ratings"

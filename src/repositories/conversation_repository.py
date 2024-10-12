@@ -18,7 +18,7 @@ from src.schema.conversation_schema import RequestGetAllConversationSchema
 
 class ConversationRepoitory(PostgresRepository[ConversationModel]):
 
-    @catch_error_repository
+    @catch_error_repository("Failed to create conversation, please try again later")
     async def create_conversation(self, user_create: int, appointment_id: int):
         # check appointment_id exist
         query_appointment = select(
@@ -164,7 +164,7 @@ class ConversationRepoitory(PostgresRepository[ConversationModel]):
         }
         return data
 
-    @catch_error_repository
+    @catch_error_repository("Failed to get conversation, please try again later")
     async def get_conversation(
         self, user_id: int, query_params: RequestGetAllConversationSchema
     ):

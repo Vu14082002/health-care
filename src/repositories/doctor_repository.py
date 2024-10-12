@@ -253,7 +253,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             logging.error(f"Error in get_one: {e}")
             raise
 
-    @catch_error_repository
+    @catch_error_repository("Failed to insert doctor, please try again later")
     async def insert(self, data: dict[str, Any], *args: Any, **kwargs: Any):
         await self._check_existing_user(data.get("phone_number", ""))
 
@@ -358,61 +358,73 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             logging.error(f"Error in count_record: {e}")
             raise
 
+    @catch_error_repository("Server error when get doctor by id")
     async def get_doctor_with_ratings(self, doctor_id: int) -> Optional[Dict[str, Any]]:
-        try:
-            query = (
-                select(
-                    self.model_class,
-                    func.avg(RatingModel.rating).label("avg_rating"),
-                    func.array_agg(RatingModel.comment).label("comments"),
-                    DoctorExaminationPriceModel,
-                )
-                .outerjoin(RatingModel)
-                .outerjoin(DoctorExaminationPriceModel)
-                .where(
-                    and_(
-                        self.model_class.id == doctor_id,
-                        self.model_class.verify_status != 0,
-                    )
-                )
-                .group_by(self.model_class.id, DoctorExaminationPriceModel.id)
-                .order_by(desc(DoctorExaminationPriceModel.created_at))
-                .limit(1)
+        query = (
+            select(
+                self.model_class,
+                func.avg(RatingModel.rating).label("avg_rating"),
+                func.array_agg(RatingModel.comment).label("comments"),
+                DoctorExaminationPriceModel,
             )
-
-            result: Result[
-                Tuple[DoctorModel, Any, Any, DoctorExaminationPriceModel]
-            ] = await self.session.execute(query)
-            row: (
-                Row[Tuple[DoctorModel, Any, Any, DoctorExaminationPriceModel]] | None
-            ) = result.first()
-
-            if row is None:
-                return None
-
-            doctor, avg_rating, comments, latest_price = row
-            doctor_dict = doctor.as_dict
-            doctor_dict["avg_rating"] = (
-                float(avg_rating) if avg_rating is not None else 0
+            .outerjoin(RatingModel)
+            .outerjoin(DoctorExaminationPriceModel)
+            .where(
+                and_(
+                    self.model_class.id == doctor_id,
+                    self.model_class.verify_status != 0,
+                )
             )
-            doctor_dict["comments"] = [
-                comment for comment in comments if comment is not None
-            ]
+            .group_by(self.model_class.id, DoctorExaminationPriceModel.id)
+            .order_by(desc(DoctorExaminationPriceModel.created_at))
+            .limit(1)
+        )
 
-            if latest_price:
-                doctor_dict["latest_examination_price"] = {
-                    "offline_price": latest_price.offline_price,
-                    "online_price": latest_price.online_price,
-                    "is_active": latest_price.is_active,
-                    "created_at": latest_price.created_at,
-                }
-            else:
-                doctor_dict["latest_examination_price"] = None
+        result: Result[Tuple[DoctorModel, Any, Any, DoctorExaminationPriceModel]] = (
+            await self.session.execute(query)
+        )
+        row: Row[Tuple[DoctorModel, Any, Any, DoctorExaminationPriceModel]] | None = (
+            result.first()
+        )
 
-            return doctor_dict
-        except SQLAlchemyError as e:
-            logging.error(f"Error in get_doctor_with_ratings: {e}")
-            raise
+        if row is None:
+            return None
+
+        doctor, avg_rating, comments, latest_price = row
+        doctor_dict = doctor.as_dict
+        doctor_dict["avg_rating"] = float(avg_rating) if avg_rating is not None else 0
+        query_rating_model = (
+            select(RatingModel)
+            .where(RatingModel.doctor_id == doctor_id)
+            .options(joinedload(RatingModel.patient))
+        )
+        result_rating = await self.session.execute(query_rating_model)
+        rating_model = result_rating.scalars().all()
+        doctor_dict["comments"] = [
+            {
+                **comment.as_dict,
+                "user": {
+                    "id": comment.patient.id,
+                    "avatar": comment.patient.avatar,
+                    "first_name": comment.patient.first_name,
+                    "last_name": comment.patient.last_name,
+                },
+            }
+            for comment in rating_model
+            if comment is not None
+        ]
+
+        if latest_price:
+            doctor_dict["latest_examination_price"] = {
+                "offline_price": latest_price.offline_price,
+                "online_price": latest_price.online_price,
+                "is_active": latest_price.is_active,
+                "created_at": latest_price.created_at,
+            }
+        else:
+            doctor_dict["latest_examination_price"] = None
+
+        return doctor_dict
 
     async def add_workingschedule(
         self, doctor_id: int, data: RequestDoctorWorkScheduleNextWeek
@@ -823,7 +835,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 errors={"message": "Unexpected error"},
             )
 
-    @catch_error_repository
+    @catch_error_repository("Failed to update doctor, please try again later")
     async def update_doctor_model(
         self,
         doctor_model: DoctorModel,
@@ -835,7 +847,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         await self.session.commit()
         return doctor_model
 
-    @catch_error_repository
+    @catch_error_repository("Failed to get doctor by id, please try again later")
     async def reject_doctor(self, doctor_id: int):
         update_user_query = (
             update(UserModel).where(UserModel.id == doctor_id).values(is_deleted=True)

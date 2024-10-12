@@ -85,7 +85,7 @@ class MessageRepository(PostgresRepository[MessageModel]):
                 errors={"message": "Internal server error"},
             )
 
-    @catch_error_repository
+    @catch_error_repository("Failed to create message, please try again later")
     async def create_message(
         self,
         sender_id: int,

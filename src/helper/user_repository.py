@@ -38,7 +38,7 @@ class UserHelper:
         if user is None:
             raise Unauthorized(
                 error_code=ErrorCode.UNAUTHORIZED.name,
-                errors={"message": ErrorCode.msg_phone_not_registered.value},
+                errors={"message": ErrorCode.msg_error_login.value},
             )
         if user.is_deleted:
             raise Unauthorized(

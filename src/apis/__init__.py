@@ -31,6 +31,7 @@ from src.apis.medical_records_api import (
     MedicalRecordsApiPOST,
 )
 from src.apis.message_api import MessageApi
+from src.apis.rating_api import RatingApi
 from src.apis.user import ResetPassword, UserProfile
 from src.apis.working_time_api import (
     CreateDoctorWorkingTimeApi,
@@ -239,6 +240,13 @@ routes = [
         "/message",
         MessageApi,
         methods=["GET", "POST"],
+        tags=["PATIENT", "DOCTOR", "ADMIN"],
+    ),
+    # rating api
+    RouteSwagger(
+        "/rating",
+        RatingApi,
+        methods=["POST"],
         tags=["PATIENT", "DOCTOR", "ADMIN"],
     ),
 ]
