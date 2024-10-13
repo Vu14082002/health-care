@@ -7,7 +7,7 @@ from src.helper.message_helper import MessageHelper
 from src.helper.patient_helper import PatientHelper
 from src.helper.post_helper import PostHelper
 from src.helper.time_helper import TimeHelper
-from src.helper.user_repository import UserHelper
+from src.helper.user_helper import UserHelper
 
 __all__ = [
     "AppointmentHelper",

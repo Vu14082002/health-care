@@ -14,9 +14,8 @@ from src.enum import ErrorCode, Role, TypeOfDisease
 from src.factory import Factory
 from src.helper.doctor_helper import DoctorHelper
 from src.helper.email_helper import send_mail_request_additional_info
-from src.helper.patient_helper import PatientHelper
 from src.helper.s3_helper import S3Service
-from src.helper.user_repository import UserHelper
+from src.helper.user_helper import UserHelper
 from src.models.doctor_model import DoctorModel
 from src.schema.register import (
     RequestAdminRegisterSchema,

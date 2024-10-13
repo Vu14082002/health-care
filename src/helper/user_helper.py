@@ -72,7 +72,7 @@ class UserHelper:
     def _scalar_user(self, user: UserModel) -> Dict[str, str]:
         role_name = user.role
         if role_name == Role.ADMIN.value:
-            payload = user.as_dict
+            payload = {**user.staff.as_dict, "role": role_name}
         elif role_name == Role.DOCTOR.value:
             payload = {**user.doctor.as_dict, "role": role_name}
         elif role_name == Role.PATIENT.value:
