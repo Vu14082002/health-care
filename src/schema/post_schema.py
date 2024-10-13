@@ -80,3 +80,23 @@ class RequestCreateComment(BaseModel):
         from_attributes = True
         arbitrary_types_allowed = True
         extra = "forbid"
+
+
+class RequestUpdateComment(BaseModel):
+    comment_id: int = Field(..., title="Comment id will update", examples=[1])
+    media: Optional[Any] = Field(
+        default=None,
+        description="is video of post, and accept one file",
+    )
+    images: Optional[Any] = Field(
+        default=None,
+        description="is img of post and accept multiple files",
+    )
+    content: Optional[str] = Field(
+        None, description="content of post", examples=["Hi! ......"]
+    )
+
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
+        extra = "forbid"

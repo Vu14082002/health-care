@@ -111,6 +111,43 @@ class PostRepository(PostgresRepository[PostModel]):
         }
         return data
 
+    @catch_error_repository("Server error when handling update comment, pls try later")
+    async def update_comment_repository(
+        self, auth_id: int, comment_id: int, content_schema: MessageContentSchema
+    ):
+        comment_statment = select(CommentModel).where(CommentModel.id == comment_id)
+        result_comment_statment = await self.session.execute(comment_statment)
+        comment = result_comment_statment.unique().scalars().first()
+        if not comment:
+            raise BadRequest(
+                error_code=ErrorCode.NOT_FOUND.name,
+                errors=({"message": "comment not found"}),
+            )
+        if comment.user_id != auth_id:
+            raise BadRequest(
+                error_code=ErrorCode.FORBIDDEN.name,
+                errors=({"message": "you can't update this comment"}),
+            )
+        comment.content = content_schema.model_dump()
+        await self.session.commit()
+        user_comment = comment.user.patient or comment.user.doctor or comment.user.staff
+        include_fields = ["id", "email", "first_name", "last_name", "avatar"]
+        data = {
+            **comment.as_dict,
+            "created_at": datetime.fromtimestamp(
+                comment.created_at, timezone.utc
+            ).strftime("%Y-%m-%d %H:%M:%S"),
+            "updated_at": datetime.fromtimestamp(
+                comment.updated_at, timezone.utc
+            ).strftime("%Y-%m-%d %H:%M:%S"),
+            "user": {
+                key: value
+                for key, value in user_comment.as_dict.items()
+                if key in include_fields
+            },
+        }
+        return data
+
     async def _is_post_by_id(self, post_id: int):
         check_statment = select(exists().where(PostModel.id == post_id))
         result_check_statment = await self.session.execute(check_statment)

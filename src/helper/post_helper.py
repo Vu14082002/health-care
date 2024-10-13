@@ -33,6 +33,17 @@ class PostHelper:
         return data
 
     @catch_error_helper(
+        "Server error when handling business logic on update commnent ,pls try later"
+    )
+    async def update_comment_helper(
+        self, auth_id: int, comment_id: int, content_schema: MessageContentSchema
+    ):
+        data = await self.post_repository.update_comment_repository(
+            auth_id, comment_id, content_schema
+        )
+        return data
+
+    @catch_error_helper(
         "Server error when handling business logic on get posts ,pls try later"
     )
     async def get_post_helper(self, query: dict[str, Any]):

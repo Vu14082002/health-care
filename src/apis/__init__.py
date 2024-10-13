@@ -98,7 +98,7 @@ routes = [
     RouteSwagger(
         "/post/comment",
         CommentApi,
-        methods=["POST"],
+        methods=["POST", "PUT"],
         tags=["ADMIN", "PATIENT", "DOCTOR"],
     ),
     # change status verify doctor from 0 to -1
