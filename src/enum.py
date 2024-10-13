@@ -37,6 +37,7 @@ class ErrorCode(Enum):
     DATABASE_ERROR = "DATABASE_ERROR"
     INVALID_FILE_TYPE = "INVALID_FILE_TYPE"
     INVALID_REQUEST = "INVALID_REQUEST"
+    VALIDATION_ERROR = "VALIDATION_ERROR"
     msg_permission_denied = "You don't have permission to access this resource"
     msg_delete_account_before = "Your account has been deleted before, if you want to use this account, please contact the admin"
     msg_wrong_password = "Wrong password"
@@ -50,6 +51,7 @@ class ErrorCode(Enum):
     msg_verify_step_one_befor_verify_two = (
         "You must verify doctor with status 1 before verify with status 2"
     )
+    msg_invalid_medical_record = "media must be file"
 
 
 CACHE_REFRESH_TOKEN = 60 * 60 * 5

@@ -218,10 +218,12 @@ class RequestDoctorPatientSchema(BaseModel):
     page_size: Optional[int] = Field(
         default=10, description="Number of items per page.", examples=["10"]
     )
-    appointment_status: Optional[Literal["approved", "completed", "processing"]] = Field(
-        default=None,
-        description="If value is None, then get all appointments.",
-        examples=["approved", "completed", "processing", " None"],
+    appointment_status: Optional[Literal["approved", "completed", "processing"]] = (
+        Field(
+            default=None,
+            description="If value is None, then get all appointments.",
+            examples=["approved", "completed", "processing", " None"],
+        )
     )
     status_order: Optional[Tuple[str, ...]] = Field(
         default=("approved", "processing", "completed"),

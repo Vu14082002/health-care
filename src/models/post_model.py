@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from sqlalchemy import ForeignKey, Index, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
@@ -34,9 +34,17 @@ class PostModel(Model):
         lazy="joined",
         passive_deletes=True,
     )
-    comments: Mapped["CommentModel"] = relationship(
-        "CommentModel", back_populates="post"
+    comments: Mapped[List["CommentModel"]] = relationship(
+        "CommentModel",
+        back_populates="post",
+        cascade="all, delete-orphan",
+        lazy="joined",
     )
+    viewed: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    @property
+    def get_size_comments(self) -> int:
+        return len(self.comments) if self.comments else 0
 
 
 class CommentModel(Model):

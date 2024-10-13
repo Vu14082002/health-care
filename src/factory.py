@@ -1,36 +1,38 @@
 from functools import partial
 
-
 from src.core.database.postgresql import get_session
 from src.helper import (
     AppointmentHelper,
     ConversationHelper,
+    DailyHealthCheckHelper,
     DoctorHelper,
     MedicalRecordsHelper,
     MessageHelper,
     PatientHelper,
+    PostHelper,
     UserHelper,
-    DailyHealthCheckHelper,
 )
 from src.models import (
     AppointmentModel,
     ConversationModel,
+    DailyHealCheckModel,
     DoctorModel,
     MedicalRecordModel,
     MessageModel,
     PatientModel,
+    PostModel,
     UserModel,
-    DailyHealCheckModel,
 )
 from src.repositories import (
     AppointmentRepository,
     ConversationRepoitory,
+    DailyHealthCheckRepository,
     DoctorRepository,
     MedicalRecordsRepository,
     MessageRepository,
     PatientRepository,
+    PostRepository,
     UserRepository,
-    DailyHealthCheckRepository,
 )
 
 
@@ -47,6 +49,7 @@ class Factory:
     daily_health_check_repository = partial(
         DailyHealthCheckRepository, DailyHealCheckModel
     )
+    post_repository = partial(PostRepository, PostModel)
 
     async def get_patient_helper(self) -> PatientHelper:
         async with get_session() as session:
@@ -97,3 +100,7 @@ class Factory:
                     db_session=session
                 )
             )
+
+    async def get_post_helper(self) -> PostHelper:
+        async with get_session() as session:
+            return PostHelper(post_repository=self.post_repository(db_session=session))

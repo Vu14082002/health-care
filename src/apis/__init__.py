@@ -31,6 +31,7 @@ from src.apis.medical_records_api import (
     MedicalRecordsApiPOST,
 )
 from src.apis.message_api import MessageApi
+from src.apis.post_api import CommentApi, CreatePostApi
 from src.apis.rating_api import RatingApi
 from src.apis.user import ResetPassword, UserProfile
 from src.apis.working_time_api import (
@@ -75,6 +76,24 @@ routes = [
         AdminNotifyRegisterMail,
         methods=["POST"],
         tags=["ADMIN"],
+    ),
+    RouteSwagger(
+        "/admin/post",
+        CreatePostApi,
+        methods=["POST", "GET"],
+        tags=["ADMIN"],
+    ),
+    RouteSwagger(
+        "/posts",
+        CreatePostApi,
+        methods=["GET"],
+        tags=["USERS", "ADMIN", "DOCTOR", "PATIENT"],
+    ),
+    RouteSwagger(
+        "/post/comment",
+        CommentApi,
+        methods=["POST"],
+        tags=["ADMIN", "PATIENT", "DOCTOR"],
     ),
     # change status verify doctor from 0 to -1
     RouteSwagger(
