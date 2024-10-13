@@ -168,42 +168,27 @@ class PostRepository(PostgresRepository[PostModel]):
         result_commnet = await self.session.execute(comment_select)
         data_comment = result_commnet.unique().scalars().all()
         comments = []
+        include_fields = ["id", "email", "first_name", "last_name", "avatar"]
         for comment in data_comment:
             user_comment = comment.user.patient
             if user_comment is None:
                 user_comment = comment.user.doctor
             # FIXME: user_comment is None
+
             if user_comment is None:
                 user_comment = {
                     "id": comment.user.id,
                     "email": "admin@gmail.com",
                     "first_name": "admin",
                     "last_name": "",
+                    "avatar": "",
                 }
-            exclue_fields = [
-                "certification",
-                "verify_status",
-                "is_local_person",
-                "diploma",
-                "type_of_disease",
-                "hopital_address_work",
-                "address",
-                "description",
-                "license_number",
-                "education",
-                "account_number",
-                "bank_name",
-                "beneficiary_name",
-                "branch_name",
-                "created_at",
-                "updated_at",
-                "is_deleted",
-            ]
+
             user_comment = (
                 {
                     key: value
                     for key, value in user_comment.as_dict.items()
-                    if key not in exclue_fields
+                    if key in include_fields
                 }
                 if not isinstance(user_comment, dict)
                 else user_comment
@@ -220,5 +205,7 @@ class PostRepository(PostgresRepository[PostModel]):
         await self.session.commit()
         return {
             **post.as_dict,
+            "first_name": "admin",
+            "last_name": "admin",
             "comments": comments,
         }
