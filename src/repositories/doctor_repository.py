@@ -36,6 +36,7 @@ from src.models.appointment_model import AppointmentModel
 from src.models.doctor_model import DoctorExaminationPriceModel, DoctorModel
 from src.models.patient_model import PatientModel
 from src.models.rating_model import RatingModel
+from src.models.staff_model import StaffModel
 from src.models.user_model import Role, UserModel
 from src.models.work_schedule_model import WorkScheduleModel
 from src.repositories.global_func import destruct_where, process_orderby
@@ -256,24 +257,18 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
     @catch_error_repository("Failed to insert doctor, please try again later")
     async def insert(self, data: dict[str, Any], *args: Any, **kwargs: Any):
         await self._check_existing_user(data.get("phone_number", ""))
-
         await self._check_existing_doctor(
             data.get("email", ""), data.get("license_number", "")
         )
 
         user_model = self._create_user_model(data)
         doctor_model = self._create_doctor_model(data, user_model)
-
         self.session.add(doctor_model)
         await self.session.flush()
-
         examination_price = self._create_examination_price(data, doctor_model.id)
         self.session.add(examination_price)
-
         await self.session.commit()
-        # task = BackgroundTask(
-        #     send_mail_register_success_local, email=data.get("email")
-        # )
+
         task = None
         if data["is_local_person"]:
             task = BackgroundTask(
@@ -309,7 +304,12 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         query_patient_exists = select(exists().where(PatientModel.email == email))
         result = await self.session.execute(query_patient_exists)
         patient_exists = result.scalar_one()
-        if doctor_exists or patient_exists:
+        # check existing on table staff
+        select_exists_staff = select(exists().where(StaffModel.email == email))
+        result_staff = await self.session.execute(select_exists_staff)
+        staff_exists = result_staff.scalar_one()
+
+        if doctor_exists or patient_exists or staff_exists:
             raise BadRequest(
                 error_code=ErrorCode.EMAIL_OR_LICENSE_NUMBER_HAVE_BEEN_REGISTERED.name,
                 errors={"email": "Email or license number has already been registered"},
