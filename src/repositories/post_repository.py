@@ -180,34 +180,22 @@ class PostRepository(PostgresRepository[PostModel]):
         comments = []
         include_fields = ["id", "email", "first_name", "last_name", "avatar"]
         for comment in data_comment:
-            user_comment = comment.user.patient
-            if user_comment is None:
-                user_comment = comment.user.doctor
-            # FIXME: user_comment is None
-
-            if user_comment is None:
-                user_comment = {
-                    "id": comment.user.id,
-                    "email": "admin@gmail.com",
-                    "first_name": "admin",
-                    "last_name": "",
-                    "avatar": "",
-                }
-
             user_comment = (
-                {
-                    key: value
-                    for key, value in user_comment.as_dict.items()
-                    if key in include_fields
-                }
-                if not isinstance(user_comment, dict)
-                else user_comment
+                comment.user.patient or comment.user.doctor or comment.user.staff
             )
+            user_comment = {
+                key: value
+                for key, value in user_comment.as_dict.items()
+                if key in include_fields
+            }
             comments.append(
                 {
                     **comment.as_dict,
                     "created_at": datetime.fromtimestamp(
                         comment.created_at, timezone.utc
+                    ).strftime("%Y-%m-%d %H:%M:%S"),
+                    "updated_at": datetime.fromtimestamp(
+                        comment.updated_at, timezone.utc
                     ).strftime("%Y-%m-%d %H:%M:%S"),
                     "user": user_comment,
                 }
