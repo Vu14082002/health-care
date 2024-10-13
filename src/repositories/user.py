@@ -1,10 +1,12 @@
+import asyncio
 import logging
-import logging as log
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from sqlalchemy import and_, exists, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database.postgresql import PostgresRepository
+from src.core.database.postgresql.session import get_session
 from src.core.decorator.exception_decorator import (
     catch_error_repository,
 )
@@ -13,6 +15,7 @@ from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
 from src.models.doctor_model import DoctorModel
 from src.models.patient_model import PatientModel
+from src.models.staff_model import StaffModel
 from src.models.user_model import Role, UserModel
 from src.repositories.global_func import destruct_where
 from src.schema.register import RequestAdminRegisterSchema
@@ -20,53 +23,51 @@ from src.schema.register import RequestAdminRegisterSchema
 
 class UserRepository(PostgresRepository[UserModel]):
 
-    @catch_error_repository("Failed to register patient, please try again later")
+    @catch_error_repository("Failed to register amdin, please try again later")
     async def register_admin(self, data: RequestAdminRegisterSchema):
-        where = destruct_where(UserModel, {"phone_number": data.phone_number})
-        if where is None:
-            raise InternalServer(
-                error_code=ErrorCode.INVALID_PARAMETER.name,
-                errors={
-                    "message": "Something went wrong when registering ADMIN account"
-                },
+        async with get_session() as session:
+            is_phone_exists, is_mail_exists = await asyncio.gather(
+                self._is_phone_exist(phone_number=data.phone_number, session=session),
+                self._is_email_exist(email=data.email, session=session),
+                return_exceptions=False,
             )
+            if is_phone_exists:
+                raise BadRequest(
+                    error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
+                    errors={
+                        "message": "This phone number has been used by another user"
+                    },
+                )
+            if is_mail_exists:
+                raise BadRequest(
+                    error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
+                    errors={"message": "This email has been used by another user"},
+                )
+            password_hash = PasswordHandler.hash(data.password_hash)
+            user_model = UserModel()
+            user_model.phone_number = data.phone_number
+            user_model.password_hash = password_hash
+            user_model.role = Role.ADMIN.value
+            staff_model = StaffModel(**data.model_dump(exclude={"password_hash"}))
+            user_model.staff = staff_model
+            # add user and staff to session
+            self.session.add(user_model)
+            _ = await session.commit()
+            return staff_model.as_dict
 
-        exists_query = select(exists().where(where))
-
-        patient_exists = await self.session.scalar(exists_query)
-        if patient_exists:
-            raise BadRequest(
-                msg="User have been registered",
-                error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
-            )
-        password_hash = PasswordHandler.hash(data.password_hash)
-        user_model = UserModel()
-        user_model.phone_number = data.phone_number
-        user_model.password_hash = password_hash
-        user_model.role = Role.ADMIN.value
-        self.session.add(user_model)
-        _ = await self.session.commit()
-        return user_model
-
-    async def insert_user(self, data: dict[str, Any]):
-        pass
-
+    @catch_error_repository("Failed to insert user, please try again later")
     async def get_by_id(self, user_id: int):
         return await self.get_by("id", user_id)
 
+    @catch_error_repository("Failed to insert user, please try again later")
     async def get_one(self, where: Dict[str, Any]):
-        try:
-            conditions = destruct_where(self.model_class, where)
-            query = select(self.model_class)
-            if conditions is not None:
-                query = query.where(conditions)
-            result = await self.session.execute(query)
-            user_model: UserModel | None = result.unique().scalars().first()
-            return user_model
-        except Exception as e:
-            logging.error("ERROR")
-            logging.info(e)
-            raise e
+        conditions = destruct_where(self.model_class, where)
+        query = select(self.model_class)
+        if conditions is not None:
+            query = query.where(conditions)
+        result = await self.session.execute(query)
+        user_model: UserModel | None = result.unique().scalars().first()
+        return user_model
 
     @catch_error_repository("Failed to update profile, please try again later")
     async def update_profile(self, user_id: int, data: dict[str, Any]):
@@ -110,56 +111,74 @@ class UserRepository(PostgresRepository[UserModel]):
                     msg="You can't update email to an existing one",
                     errors={"message": "This email has been used by another user"},
                 )
-
         if value_update:
             for key, value in value_update.items():
                 setattr(model, key, value)
-
             await self.session.commit()
         return model.as_dict
 
-    async def _is_phone_exist(self, phone_number: str, user_id: int):
-        query_check_phone = select(
-            exists().where(
-                and_(
-                    UserModel.phone_number == phone_number,
-                    UserModel.id != user_id,
-                )
-            )
-        )
-        resukt_query_check_phone = await self.session.execute(query_check_phone)
-        return resukt_query_check_phone.scalar_one()
+    async def _is_phone_exist(
+        self,
+        phone_number: str,
+        user_id: int | None = None,
+        session: Optional[AsyncSession] = None,
+    ):
+        """
+        this function is used to check if phone number is exist in database
 
-    async def _is_email_exist(self, email: str, user_id: int):
-        query_check_doctor_email = select(
-            exists().where(
-                and_(
-                    DoctorModel.email == email,
-                    DoctorModel.id != user_id,
-                )
-            )
-        )
-        resukt_query_check_doctor_email = await self.session.execute(
+        Args:
+            phone_number (str): check phone number
+            user_id (int | None, optional): _description_. Defaults to None.
+        Returns:
+            _type_: _description_
+        """
+        _session = session or self.session
+        user_filter = UserModel.phone_number == phone_number
+        if user_id:
+            user_filter = and_(user_filter, UserModel.id != user_id)
+        query_check_phone = select(exists().where(user_filter))
+        result_query_check_phone = await _session.execute(query_check_phone)
+        return result_query_check_phone.scalar_one()
+
+    async def _is_email_exist(
+        self,
+        email: str,
+        user_id: int | None = None,
+        session: Optional[AsyncSession] = None,
+    ):
+        _session = session or self.session
+        doctor_filter = DoctorModel.email == email
+        patient_filter = PatientModel.email == email
+        staff_filter = StaffModel.email == email
+
+        if user_id is not None:
+            doctor_filter = and_(doctor_filter, DoctorModel.id != user_id)
+            patient_filter = and_(patient_filter, PatientModel.id != user_id)
+            staff_filter = and_(staff_filter, StaffModel.id != user_id)
+
+        # Check email existence in doctor
+        query_check_doctor_email = select(exists().where(doctor_filter))
+        result_query_check_doctor_email = await _session.execute(
             query_check_doctor_email
         )
+        is_doctor_email_exists = result_query_check_doctor_email.scalar_one()
 
-        is_doctor_email_exists = resukt_query_check_doctor_email.scalar_one()
+        # Check email existence in patient
+        query_check_patient_email = select(exists().where(patient_filter))
+        result_patient_email = await _session.execute(query_check_patient_email)
+        is_patient_email_exists = result_patient_email.scalar_one()
 
-        query_check_patient_email = select(
-            exists().where(
-                and_(
-                    PatientModel.email == email,
-                    PatientModel.id != user_id,
-                )
-            )
+        # Check email existence in staff
+        query_check_staff_email = select(exists().where(staff_filter))
+        result_staff_email = await _session.execute(query_check_staff_email)
+        is_staff_email_exists = result_staff_email.scalar_one()
+
+        # Return True if the email exists in any of the models
+        return (
+            is_doctor_email_exists or is_patient_email_exists or is_staff_email_exists
         )
-        result_query_check_patient_email = await self.session.execute(
-            query_check_patient_email
-        )
-        is_patient_email_exists = result_query_check_patient_email.scalar_one()
 
-        return is_doctor_email_exists or is_patient_email_exists
-
+    @catch_error_repository("Failed to handle reset password, please try again later")
     async def reset_pwd(self, user_id: int, password_hash: str, old_password: str):
         try:
             user_query = select(UserModel).where(UserModel.id == user_id)

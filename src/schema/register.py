@@ -228,8 +228,41 @@ class RequestGetAllDoctorsNotVerifySchema(BaseModel):
 
 
 class RequestAdminRegisterSchema(BaseModel):
-    phone_number: str
+    email: str = Field(..., description="email of admin")
+
+    phone_number: str = Field(..., description="phone number of admin")
+
+    first_name: str = Field(..., description="first name of admin")
+
+    last_name: str = Field(..., description="last name of admin")
+
+    date_of_birth: date = Field(..., description="date of birth of admin")
+
+    gender: Literal["male", "female", "other"] = Field(
+        ..., description="gender of admin"
+    )
+    avatar: Any | None = Field(None, description="set avatar for admin")
+
+    description: str = Field(None, description="description of role of admin")
+
+    account_number: str | None = Field(None, description="bank account number")
+
+    bank_name: str | None = Field(None, description="bank name")
+
+    beneficiary_name: str | None = Field(None, description="beneficiary name")
+
     password_hash: str = Field(alias="password")
+
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
+        extra = "forbid"
+
+    @validator("password_hash")
+    def check_password_hash(cls, v):
+        if v is None or len(v) < 1:
+            raise ValueError("Password is required")
+        return v
 
 
 class RequestNotifyMail(BaseModel):

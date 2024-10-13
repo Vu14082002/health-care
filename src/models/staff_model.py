@@ -44,7 +44,11 @@ class StaffModel(Model):
 
     email: Mapped[str] = mapped_column(String, nullable=True, unique=True)
 
-    user: Mapped["UserModel"] = relationship("UserModel", back_populates="doctor")
+    user: Mapped["UserModel"] = relationship(
+        "UserModel",
+        back_populates="staff",
+        lazy="joined",
+    )
 
     account_number: Mapped[str | None] = mapped_column(Text, nullable=True)
 

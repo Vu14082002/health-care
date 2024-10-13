@@ -19,7 +19,6 @@ from src.helper.s3_helper import S3Service
 from src.helper.user_repository import UserHelper
 from src.models.doctor_model import DoctorModel
 from src.schema.register import (
-    ReponseAdminSchema,
     RequestAdminRegisterSchema,
     RequestGetAllDoctorsNotVerifySchema,
     RequestLoginSchema,
@@ -32,15 +31,21 @@ from src.schema.register import (
 
 
 class AdminRegisterApi(HTTPEndpoint):
-    async def post(self, form_data: RequestAdminRegisterSchema):
+    async def post(self, request: Request, form_data: RequestAdminRegisterSchema):
         """
         This function is used to register admin
         """
         try:
+            form_request = await request.form()
+            if form_request.get("avatar", None):
+                if isinstance(form_request.get("avatar"), UploadFile):
+                    upload_file: UploadFile = form_request.get("avatar")
+                    s3_service = S3Service()
+                    link_avatar = await s3_service.upload_file_from_form(upload_file)
+                    form_data.avatar = link_avatar
             _user_helper: UserHelper = await Factory().get_user_helper()
             _result = await _user_helper.register_admin(form_data)
-            _reponse = ReponseAdminSchema(**_result.as_dict)
-            return _reponse.model_dump(mode="json")
+            return _result
         except (BadRequest, InternalServer) as e:
             log.error(f"Error: {e}")
             raise e
