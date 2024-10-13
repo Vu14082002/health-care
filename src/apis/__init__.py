@@ -80,7 +80,7 @@ routes = [
     RouteSwagger(
         "/admin/post",
         CreatePostApi,
-        methods=["POST", "GET"],
+        methods=["POST"],
         tags=["ADMIN"],
     ),
     RouteSwagger(

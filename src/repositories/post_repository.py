@@ -128,16 +128,26 @@ class PostRepository(PostgresRepository[PostModel]):
         result = await self.session.execute(query_statement)
         posts = result.unique().scalars().all()
 
-        items = [
-            {
+        items = []
+        for post in posts:
+            include_fields = ["id", "email", "first_name", "last_name", "avatar"]
+            auth_post = post.author
+            user = auth_post.patient or auth_post.doctor or auth_post.staff
+            user = {
+                key: value
+                for key, value in user.as_dict.items()
+                if key in include_fields
+            }
+            item = {
+                "user": user,
                 **post.as_dict,
                 "comment": post.get_size_comments,
                 "created_at": datetime.fromtimestamp(
                     post.created_at, timezone.utc
                 ).strftime("%Y-%m-%d %H:%M:%S"),
             }
-            for post in posts
-        ]
+
+            items.append(item)
 
         return {
             "items": items,

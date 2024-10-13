@@ -26,7 +26,9 @@ class S3Service(object):
             ),
         )
 
-    async def upload_file_from_form(self, file: UploadFile, bucket_name=config.S3_BUCKET):
+    async def upload_file_from_form(
+        self, file: UploadFile, bucket_name=config.S3_BUCKET
+    ):
         month = "{:02d}".format(datetime.now(timezone.utc).month)
         day = "{:02d}".format(datetime.now(timezone.utc).day)
         year = datetime.now(timezone.utc).year
@@ -48,7 +50,7 @@ class S3Service(object):
                 ExtraArgs={"ACL": "public-read", "ContentType": content_type},
             )
         except ClientError as e:
-            print(f"Error uploading file: {e}")
+            logging.error(f"Error uploading file to s3: {e}")
             return None
 
         link = f"{config.S3_ENDPOINT}/{bucket_name}/{key}"
