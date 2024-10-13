@@ -13,6 +13,7 @@ from src.core.decorator.exception_decorator import (
 from src.core.exception import BadRequest, InternalServer
 from src.enum import ErrorCode, MessageContentSchema
 from src.models.post_model import CommentModel, PostModel
+from src.models.user_model import UserModel
 
 
 class PostRepository(PostgresRepository[PostModel]):
@@ -78,7 +79,37 @@ class PostRepository(PostgresRepository[PostModel]):
                 errors=({"message": ErrorCode.msg_server_error.value}),
             )
         await self.session.commit()
-        return data.as_dict
+
+        result_user_comment = await self.session.execute(
+            select(UserModel).where(UserModel.id == auth_id)
+        )
+        data_user_comment = result_user_comment.scalar_one_or_none()
+        if data_user_comment is None:
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors=({"message": ErrorCode.msg_server_error.value}),
+            )
+        user_comment = (
+            data_user_comment.patient
+            or data_user_comment.doctor
+            or data_user_comment.staff
+        )
+        include_fields = ["id", "email", "first_name", "last_name", "avatar"]
+        data = {
+            **data.as_dict,
+            "created_at": datetime.fromtimestamp(
+                data.created_at, timezone.utc
+            ).strftime("%Y-%m-%d %H:%M:%S"),
+            "updated_at": datetime.fromtimestamp(
+                data.updated_at, timezone.utc
+            ).strftime("%Y-%m-%d %H:%M:%S"),
+            "user": {
+                key: value
+                for key, value in user_comment.as_dict.items()
+                if key in include_fields
+            },
+        }
+        return data
 
     async def _is_post_by_id(self, post_id: int):
         check_statment = select(exists().where(PostModel.id == post_id))
