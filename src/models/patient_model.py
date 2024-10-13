@@ -1,7 +1,7 @@
 from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Date, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Date, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
@@ -18,6 +18,11 @@ default_avatar = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSn5k7ItL
 
 class PatientModel(Model):
     __tablename__ = "patient"
+    __table_args__ = (
+        Index("ix_patient_first_name_last_name", "first_name", "last_name"),
+        Index("ix_patient_phone_number", "phone_number"),
+        Index("idx_patient_email", "email"),
+    )
 
     # id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"), primary_key=True)

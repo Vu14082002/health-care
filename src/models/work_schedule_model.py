@@ -1,3 +1,4 @@
+from ast import In
 from datetime import date, time
 from typing import TYPE_CHECKING
 
@@ -6,6 +7,7 @@ from sqlalchemy import (
     Date,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Time,
@@ -22,6 +24,11 @@ if TYPE_CHECKING:
 
 class WorkScheduleModel(Model):
     __tablename__ = "work_schedule"
+    __table_args__ = (
+        Index("idx_work_schedule_doctor", "doctor_id"),
+        Index("idx_work_schedule_date", "work_date"),
+        Index("idx_work_schedule_examination_type", "examination_type"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 

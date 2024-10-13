@@ -1,19 +1,24 @@
-from sqlalchemy import Float, ForeignKey, Integer, String, Text, Date
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from datetime import date
+from typing import TYPE_CHECKING
+
+from sqlalchemy import Date, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
-from typing import TYPE_CHECKING
-from datetime import date
 from src.enum import ImageDailyHealthCheck
 
 if TYPE_CHECKING:
-    from src.models.patient_model import PatientModel
     from src.models.appointment_model import AppointmentModel
+    from src.models.patient_model import PatientModel
 
 
 class DailyHealCheckModel(Model):
     __tablename__ = "daily_health_check"
+    __table_args__ = (
+        Index("idx_daily_health_check_patient", "patient_id"),
+        Index("idx_daily_health_check_appointment", "appointment_id"),
+    )
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     patient_id: Mapped[int] = mapped_column(

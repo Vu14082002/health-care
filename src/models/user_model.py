@@ -1,7 +1,7 @@
 from enum import Enum as PyEnum
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import Integer, String
+from sqlalchemy import Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from src.models.message_model import MessageModel
     from src.models.notification_model import NotificationModel
     from src.models.patient_model import PatientModel
+    from src.models.post_model import CommentModel, PostModel
 
 
 class Role(PyEnum):
@@ -21,6 +22,10 @@ class Role(PyEnum):
 
 class UserModel(Model):
     __tablename__ = "user"
+    __table_args__ = (
+        Index("idx_user_phone_number_password_hash", "phone_number", "password_hash"),
+        Index("idx_user_phone_number", "phone_number"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
@@ -52,6 +57,9 @@ class UserModel(Model):
     messages: Mapped[List["MessageModel"]] = relationship(
         "MessageModel", back_populates="sender"
     )
-
-    def __repr__(self):
-        return f"<User(id={self.id}, phone_number='{self.phone_number}', role='{self.role}')>"
+    posts: Mapped[List["PostModel"]] = relationship(
+        "PostModel", back_populates="author"
+    )
+    comment_posts: Mapped[List["CommentModel"]] = relationship(
+        "CommentModel", back_populates="user", foreign_keys="[CommentModel.user_id]"
+    )

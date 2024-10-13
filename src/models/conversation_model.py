@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
@@ -18,14 +18,15 @@ def _random_uuid():
 
 class ConversationModel(Model):
     __tablename__ = "conversation"
-    # appointment_id
+    __table_args__ = (
+        Index("idx_conversation_name", "name"),
+        Index("idx_conversation_appointment", "appointment_id"),
+    )
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_random_uuid)
     name: Mapped[str] = mapped_column(String, nullable=True, default="")
-
     appointment_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("appointment.id"), nullable=False, unique=True
     )
-
     appointment: Mapped["AppointmentModel"] = relationship(
         "AppointmentModel", back_populates="conversation", uselist=False
     )

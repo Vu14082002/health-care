@@ -6,6 +6,7 @@ from sqlalchemy import (
     Date,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -46,7 +47,12 @@ class DoctorExaminationPriceModel(Model):
 
 class DoctorModel(Model):
     __tablename__ = "doctor"
-
+    __table_args__ = (
+        Index("ix_doctor_first_name_last_name", "first_name", "last_name"),
+        Index("ix_doctor_phone_number", "phone_number"),
+        Index("idx_doctor_is_local_person", "is_local_person"),
+        Index("idex_doctor_email", "email"),
+    )
     id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"), primary_key=True)
 
     first_name: Mapped[str] = mapped_column(String, nullable=False)
@@ -67,7 +73,9 @@ class DoctorModel(Model):
 
     verify_status: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    is_local_person: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_local_person: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
 
     diploma: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=True)
 
@@ -87,7 +95,9 @@ class DoctorModel(Model):
         "AppointmentModel", back_populates="doctor"
     )
 
-    ratings: Mapped["RatingModel"] = relationship("RatingModel", back_populates="doctor")
+    ratings: Mapped["RatingModel"] = relationship(
+        "RatingModel", back_populates="doctor"
+    )
 
     user: Mapped["UserModel"] = relationship("UserModel", back_populates="doctor")
 

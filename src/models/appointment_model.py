@@ -2,7 +2,7 @@ import enum
 import logging
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy import ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
@@ -36,6 +36,10 @@ class AppointmentModelTypeStatus(enum.Enum):
 
 class AppointmentModel(Model):
     __tablename__ = "appointment"
+    __table_args__ = (
+        Index("idx_appoint_name", "name"),
+        Index("idx_appointment_status", "appointment_status"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 

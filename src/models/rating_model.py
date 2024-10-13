@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Float, ForeignKey, Integer, Text
+from sqlalchemy import Float, ForeignKey, Index, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
@@ -12,7 +12,10 @@ if TYPE_CHECKING:
 
 class RatingModel(Model):
     __tablename__ = "rating"
-
+    __table_args__ = (
+        Index("ix_rating_doctor_patient", "doctor_id", "patient_id"),
+        Index("ix_rating_doctor", "doctor_id"),
+    )
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     doctor_id: Mapped[int] = mapped_column(

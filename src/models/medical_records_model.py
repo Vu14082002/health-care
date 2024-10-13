@@ -2,7 +2,7 @@ from datetime import date
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import Date, ForeignKey, Integer, Text
+from sqlalchemy import Date, ForeignKey, Index, Integer, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -55,12 +55,20 @@ class MedicalHistorySchema(BaseModel):
 
 class MedicalRecordModel(Model):
     __tablename__ = "medical_record"
+    __table_args__ = (
+        Index("idx_medical_record_patient ", "patient_id"),
+        Index("idx_medical_record_doctor_create", "doctor_create_id"),
+        Index("idx_medical_record_doctor_read", "doctor_read_id"),
+        Index("idx_medical_record_appointment", "appointment_id"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     patient_id: Mapped[int] = mapped_column(ForeignKey("patient.id"), nullable=False)
 
-    doctor_create_id: Mapped[int] = mapped_column(ForeignKey("doctor.id"), nullable=False)
+    doctor_create_id: Mapped[int] = mapped_column(
+        ForeignKey("doctor.id"), nullable=False
+    )
 
     doctor_read_id: Mapped[int] = mapped_column(ForeignKey("doctor.id"), nullable=False)
 
