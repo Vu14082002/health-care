@@ -18,7 +18,7 @@ from src.models.patient_model import PatientModel
 from src.models.staff_model import StaffModel
 from src.models.user_model import Role, UserModel
 from src.repositories.global_func import destruct_where
-from src.schema.register import RequestAdminRegisterSchema
+from src.schema.register import RequestAdminRegisterSchema, RequestRegisterPatientSchema
 
 
 class UserRepository(PostgresRepository[UserModel]):
@@ -54,6 +54,38 @@ class UserRepository(PostgresRepository[UserModel]):
             self.session.add(user_model)
             _ = await session.commit()
             return staff_model.as_dict
+
+    @catch_error_repository("Failed to create patient, please try again later")
+    async def register_patient(self, data: RequestRegisterPatientSchema):
+        async with get_session() as session:
+            is_phone_exists, is_mail_exists = await asyncio.gather(
+                self._is_phone_exist(phone_number=data.phone_number, session=session),
+                self._is_email_exist(email=data.email, session=session),
+                return_exceptions=False,
+            )
+            if is_phone_exists:
+                raise BadRequest(
+                    error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
+                    errors={
+                        "message": "This phone number has been used by another user"
+                    },
+                )
+            if is_mail_exists:
+                raise BadRequest(
+                    error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
+                    errors={"message": "This email has been used by another user"},
+                )
+            password_hash = PasswordHandler.hash(data.password_hash)
+            user_model = UserModel(
+                phone_number=data.phone_number,
+                password_hash=password_hash,
+                role=Role.PATIENT.value,
+            )
+            patient_model = PatientModel(**data.model_dump(exclude={"password_hash"}))
+            user_model.patient = patient_model
+            self.session.add(user_model)
+            await self.session.commit()
+            return patient_model.as_dict
 
     @catch_error_repository("Failed to insert user, please try again later")
     async def get_by_id(self, user_id: int):

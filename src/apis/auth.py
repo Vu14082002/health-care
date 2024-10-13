@@ -47,7 +47,6 @@ class AdminRegisterApi(HTTPEndpoint):
             _result = await _user_helper.register_admin(form_data)
             return _result
         except (BadRequest, InternalServer) as e:
-            log.error(f"Error: {e}")
             raise e
         except Exception as ex:
             log.error(f"Error: {ex}")
@@ -94,9 +93,9 @@ class PatientRegisterApi(HTTPEndpoint):
                 await upload_file.seek(0)
                 avatar = await s3_service.upload_file_from_form(upload_file)
             form_data.avatar = avatar
-            patient_helper: PatientHelper = await Factory().get_patient_helper()
-            result_respone = await patient_helper.create_patient(data=form_data)
-            return result_respone
+            _user_helper = await Factory().get_user_helper()
+            _result = await _user_helper.register_patient(form_data)
+            return _result
         except Exception as e:
             if isinstance(e, BaseException):
                 raise e

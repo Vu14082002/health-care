@@ -65,46 +65,6 @@ class PatientRepository(PostgresRepository[PatientModel]):
             "page_size": page_size,
         }
 
-    @catch_error_repository("Failed to create patient, please try again later")
-    async def insert_patient(self, data: RequestRegisterPatientSchema) -> PatientModel:
-        user_exists = await self.session.scalar(
-            select(exists().where(UserModel.phone_number == data.phone_number))
-        )
-        if user_exists:
-            raise BadRequest(
-                error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
-                errors={"message": "Phone number has been used by another user"},
-            )
-
-        # Check if patient exists by email
-        patient_exists = await self.session.scalar(
-            select(exists().where(PatientModel.email == data.email))
-        )
-        doctor_email_exists = await self.session.scalar(
-            select(exists().where(DoctorModel.email == data.email))
-        )
-        if patient_exists or doctor_email_exists:
-            raise BadRequest(
-                error_code=ErrorCode.EMAIL_HAVE_BEEN_REGISTERED.name,
-                errors={"message": "Email has been used by another user"},
-            )
-
-        # Create user and patient models
-        password_hash = PasswordHandler.hash(data.password_hash)
-        user_model = UserModel(
-            phone_number=data.phone_number,
-            password_hash=password_hash,
-            role=Role.PATIENT.value,
-        )
-        self.session.add(user_model)
-        await self.session.flush()
-        patient_data = data.model_dump(exclude={"password_hash"})
-        patient_model = PatientModel(id=user_model.id, **patient_data)
-
-        self.session.add(patient_model)
-        await self.session.commit()
-        return patient_model
-
     @catch_error_repository("Failed to get patient by id, please try again later")
     async def get_by_id(self, patient_id: int):
         return await self.get_by("id", patient_id)

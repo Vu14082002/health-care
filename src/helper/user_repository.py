@@ -4,13 +4,14 @@ import jwt
 
 from src.config import config
 from src.core.cache.redis_backend import RedisBackend
+from src.core.decorator.exception_decorator import catch_error_helper
 from src.core.exception import Unauthorized
 from src.core.security.authentication import JsonWebToken
 from src.core.security.password import PasswordHandler
 from src.enum import CACHE_ACCESS_TOKEN, CACHE_REFRESH_TOKEN, ErrorCode, Role
 from src.models.user_model import UserModel
 from src.repositories import UserRepository
-from src.schema.register import RequestAdminRegisterSchema
+from src.schema.register import RequestAdminRegisterSchema, RequestRegisterPatientSchema
 
 redis = RedisBackend(config.REDIS_URL)
 
@@ -20,8 +21,17 @@ class UserHelper:
         self.user_repository = user_repository
         self.jwt = JsonWebToken()
 
+    @catch_error_helper(
+        "Failed to execute business logic to register user,please try again later"
+    )
     async def register_admin(self, data: RequestAdminRegisterSchema):
         return await self.user_repository.register_admin(data)
+
+    @catch_error_helper(
+        "Failed to execute business logic to register user,please try again later"
+    )
+    async def register_patient(self, data: RequestRegisterPatientSchema):
+        return await self.user_repository.register_patient(data)
 
     async def insert_user(self, user: Dict[str, Any]):
         return await self.user_repository.insert_user(user)
