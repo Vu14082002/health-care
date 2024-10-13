@@ -26,6 +26,7 @@ from src.schema.register import (
     RequestRegisterDoctorSchema,
     RequestRegisterPatientSchema,
     RequestVerifyDoctorSchema,
+    RequestVerifyFinalDoctorSchema,
 )
 
 
@@ -326,36 +327,23 @@ class LogoutApi(HTTPEndpoint):
 
 
 class DoctorOtherVerifyFinalApiPut(HTTPEndpoint):
-    async def put(self, request: Request, auth: JsonWebToken):
+    async def put(
+        self,
+        form_data: RequestVerifyFinalDoctorSchema,
+        auth: JsonWebToken,
+    ):
         try:
             if auth.get("role", "") != Role.ADMIN.name:
                 raise Forbidden(
                     msg="Unauthorized access",
                     error_code=ErrorCode.UNAUTHORIZED.name,
-                    errors={"message": "only admin can access"},
+                    errors={"message": ErrorCode.msg_permission_denied.value},
                 )
-            form_data = await request.form()
-            if not form_data:
-                form_data = await request.json()
-
-            if form_data.get("doctor_id") is None:
-                raise BadRequest(
-                    msg="Bad request",
-                    error_code=ErrorCode.BAD_REQUEST.name,
-                    errors={"message": "doctor_id is required"},
-                )
-            if form_data.get("online_price") is None:
-                raise BadRequest(
-                    msg="Bad request",
-                    error_code=ErrorCode.BAD_REQUEST.name,
-                    errors={"message": "online_price is required"},
-                )
-
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             result = await doctor_helper.verify_doctor(
-                doctor_id=form_data.get("doctor_id"),
+                doctor_id=form_data.doctor_id,
                 verify_status=2,
-                online_price=form_data.get("online_price"),
+                online_price=form_data.online_price,
             )
             if result:
                 return {"message": "Doctor verified successfully on status 2"}

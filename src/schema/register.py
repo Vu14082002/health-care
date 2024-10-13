@@ -342,3 +342,14 @@ class RequestUpdateUserSchema(BaseModel):
 class RequestResetPasswordSchema(BaseModel):
     old_password: str = Field(alias="old_password")
     password: str = Field(alias="password")
+
+
+class RequestVerifyFinalDoctorSchema(BaseModel):
+    doctor_id: int
+
+    online_price: float = Field(..., description="Price for online consultation")
+
+    @validator("online_price")
+    def online_price_validator(cls, v):
+        if v <= 0:
+            raise ValueError("Invalid online price, must be greater than 0")
