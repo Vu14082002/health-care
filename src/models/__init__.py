@@ -20,6 +20,7 @@ from src.models.patient_model import PatientModel
 from src.models.payment_model import PaymentModel
 from src.models.post_model import CommentModel, PostModel
 from src.models.rating_model import RatingModel
+from src.models.staff_model import StaffModel
 from src.models.user_model import UserModel
 from src.models.work_schedule_model import WorkScheduleModel
 
@@ -38,6 +39,7 @@ __all__ = [
     "DailyHealCheckModel",
     "PostModel",
     "CommentModel",
+    "StaffModel",
 ]
 # async def manage_database():
 #     engine = create_async_engine(config.POSTGRES_URL_MASTER, echo=True)

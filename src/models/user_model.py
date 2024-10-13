@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from src.models.notification_model import NotificationModel
     from src.models.patient_model import PatientModel
     from src.models.post_model import CommentModel, PostModel
+    from src.models.staff_model import StaffModel
 
 
 class Role(PyEnum):
@@ -50,6 +51,13 @@ class UserModel(Model):
         back_populates="user",
         lazy="joined",
         foreign_keys="[PatientModel.id]",
+    )
+    staff: Mapped["StaffModel"] = relationship(
+        "StaffModel",
+        uselist=False,
+        back_populates="user",
+        lazy="joined",
+        foreign_keys="[StaffModel.id]",
     )
     notifications: Mapped[List["NotificationModel"]] = relationship(
         "NotificationModel", back_populates="user"
