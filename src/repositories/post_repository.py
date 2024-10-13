@@ -53,8 +53,8 @@ class PostRepository(PostgresRepository[PostModel]):
     async def add_comment_repository(
         self, auth_id: int, post_id: int, content_schema: MessageContentSchema
     ):
-
-        if self._is_post_by_id(post_id) is False:
+        is_exists = await self._is_post_by_id(post_id)
+        if is_exists is False:
             raise BadRequest(
                 error_code=ErrorCode.NOT_FOUND.name,
                 errors=({"message": "post not found"}),
@@ -71,7 +71,7 @@ class PostRepository(PostgresRepository[PostModel]):
             .returning(CommentModel)
         )
         result_insert_data = await self.session.execute(insert_data)
-        data = result_insert_data.scalar_one_or_none()
+        data = result_insert_data.unique().scalars().first()
         if data is None:
             raise InternalServer(
                 error_code=ErrorCode.SERVER_ERROR.name,
@@ -94,12 +94,16 @@ class PostRepository(PostgresRepository[PostModel]):
         sort_by: Literal["created_at", "viewed"] = query.get("sort_by", "created_at")
         sort_order: str = query.get("sort_order", "desc")
 
-        query_statement = select(PostModel)
+        query_statement = select(PostModel).where(PostModel.is_deleted == False)
 
         if title:
             query_statement = query_statement.where(PostModel.title.ilike(f"%{title}%"))
 
-        total_posts_statement = select(func.count(PostModel.id)).select_from(PostModel)
+        total_posts_statement = (
+            select(func.count(PostModel.id))
+            .select_from(PostModel)
+            .where(PostModel.is_deleted == False)
+        )
         if title:
             total_posts_statement = total_posts_statement.where(
                 PostModel.title.ilike(f"%{title}%")
@@ -144,9 +148,77 @@ class PostRepository(PostgresRepository[PostModel]):
 
     @catch_error_repository("Server error when handling get post, pls try later")
     async def get_post_repository_by_id(self, post_id: int):
-        query_statment = (
-            select(PostModel)
-            .where(PostModel.id == post_id)
-            .options(joinedload(PostModel.comments))
-            .order_by(PostModel.created_at.desc(), PostModel.comments.created_at.desc())
+        query_statment = select(PostModel).where(PostModel.id == post_id)
+        result = await self.session.execute(query_statment)
+        post = result.unique().scalars().first()
+        if post is None:
+            raise BadRequest(
+                error_code=ErrorCode.NOT_FOUND.name,
+                errors=({"message": "post not found"}),
+            )
+        # plus view
+        post.viewed += 1
+        self.session.add(post)
+        comment_select = (
+            select(CommentModel)
+            .where(CommentModel.post_id == post_id)
+            .options(joinedload(CommentModel.user))
+            .order_by(desc(CommentModel.created_at))
         )
+        result_commnet = await self.session.execute(comment_select)
+        data_comment = result_commnet.unique().scalars().all()
+        comments = []
+        for comment in data_comment:
+            user_comment = comment.user.patient
+            if user_comment is None:
+                user_comment = comment.user.doctor
+            # FIXME: user_comment is None
+            if user_comment is None:
+                user_comment = {
+                    "id": comment.user.id,
+                    "email": "admin@gmail.com",
+                    "first_name": "admin",
+                    "last_name": "",
+                }
+            exclue_fields = [
+                "certification",
+                "verify_status",
+                "is_local_person",
+                "diploma",
+                "type_of_disease",
+                "hopital_address_work",
+                "address",
+                "description",
+                "license_number",
+                "education",
+                "account_number",
+                "bank_name",
+                "beneficiary_name",
+                "branch_name",
+                "created_at",
+                "updated_at",
+                "is_deleted",
+            ]
+            user_comment = (
+                {
+                    key: value
+                    for key, value in user_comment.as_dict.items()
+                    if key not in exclue_fields
+                }
+                if not isinstance(user_comment, dict)
+                else user_comment
+            )
+            comments.append(
+                {
+                    **comment.as_dict,
+                    "created_at": datetime.fromtimestamp(
+                        comment.created_at, timezone.utc
+                    ).strftime("%Y-%m-%d %H:%M:%S"),
+                    "user": user_comment,
+                }
+            )
+        await self.session.commit()
+        return {
+            **post.as_dict,
+            "comments": comments,
+        }

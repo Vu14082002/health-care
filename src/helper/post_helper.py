@@ -38,3 +38,10 @@ class PostHelper:
     async def get_post_helper(self, query: dict[str, Any]):
         data = await self.post_repository.get_post_repository(query)
         return data
+
+    @catch_error_helper(
+        "Server error when handling business logic on get post by id ,pls try later"
+    )
+    async def get_post_by_id_helper(self, post_id: int):
+        data = await self.post_repository.get_post_repository_by_id(post_id)
+        return data

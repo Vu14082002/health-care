@@ -3,6 +3,14 @@ from typing import Any, Literal, Optional
 from pydantic import BaseModel, Field
 
 
+class RequestGetPostByIdSchema(BaseModel):
+    post_id: int = Field(..., title="Post id will get", examples=[1])
+
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
+
+
 class RequestGetAllPostSchema(BaseModel):
     text_search: Optional[str] = Field(
         default=None,

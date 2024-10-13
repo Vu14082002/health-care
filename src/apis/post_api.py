@@ -13,6 +13,7 @@ from src.schema.post_schema import (
     RequestCreateComment,
     RequestCreatePostSchema,
     RequestGetAllPostSchema,
+    RequestGetPostByIdSchema,
 )
 
 
@@ -84,6 +85,25 @@ class CreatePostApi(HTTPEndpoint):
                 auth_id=auth.get("id"),
                 title=form_data.title,
                 content_schema=content_schema,
+            )
+            return result
+        except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
+            logging.error(e)
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            )
+
+
+class GetPostByIdApi(HTTPEndpoint):
+
+    async def get(self, path_params: RequestGetPostByIdSchema):
+        try:
+            post_helper = await Factory().get_post_helper()
+            result = await post_helper.get_post_by_id_helper(
+                post_id=path_params.post_id
             )
             return result
         except Exception as e:

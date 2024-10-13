@@ -31,7 +31,7 @@ from src.apis.medical_records_api import (
     MedicalRecordsApiPOST,
 )
 from src.apis.message_api import MessageApi
-from src.apis.post_api import CommentApi, CreatePostApi
+from src.apis.post_api import CommentApi, CreatePostApi, GetPostByIdApi
 from src.apis.rating_api import RatingApi
 from src.apis.user import ResetPassword, UserProfile
 from src.apis.working_time_api import (
@@ -86,6 +86,12 @@ routes = [
     RouteSwagger(
         "/posts",
         CreatePostApi,
+        methods=["GET"],
+        tags=["USERS", "ADMIN", "DOCTOR", "PATIENT"],
+    ),
+    RouteSwagger(
+        "/posts/{post_id}",
+        GetPostByIdApi,
         methods=["GET"],
         tags=["USERS", "ADMIN", "DOCTOR", "PATIENT"],
     ),
