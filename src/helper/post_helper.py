@@ -22,6 +22,21 @@ class PostHelper:
         return data
 
     @catch_error_helper(
+        "Server error when handling business logic on update post,pls try later"
+    )
+    async def update_post_helper(
+        self,
+        auth_id: int,
+        post_id: int,
+        title: str | None,
+        content_schema: MessageContentSchema | None,
+    ):
+        data = await self.post_repository.update_post_repository(
+            auth_id, post_id, title, content_schema
+        )
+        return data
+
+    @catch_error_helper(
         "Server error when handling business logic on add commnent this post ,pls try later"
     )
     async def add_comment_helper(

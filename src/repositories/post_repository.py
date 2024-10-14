@@ -148,6 +148,35 @@ class PostRepository(PostgresRepository[PostModel]):
         }
         return data
 
+    @catch_error_repository("Server error when handling update post, pls try later")
+    async def update_post_repository(
+        self,
+        auth_id: int,
+        post_id: int,
+        title: str | None,
+        content_schema: MessageContentSchema | None,
+    ):
+        post_statment = select(PostModel).where(PostModel.id == post_id)
+        result_post_statment = await self.session.execute(post_statment)
+        post = result_post_statment.unique().scalars().first()
+        if not post:
+            raise BadRequest(
+                error_code=ErrorCode.NOT_FOUND.name,
+                errors=({"message": "post not found"}),
+            )
+        if post.author_id != auth_id:
+            raise BadRequest(
+                error_code=ErrorCode.FORBIDDEN.name,
+                errors=({"message": "you can't update this post"}),
+            )
+        if title:
+            post.title = title
+        if content_schema:
+            post.content = content_schema.model_dump()
+        self.session.add(post)
+        await self.session.commit()
+        return post.as_dict
+
     async def _is_post_by_id(self, post_id: int):
         check_statment = select(exists().where(PostModel.id == post_id))
         result_check_statment = await self.session.execute(check_statment)

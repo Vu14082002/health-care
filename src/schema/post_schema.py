@@ -61,6 +61,29 @@ class RequestCreatePostSchema(BaseModel):
         extra = "forbid"
 
 
+class RequestUpdatePostSchema(BaseModel):
+    post_id: int = Field(..., title="Post id will update", examples=[1])
+    title: str | None = Field(
+        None, title="Title of the post", examples=["How to clean your skin"]
+    )
+    media: Optional[Any] = Field(
+        default=None,
+        description="is video of post, and accept one file",
+    )
+    images: Optional[Any] = Field(
+        default=None,
+        description="is img of post and accept multiple files or url img",
+    )
+    content: Optional[str] = Field(
+        None, description="content of post", examples=["Hi! ......"]
+    )
+
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
+        extra = "forbid"
+
+
 class RequestCreateComment(BaseModel):
     post_id: int = Field(..., title="Post id will comment", examples=[1])
 
@@ -86,7 +109,7 @@ class RequestUpdateComment(BaseModel):
     comment_id: int = Field(..., title="Comment id will update", examples=[1])
     media: Optional[Any] = Field(
         default=None,
-        description="is video of post, and accept one file",
+        description="is video of post, and accept file or url video",
     )
     images: Optional[Any] = Field(
         default=None,
