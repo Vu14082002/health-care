@@ -1,13 +1,13 @@
 import logging
 from typing import List, Union
-from starlette.datastructures import UploadFile
-from src.core import HTTPEndpoint
-from src.core.exception import BadRequest, Forbidden, InternalServer
-from src.core.security.authentication import JsonWebToken
-from src.enum import ErrorCode, ImageDailyHealthCheck, Role
 
+from starlette.datastructures import UploadFile
 from starlette.requests import Request
 
+from src.core import HTTPEndpoint
+from src.core.exception import BadRequest, BaseException, Forbidden, InternalServer
+from src.core.security.authentication import JsonWebToken
+from src.enum import ErrorCode, ImageDailyHealthCheck, Role
 from src.factory import Factory
 from src.helper.daily_health_check_helper import DailyHealthCheckHelper
 from src.helper.s3_helper import S3Service
@@ -29,7 +29,9 @@ class DailyDealthCheckApi(HTTPEndpoint):
             if not self._is_authorized(auth):
                 return BadRequest(
                     error_code=ErrorCode.UNAUTHORIZED.name,
-                    errors={"message": "You are not authorized to access this resource"},
+                    errors={
+                        "message": ErrorCode.msg_permission_denied.value,
+                    },
                 )
             patient_id = self._get_patient_id(auth, form_data)
             if not patient_id:
@@ -56,22 +58,26 @@ class DailyDealthCheckApi(HTTPEndpoint):
             )
             result = await helper.create_daily_health_check(health_check_schema)
             return result
-        except (Forbidden, BadRequest) as e:
-            raise e
         except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
             logging.error(f"Error: {e}")
             raise InternalServer(
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": "Internal server error"},
+                errors={"message": ErrorCode.msg_server_error.value},
             )
 
-    async def get(self, query_params: RequestGetAllDailyHealthSchema, auth: JsonWebToken):
+    async def get(
+        self, query_params: RequestGetAllDailyHealthSchema, auth: JsonWebToken
+    ):
         try:
             user_role = auth.get("role")
             if user_role not in [Role.ADMIN.name, Role.PATIENT.name, Role.DOCTOR.name]:
-                return BadRequest(
+                return Forbidden(
                     error_code=ErrorCode.UNAUTHORIZED.name,
-                    errors={"message": "You are not authorized to access this resource"},
+                    errors={
+                        "message": ErrorCode.msg_permission_denied.value,
+                    },
                 )
             patient_id = (
                 auth.get("id")
@@ -87,13 +93,14 @@ class DailyDealthCheckApi(HTTPEndpoint):
             helper = await Factory().get_daily_health_check_helper()
             result = await helper.get_all_daily_health_check(query_params, doctor_id)
             return result
-        except (Forbidden, BadRequest) as e:
-            raise e
+
         except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
             logging.error(f"Error: {e}")
             raise InternalServer(
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": "Internal server error"},
+                errors={"message": ErrorCode.msg_server_error.value},
             )
 
     def _is_authorized(self, auth: JsonWebToken) -> bool:

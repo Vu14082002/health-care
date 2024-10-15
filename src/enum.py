@@ -38,20 +38,39 @@ class ErrorCode(Enum):
     INVALID_FILE_TYPE = "INVALID_FILE_TYPE"
     INVALID_REQUEST = "INVALID_REQUEST"
     VALIDATION_ERROR = "VALIDATION_ERROR"
-    msg_permission_denied = "You don't have permission to access this resource"
-    msg_delete_account_before = "Your account has been deleted before, if you want to use this account, please contact the admin"
-    msg_wrong_password = "Wrong password"
+    msg_permission_denied = "Bạn không có quyền truy cập tài nguyên này"
+    msg_delete_account_before = "Tài khoản của bạn đã bị xóa trước đó, nếu bạn muốn sử dụng tài khoản này vui lòng liên hệ với quản trị viên"
+    msg_wrong_password = "Mật khẩu sai"
     msg_phone_not_registered = "Phone number is not registered"
     msg_error_login = "Phone number or password is incorrect"
-    msg_server_error = "Server is error, pls try later"
+    msg_server_error = "Máy chủ bị lỗi, vui lòng thử lại sau"
     msg_permission_rating = (
-        "You must have and done appointment with doctor before rating"
+        "Bạn phải có và thực hiện cuộc hẹn với bác sĩ trước khi bình luận"
     )
 
     msg_verify_step_one_befor_verify_two = (
-        "You must verify doctor with status 1 before verify with status 2"
+        "Bạn phải xác minh bác sĩ ở trạng thái 1 trước khi xác minh ở trạng thái 2"
     )
     msg_invalid_medical_record = "media must be file"
+    msg_server_error_procesing = (
+        " Máy chủ lỗi khi thực hiện tác vụ này, vui lòng thử lại sau"
+    )
+    msg_doctor_not_found_or_verify_status_1 = (
+        "Không tìm thấy bác sĩ hoặc đã được xác minh ở trạng thái 1"
+    )
+    msg_doctor_not_found_or_verify_status_2 = (
+        "Không tìm thấy bác sĩ hoặc đã được xác minh ở trạng thái 2"
+    )
+    msg_doctor_not_found_or_reject = (
+        "Không tìm thấy bác sĩ hoặc đã được xác minh ở trạng thái -1"
+    )
+    msg_content_message_required = (
+        "Phải cung cấp ít nhất một trong các, content, media, or image"
+    )
+    msg_content_message_or_title_required = (
+        "Phải cung cấp ít nhất một trong các, content, media, or title"
+    )
+    msg_only_support_patient = "Tính năng này hiện chỉ hỗ trợ cho bệnh nhân"
 
 
 CACHE_REFRESH_TOKEN = 60 * 60 * 5

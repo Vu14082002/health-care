@@ -4,7 +4,7 @@ from starlette.datastructures import UploadFile
 from starlette.requests import Request
 
 from src.core.endpoint import HTTPEndpoint
-from src.core.exception import BadRequest, Forbidden, InternalServer
+from src.core.exception import BadRequest, BaseException, Forbidden, InternalServer
 from src.core.security.authentication import JsonWebToken
 from src.enum import ErrorCode, MessageContentSchema, Role
 from src.factory import Factory
@@ -50,7 +50,7 @@ class CreatePostApi(HTTPEndpoint):
             ):
                 raise BadRequest(
                     error_code=ErrorCode.VALIDATION_ERROR.name,
-                    errors={"message": "Please provide content, media or images"},
+                    errors={"message": ErrorCode.msg_content_message_required.value},
                 )
             s3_service = S3Service()
             media = None
@@ -125,7 +125,7 @@ class CreatePostApi(HTTPEndpoint):
                 raise BadRequest(
                     error_code=ErrorCode.VALIDATION_ERROR.name,
                     errors={
-                        "message": "Please provide content, media or images or title"
+                        "message": ErrorCode.msg_content_message_or_title_required.value
                     },
                 )
             s3_service = S3Service()
@@ -214,7 +214,7 @@ class CommentApi(HTTPEndpoint):
             ):
                 raise BadRequest(
                     error_code=ErrorCode.VALIDATION_ERROR.name,
-                    errors={"message": "Please provide content, media or images"},
+                    errors={"message": ErrorCode.msg_content_message_required.value},
                 )
             s3_service = S3Service()
             media = None
@@ -278,7 +278,7 @@ class CommentApi(HTTPEndpoint):
             ):
                 raise BadRequest(
                     error_code=ErrorCode.VALIDATION_ERROR.name,
-                    errors={"message": "Please provide content, media or images"},
+                    errors={"message": ErrorCode.msg_content_message_required.value},
                 )
             s3_service = S3Service()
             media = None

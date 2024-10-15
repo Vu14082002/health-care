@@ -48,8 +48,7 @@ def catch_error_repository(message: str | None = None):
                 raise InternalServer(
                     error_code=ErrorCode.SERVER_ERROR.name,
                     errors={
-                        "message": message
-                        or "Server is currently unable to handle this request, please try again later."
+                        "message": message or ErrorCode.msg_server_error_procesing.value
                     },
                 )
 
@@ -75,8 +74,7 @@ def catch_error_helper(message: Optional[str] = None):
                 raise InternalServer(
                     error_code=ErrorCode.SERVER_ERROR.name,
                     errors={
-                        "message": message
-                        or "Server is currently unable to handle this request, please try again later."
+                        "message": message or ErrorCode.msg_server_error_procesing.value
                     },
                 )
 

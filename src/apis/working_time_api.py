@@ -1,7 +1,7 @@
-import logging as log
+import logging
 
 from src.core import HTTPEndpoint
-from src.core.exception import BadRequest, Forbidden, InternalServer
+from src.core.exception import BadRequest, BaseException, Forbidden, InternalServer
 from src.core.security import JsonWebToken
 from src.enum import ErrorCode, Role
 from src.factory import Factory
@@ -29,33 +29,33 @@ class DoctorWorkingTimeApi(HTTPEndpoint):
                 **query_params.model_dump()
             )
             return response
-        except Forbidden as e:
-            raise e
-        except BadRequest as e:
-            raise e
         except Exception as e:
-            log.error(f"Error getting doctor empty working  time: {e}")
+            if isinstance(e, BaseException):
+                raise e
+            logging.error(f"Error: {e}")
             raise InternalServer(
-                msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": f"Error getting doctor empty working  time: {e}"},
+                errors={"message": ErrorCode.msg_server_error.value},
             ) from e
 
 
 class DoctorWorkingTimeByIdApi(HTTPEndpoint):
-    async def get(self, path_params: RequestGetWorkingTimeByIdSchema, auth: JsonWebToken):
+    async def get(
+        self, path_params: RequestGetWorkingTimeByIdSchema, auth: JsonWebToken
+    ):
         try:
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
-            response = await doctor_helper.get_working_schedules_by_id(id=path_params.id)
+            response = await doctor_helper.get_working_schedules_by_id(
+                id=path_params.id
+            )
             return response
-        except (Forbidden, BadRequest) as e:
-            raise e
         except Exception as e:
-            log.error(f"Error getting doctor empty working  time: {e}")
+            if isinstance(e, BaseException):
+                raise e
+            logging.error(f"Error: {e}")
             raise InternalServer(
-                msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": f"Error getting woking time by id {e}"},
+                errors={"message": ErrorCode.msg_server_error.value},
             ) from e
 
 
@@ -66,7 +66,9 @@ class DoctorWorkingTimeOrderedApi(HTTPEndpoint):
         try:
 
             where = query_params.model_dump()
-            patient_id = auth.get("id") if auth.get("role") == Role.PATIENT.name else None
+            patient_id = (
+                auth.get("id") if auth.get("role") == Role.PATIENT.name else None
+            )
             where["patient_id"] = patient_id
 
             doctor_id = auth.get("id") if auth.get("role") == "DOCTOR" else None
@@ -76,16 +78,13 @@ class DoctorWorkingTimeOrderedApi(HTTPEndpoint):
                 **query_params.model_dump()
             )
             return response
-        except Forbidden as e:
-            raise e
-        except BadRequest as e:
-            raise e
         except Exception as e:
-            log.error(f"Error getting doctor empty working  time: {e}")
+            if isinstance(e, BaseException):
+                raise e
+            logging.error(f"Error: {e}")
             raise InternalServer(
-                msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": f"Error getting doctor empty working  time: {e}"},
+                errors={"message": ErrorCode.msg_server_error.value},
             ) from e
 
 
@@ -114,19 +113,20 @@ class CreateDoctorWorkingTimeApi(HTTPEndpoint):
                 doctor_id=doctor_id, data=form_data
             )
 
-        except (Forbidden, BadRequest) as e:
-            raise e
         except Exception as e:
-            log.error(f"Error creating doctor work schedule: {e}")
+            if isinstance(e, BaseException):
+                raise e
+            logging.error(f"Error: {e}")
             raise InternalServer(
-                msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": f"Error creating doctor work schedule: {e}"},
+                errors={"message": ErrorCode.msg_server_error.value},
             ) from e
 
 
 class DoctorEmptyWorkingSchedulingTimeApi(HTTPEndpoint):
-    async def get(self, query_params: RequestGetUncenteredTimeSchema, auth: JsonWebToken):
+    async def get(
+        self, query_params: RequestGetUncenteredTimeSchema, auth: JsonWebToken
+    ):
         try:
 
             user_role = auth.get("role")
@@ -135,7 +135,9 @@ class DoctorEmptyWorkingSchedulingTimeApi(HTTPEndpoint):
                 raise Forbidden(
                     msg="Forbidden",
                     error_code=ErrorCode.FORBIDDEN.name,
-                    errors={"message": "Only doctors or Admin can access this endpoint"},
+                    errors={
+                        "message": "Only doctors or Admin can access this endpoint"
+                    },
                 )
             if user_role == Role.DOCTOR.name and query_params.doctor_id is not None:
                 raise Forbidden(
@@ -159,14 +161,11 @@ class DoctorEmptyWorkingSchedulingTimeApi(HTTPEndpoint):
                 end_date=query_params.end_date,
             )
             return response
-        except Forbidden as e:
-            raise e
-        except BadRequest as e:
-            raise e
         except Exception as e:
-            log.error(f"Error getting doctor empty working time: {e}")
+            if isinstance(e, BaseException):
+                raise e
+            logging.error(f"Error: {e}")
             raise InternalServer(
-                msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": f"Error getting doctor empty working time: {e}"},
+                errors={"message": ErrorCode.msg_server_error.value},
             ) from e

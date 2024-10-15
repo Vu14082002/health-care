@@ -1,7 +1,7 @@
 import logging
 
 from src.core import HTTPEndpoint
-from src.core.exception import BadRequest, Forbidden, InternalServer
+from src.core.exception import BadRequest, BaseException, InternalServer
 from src.core.security.authentication import JsonWebToken
 from src.enum import ErrorCode
 from src.factory import Factory
@@ -22,15 +22,13 @@ class ConversationApi(HTTPEndpoint):
                 auth.get("id"), query_params
             )
             return conversation
-        except (BadRequest, Forbidden, InternalServer) as e:
-            raise e
         except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
             logging.error(e)
             raise InternalServer(
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={
-                    "message": "Server currently unable to handle this request,please try again later"
-                },
+                errors={"message": ErrorCode.msg_server_error.value},
             )
 
     async def post(
@@ -42,13 +40,11 @@ class ConversationApi(HTTPEndpoint):
                 user_create=auth.get("id"), appointment_id=form_data.appointment_id
             )
             return conversation
-        except (BadRequest, Forbidden, InternalServer) as e:
-            raise e
         except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
             logging.error(e)
             raise InternalServer(
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={
-                    "message": "Server currently unable to handle this request,please try again later"
-                },
+                errors={"message": ErrorCode.msg_server_error.value},
             )

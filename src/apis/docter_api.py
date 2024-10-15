@@ -1,7 +1,7 @@
 import logging as log
 
 from src.core import HTTPEndpoint
-from src.core.exception import BadRequest, Forbidden, InternalServer
+from src.core.exception import BadRequest, BaseException, Forbidden, InternalServer
 from src.core.security import JsonWebToken
 from src.enum import ErrorCode, Role
 from src.factory import Factory
@@ -48,12 +48,13 @@ class GetAllDoctorApi(HTTPEndpoint):
             )
 
             return response_data
-        except BadRequest as e:
-            raise e
         except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
             log.error(f"Error: {e}")
             raise InternalServer(
-                msg="Internal server error", error_code=ErrorCode.SERVER_ERROR.name
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
             ) from e
 
 
@@ -81,9 +82,12 @@ class GetAllDoctorLocalAPi(HTTPEndpoint):
             )
             return response_data
         except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
             log.error(f"Error: {e}")
             raise InternalServer(
-                msg="Internal server error", error_code=ErrorCode.SERVER_ERROR.name
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
             ) from e
 
 
@@ -95,7 +99,7 @@ class GetAllDoctorForeignAPi(HTTPEndpoint):
                     msg="Permission denied",
                     error_code=ErrorCode.FORBIDDEN.name,
                     errors={
-                        "message": "You don't have permission to access this resource"
+                        "message": ErrorCode.msg_permission_denied.value,
                     },
                 )
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
@@ -120,9 +124,12 @@ class GetAllDoctorForeignAPi(HTTPEndpoint):
             )
             return response_data
         except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
             log.error(f"Error: {e}")
             raise InternalServer(
-                msg="Internal server error", error_code=ErrorCode.SERVER_ERROR.name
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
             ) from e
 
 
@@ -149,10 +156,9 @@ class DoctorGetPatientsApi(HTTPEndpoint):
             user_role = auth.get("role")
             if user_role not in [Role.ADMIN.name, Role.DOCTOR.name]:
                 raise Forbidden(
-                    msg="Permission denied",
                     error_code=ErrorCode.FORBIDDEN.name,
                     errors={
-                        "message": "You don't have permission to access this resource"
+                        "message": ErrorCode.msg_permission_denied.value,
                     },
                 )
             if user_role == Role.DOCTOR.name:
@@ -194,10 +200,9 @@ class DoctorGetPatientsByIdApi(HTTPEndpoint):
             user_role = auth.get("role")
             if user_role not in [Role.ADMIN.name, Role.DOCTOR.name]:
                 raise Forbidden(
-                    msg="Permission denied",
                     error_code=ErrorCode.FORBIDDEN.name,
                     errors={
-                        "message": "You don't have permission to access this resource"
+                        "message": ErrorCode.msg_permission_denied.value,
                     },
                 )
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
@@ -208,12 +213,13 @@ class DoctorGetPatientsByIdApi(HTTPEndpoint):
                 patient_id=patient_id,
             )
             return response
-        except (BadRequest, Forbidden) as e:
-            raise e
         except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
             log.error(f"Error: {e}")
             raise InternalServer(
-                msg="Internal server error", error_code=ErrorCode.SERVER_ERROR.name
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
             ) from e
 
 
@@ -225,19 +231,18 @@ class StatisticalDoctorApi(HTTPEndpoint):
                     msg="Permission denied",
                     error_code=ErrorCode.FORBIDDEN.name,
                     errors={
-                        "message": "You don't have permission to access this resource"
+                        "message": ErrorCode.msg_permission_denied.value,
                     },
                 )
 
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             statistics = await doctor_helper.get_doctor_statistics()
             return statistics
-        except Forbidden as e:
-            raise e
         except Exception as e:
-            log.error(f"Error in StatisticalDoctorApi: {e}")
+            if isinstance(e, BaseException):
+                raise e
+            log.error(f"Error: {e}")
             raise InternalServer(
-                msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": "Internal server error"},
+                errors={"message": ErrorCode.msg_server_error.value},
             ) from e

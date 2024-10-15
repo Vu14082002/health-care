@@ -1,4 +1,4 @@
-from regex import E
+import logging
 
 from src.core.endpoint import HTTPEndpoint
 from src.core.exception import BadRequest, BaseException, InternalServer
@@ -16,7 +16,7 @@ class RatingApi(HTTPEndpoint):
             if user_role != Role.PATIENT.name:
                 raise BadRequest(
                     error_code=ErrorCode.BAD_REQUEST.name,
-                    errors={"message": "This feature current only support for patient"},
+                    errors={"message": ErrorCode.msg_only_support_patient.value},
                 )
             user_id = auth.get("id")
             if not user_id:
@@ -30,6 +30,7 @@ class RatingApi(HTTPEndpoint):
         except Exception as e:
             if isinstance(e, BaseException):
                 raise e
+            logging.error(f"Error: {e}")
             raise InternalServer(
                 error_code=ErrorCode.SERVER_ERROR.name,
                 errors={"message": ErrorCode.msg_server_error.value},

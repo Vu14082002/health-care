@@ -7,7 +7,7 @@ class PatientHelper:
     def __init__(self, patient_repository: PatientRepository) -> None:
         self.patient_repository: PatientRepository = patient_repository
 
-    @catch_error_helper(message="Failed to get patient by id, please try again later")
+    @catch_error_helper(message=None)
     async def get_all_patient(
         self, condition: dict | None = None, *, curent_page: int = 1, page_size: int = 1
     ):
@@ -16,7 +16,7 @@ class PatientHelper:
         )
         return result
 
-    @catch_error_helper("Failed to get patient by id, please try again later")
+    @catch_error_helper(message=None)
     async def create_rating_helper(
         self, user_id: int, data_model: RequestCreateRatingSchema
     ):

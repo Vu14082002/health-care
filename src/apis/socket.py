@@ -6,7 +6,7 @@ from starlette.endpoints import WebSocketEndpoint
 from starlette.websockets import WebSocket
 
 from src.config import config, connect_manager
-from src.core.exception import Forbidden
+from src.core.exception import Forbidden,BaseException
 from src.enum import ErrorCode
 from src.factory import Factory
 

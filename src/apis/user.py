@@ -1,9 +1,9 @@
-import logging as log
+import logging
 
 from starlette.datastructures import UploadFile
 
 from src.core import HTTPEndpoint
-from src.core.exception import BadRequest, InternalServer
+from src.core.exception import BadRequest, BaseException, InternalServer
 from src.core.security.authentication import JsonWebToken
 from src.enum import ErrorCode, Role
 from src.factory import Factory
@@ -22,7 +22,7 @@ class PatientRegisterApi(HTTPEndpoint):
             user_saved = await user_helper.insert_user(form_data.model_dump())
             return user_saved
         except Exception as e:
-            log.error("Error on PatientRegisterApi: %s", e)
+            logging.error("Error on PatientRegisterApi: %s", e)
             raise InternalServer(
                 msg=f"An error occurred while trying to register the user: {e}",
                 error_code=ErrorCode.SERVER_ERROR.name,
@@ -46,13 +46,13 @@ class UserProfile(HTTPEndpoint):
                 user_id=auth.get("id"), data=form_data.model_dump()
             )
             return user_saved
-        except (BadRequest, InternalServer) as e:
-            raise e
         except Exception as e:
-            log.error("Error on PatientRegisterApi: %s", e)
+            if isinstance(e, BaseException):
+                raise e
+            logging.error(f"Error: {e}")
             raise InternalServer(
-                msg=f"An error occurred while trying to register the user: {e}",
                 error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
             ) from e
 
 
@@ -67,11 +67,11 @@ class ResetPassword(HTTPEndpoint):
                 old_password=form_data.old_password,
             )
             return user_saved
-        except (BadRequest, InternalServer) as e:
-            raise e
         except Exception as e:
-            log.error("Error on PatientRegisterApi: %s", e)
+            if isinstance(e, BaseException):
+                raise e
+            logging.error(f"Error: {e}")
             raise InternalServer(
-                msg=f"An error occurred while trying to register the user: {e}",
                 error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
             ) from e

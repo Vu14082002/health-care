@@ -21,21 +21,19 @@ class UserHelper:
         self.user_repository = user_repository
         self.jwt = JsonWebToken()
 
-    @catch_error_helper(
-        "Failed to execute business logic to register user,please try again later"
-    )
+    @catch_error_helper(message=None)
     async def register_admin(self, data: RequestAdminRegisterSchema):
         return await self.user_repository.register_admin(data)
 
-    @catch_error_helper(
-        "Failed to execute business logic to register user,please try again later"
-    )
+    @catch_error_helper(message=None)
     async def register_patient(self, data: RequestRegisterPatientSchema):
         return await self.user_repository.register_patient(data)
 
+    @catch_error_helper(message=None)
     async def insert_user(self, user: Dict[str, Any]):
         return await self.user_repository.insert_user(user)
 
+    @catch_error_helper(message=None)
     async def login(self, phone_number: str, password: str) -> Dict[str, Any]:
         user = await self._authenticate_user(phone_number, password)
         user_all = self._scalar_user(user)
@@ -65,7 +63,7 @@ class UserHelper:
     # def _generate_token_for_role(self, user: UserModel) -> Dict[str, str]:
     #     self._scalar_user(user)
     #     return self._gen_token(payload)
-
+    @catch_error_helper(message=None)
     async def update_profile(self, user_id: int, data: dict[str, Any]):
         return await self.user_repository.update_profile(user_id, data)
 
@@ -102,6 +100,7 @@ class UserHelper:
             await redis.delete(phone_number)
         return {"message": "Logged out successfully"}
 
+    @catch_error_helper(message=None)
     async def reset_pwd(
         self, user_id: int, phone_number: str, password: str, old_password: str
     ):

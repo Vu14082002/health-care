@@ -11,6 +11,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import joinedload
 
 from src.core.database.postgresql import PostgresRepository
+from src.core.decorator.exception_decorator import catch_error_repository
 from src.core.exception import BadRequest
 from src.enum import AppointmentModelStatus, ErrorCode
 from src.models.appointment_model import AppointmentModel
@@ -206,7 +207,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             raise e
 
     # end::create_appointment[]
-
+    @catch_error_repository(message=None)
     async def find(self, **kwargs):  # type: ignore
         query = select(self.model_class)
         appointment_status: str = kwargs.get("appointment_status", None)

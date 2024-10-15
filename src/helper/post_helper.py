@@ -21,9 +21,7 @@ class PostHelper:
         )
         return data
 
-    @catch_error_helper(
-        "Server error when handling business logic on update post,pls try later"
-    )
+    @catch_error_helper(message=None)
     async def update_post_helper(
         self,
         auth_id: int,
@@ -36,9 +34,7 @@ class PostHelper:
         )
         return data
 
-    @catch_error_helper(
-        "Server error when handling business logic on add commnent this post ,pls try later"
-    )
+    @catch_error_helper(message=None)
     async def add_comment_helper(
         self, auth_id: int, post_id: int, content_schema: MessageContentSchema
     ):
@@ -47,9 +43,7 @@ class PostHelper:
         )
         return data
 
-    @catch_error_helper(
-        "Server error when handling business logic on update commnent ,pls try later"
-    )
+    @catch_error_helper(message=None)
     async def update_comment_helper(
         self, auth_id: int, comment_id: int, content_schema: MessageContentSchema
     ):
@@ -58,16 +52,12 @@ class PostHelper:
         )
         return data
 
-    @catch_error_helper(
-        "Server error when handling business logic on get posts ,pls try later"
-    )
+    @catch_error_helper(message=None)
     async def get_post_helper(self, query: dict[str, Any]):
         data = await self.post_repository.get_post_repository(query)
         return data
 
-    @catch_error_helper(
-        "Server error when handling business logic on get post by id ,pls try later"
-    )
+    @catch_error_helper(message=None)
     async def get_post_by_id_helper(self, post_id: int):
         data = await self.post_repository.get_post_repository_by_id(post_id)
         return data

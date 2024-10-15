@@ -1,4 +1,4 @@
-import logging as log
+import logging
 from typing import Any, Dict
 
 from sqlalchemy.exc import NoResultFound
@@ -8,7 +8,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from src.core import HTTPEndpoint
-from src.core.exception import BadRequest, Forbidden, InternalServer
+from src.core.exception import BadRequest, BaseException, Forbidden, InternalServer
 from src.core.security.authentication import JsonWebToken
 from src.enum import ErrorCode, Role, TypeOfDisease
 from src.factory import Factory
@@ -46,14 +46,14 @@ class AdminRegisterApi(HTTPEndpoint):
             _user_helper: UserHelper = await Factory().get_user_helper()
             _result = await _user_helper.register_admin(form_data)
             return _result
-        except (BadRequest, InternalServer) as e:
-            raise e
         except Exception as ex:
-            log.error(f"Error: {ex}")
+            if isinstance(ex, BaseException):
+                raise ex
+            logging.error(f"Error: {ex}")
             raise InternalServer(
                 msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": ErrorCode.msg_server_error.name},
+                errors={"message": ErrorCode.msg_server_error.value},
             ) from ex
 
 
@@ -63,20 +63,29 @@ class AdminNotifyRegisterMail(HTTPEndpoint):
         """
         This function is used to request notify mail
         """
-        if auth.get("role", "") != Role.ADMIN.name:
-            raise Forbidden(
-                msg="Unauthorized access",
-                error_code=ErrorCode.UNAUTHORIZED.name,
-                errors={"message": ErrorCode.msg_permission_denied.value},
+        try:
+            if auth.get("role", "") != Role.ADMIN.name:
+                raise Forbidden(
+                    error_code=ErrorCode.UNAUTHORIZED.name,
+                    errors={"message": ErrorCode.msg_permission_denied.value},
+                )
+            task = BackgroundTask(
+                send_mail_request_additional_info, form_data.email, form_data.message
             )
-        task = BackgroundTask(
-            send_mail_request_additional_info, form_data.email, form_data.message
-        )
-        return JSONResponse(
-            content={"message": "Send mail request additional info success"},
-            status_code=200,
-            background=task,
-        )
+            return JSONResponse(
+                content={"message": "Gửi thư yêu cầu thêm thông tin thành công"},
+                status_code=200,
+                background=task,
+            )
+        except Exception as ex:
+            if isinstance(ex, BaseException):
+                raise ex
+            logging.error(f"Error: {ex}")
+            raise InternalServer(
+                msg="Internal server error",
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from ex
 
 
 class PatientRegisterApi(HTTPEndpoint):
@@ -96,12 +105,15 @@ class PatientRegisterApi(HTTPEndpoint):
             _user_helper = await Factory().get_user_helper()
             _result = await _user_helper.register_patient(form_data)
             return _result
-        except Exception as e:
-            if isinstance(e, BaseException):
-                raise e
+        except Exception as ex:
+            if isinstance(ex, BaseException):
+                raise ex
+            logging.error(f"Error: {ex}")
             raise InternalServer(
-                msg="Internal server error", error_code=ErrorCode.SERVER_ERROR.name
-            ) from e
+                msg="Internal server error",
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from ex
 
 
 class DoctorLocalRegisterApi(HTTPEndpoint):
@@ -115,9 +127,8 @@ class DoctorLocalRegisterApi(HTTPEndpoint):
         try:
             if auth.get("role", "") != Role.ADMIN.name:
                 raise BadRequest(
-                    msg="Unauthorized access",
                     error_code=ErrorCode.UNAUTHORIZED.name,
-                    errors={"message": "You are not have permission to access"},
+                    errors={"message": ErrorCode.msg_permission_denied.value},
                 )
             avatar = None
             if isinstance(form_data.avatar, UploadFile):
@@ -134,14 +145,15 @@ class DoctorLocalRegisterApi(HTTPEndpoint):
             )
             reponse = {"data": result[0].as_dict, "errors": None, "error_code": None}
             return JSONResponse(content=reponse, status_code=200, background=result[1])
-        except Exception as e:
-            if isinstance(e, BaseException):
-                raise e
+        except Exception as ex:
+            if isinstance(ex, BaseException):
+                raise ex
+            logging.error(f"Error: {ex}")
             raise InternalServer(
                 msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": ErrorCode.msg_server_error.name},
-            ) from e
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from ex
 
 
 class DoctorOtherVerifyApi(HTTPEndpoint):
@@ -157,7 +169,7 @@ class DoctorOtherVerifyApi(HTTPEndpoint):
                 raise Forbidden(
                     error_code=ErrorCode.UNAUTHORIZED.name,
                     errors={
-                        "message": "You are not authorized to access this resource"
+                        "message": ErrorCode.msg_permission_denied.value,
                     },
                 )
 
@@ -178,15 +190,15 @@ class DoctorOtherVerifyApi(HTTPEndpoint):
                 where=where,
             )
             return response_data
-        except (BadRequest, Forbidden) as e:
-            raise e
-        except Exception as e:
-            log.error(f"Error: {e}")
+        except Exception as ex:
+            if isinstance(ex, BaseException):
+                raise ex
+            logging.error(f"Error: {ex}")
             raise InternalServer(
                 msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": "Error when get all doctor not verify"},
-            ) from e
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from ex
 
 
 class DoctorOtherRejectApiPut(HTTPEndpoint):
@@ -194,9 +206,8 @@ class DoctorOtherRejectApiPut(HTTPEndpoint):
         try:
             if auth.get("role", "") != Role.ADMIN.name:
                 raise Forbidden(
-                    msg="Unauthorized access",
                     error_code=ErrorCode.UNAUTHORIZED.name,
-                    errors={"message": "only admin can access"},
+                    errors={"message": ErrorCode.msg_permission_denied.value},
                 )
 
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
@@ -204,22 +215,21 @@ class DoctorOtherRejectApiPut(HTTPEndpoint):
                 doctor_id=path_params.doctor_id, verify_status=-1, online_price=0
             )
             if result:
-                return {"message": "Doctor verified successfully on status -1"}
+                return {"message": "Bác sĩ đã xác minh thành công ở trạng thái -1"}
             else:
                 raise BadRequest(
-                    msg="Doctor not found or already verified",
                     error_code=ErrorCode.NOT_FOUND.name,
-                    errors={
-                        "message": "Doctor not found or already verified on status -1"
-                    },
+                    errors={"message": ErrorCode.msg_doctor_not_found_or_reject.value},
                 )
-        except (Forbidden, BadRequest, NoResultFound) as e:
-            raise e
-        except Exception as e:
+        except Exception as ex:
+            if isinstance(ex, BaseException):
+                raise ex
+            logging.error(f"Error: {ex}")
             raise InternalServer(
+                msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": "Error when verify doctor"},
-            ) from e
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from ex
 
 
 class DoctorOtherVerifyApiPut(HTTPEndpoint):
@@ -237,22 +247,23 @@ class DoctorOtherVerifyApiPut(HTTPEndpoint):
                 doctor_id=path_params.doctor_id, verify_status=1, online_price=None
             )
             if result:
-                return {"message": "Doctor verified successfully on status 1"}
+                return {"message": "Bác sĩ đã xác minh thành công ở trạng thái 1"}
             else:
                 raise BadRequest(
-                    msg="Doctor not found or already verified",
                     error_code=ErrorCode.NOT_FOUND.name,
                     errors={
-                        "message": "Doctor not found or already verified on status 1"
+                        "message": ErrorCode.msg_doctor_not_found_or_verify_status_1.value
                     },
                 )
-        except (Forbidden, BadRequest, NoResultFound) as e:
-            raise e
-        except Exception as e:
+        except Exception as ex:
+            if isinstance(ex, BaseException):
+                raise ex
+            logging.error(f"Error: {ex}")
             raise InternalServer(
+                msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": "Error when verify doctor"},
-            ) from e
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from ex
 
 
 class DoctorForeignRegisterApi(HTTPEndpoint):
@@ -275,10 +286,12 @@ class DoctorForeignRegisterApi(HTTPEndpoint):
         except Exception as ex:
             if isinstance(ex, BaseException):
                 raise ex
+            logging.error(f"Error: {ex}")
             raise InternalServer(
+                msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": ErrorCode.msg_server_error.name},
-            )
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from ex
 
 
 class DoctorForeignRejectApi(HTTPEndpoint):
@@ -296,34 +309,59 @@ class DoctorForeignRejectApi(HTTPEndpoint):
             return JSONResponse(
                 content=result[0], status_code=200, background=result[1]
             )
-        except Exception as e:
-            if isinstance(e, BaseException):
-                raise e
+        except Exception as ex:
+            if isinstance(ex, BaseException):
+                raise ex
+            logging.error(f"Error: {ex}")
             raise InternalServer(
+                msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": ErrorCode.msg_server_error.name},
-            ) from e
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from ex
 
 
 class LoginApi(HTTPEndpoint):
     async def post(self, form_data: RequestLoginSchema) -> Dict[str, Any]:
-        user_helper: UserHelper = await Factory().get_user_helper()
-        reponse_json = await user_helper.login(
-            form_data.phone_number, form_data.password
-        )
-        return reponse_json
+        try:
+            user_helper: UserHelper = await Factory().get_user_helper()
+            reponse_json = await user_helper.login(
+                form_data.phone_number, form_data.password
+            )
+            return reponse_json
+        except Exception as ex:
+            if isinstance(ex, BaseException):
+                raise ex
+            logging.error(f"Error: {ex}")
+            raise InternalServer(
+                msg="Internal server error",
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from ex
 
 
 class LogoutApi(HTTPEndpoint):
     async def post(self, request: Request):
-        header = request.headers.get("Authorization")
-        if header:
-            token = header.split(" ")[1]
-            user_helper: UserHelper = await Factory().get_user_helper()
-            reponse_json = await user_helper.logout(token)
-            return reponse_json
-        else:
-            raise BadRequest(msg="Bad request", error_code=ErrorCode.BAD_REQUEST.name)
+        try:
+            header = request.headers.get("Authorization")
+            if header:
+                token = header.split(" ")[1]
+                user_helper: UserHelper = await Factory().get_user_helper()
+                reponse_json = await user_helper.logout(token)
+                return reponse_json
+            else:
+                raise BadRequest(
+                    error_code=ErrorCode.BAD_REQUEST.name,
+                    errors={"message": ErrorCode.msg_server_error.value},
+                )
+        except Exception as ex:
+            if isinstance(ex, BaseException):
+                raise ex
+            logging.error(f"Error: {ex}")
+            raise InternalServer(
+                msg="Internal server error",
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from ex
 
 
 class DoctorOtherVerifyFinalApiPut(HTTPEndpoint):
@@ -335,7 +373,6 @@ class DoctorOtherVerifyFinalApiPut(HTTPEndpoint):
         try:
             if auth.get("role", "") != Role.ADMIN.name:
                 raise Forbidden(
-                    msg="Unauthorized access",
                     error_code=ErrorCode.UNAUTHORIZED.name,
                     errors={"message": ErrorCode.msg_permission_denied.value},
                 )
@@ -346,19 +383,20 @@ class DoctorOtherVerifyFinalApiPut(HTTPEndpoint):
                 online_price=form_data.online_price,
             )
             if result:
-                return {"message": "Doctor verified successfully on status 2"}
+                return {"message": "Bác sĩ đã xác minh thành công ở trạng thái 2"}
             else:
                 raise BadRequest(
-                    msg="Doctor not found or ",
                     error_code=ErrorCode.NOT_FOUND.name,
                     errors={
-                        "message": "Doctor not found or already verified on status 2"
+                        "message": ErrorCode.msg_doctor_not_found_or_verify_status_2.value
                     },
                 )
-        except (Forbidden, BadRequest, NoResultFound) as e:
-            raise e
-        except Exception as e:
+        except Exception as ex:
+            if isinstance(ex, BaseException):
+                raise ex
+            logging.error(f"Error: {ex}")
             raise InternalServer(
+                msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": "Error when verify doctor"},
-            ) from e
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from ex

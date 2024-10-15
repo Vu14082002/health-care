@@ -1,3 +1,4 @@
+from src.core.decorator.exception_decorator import catch_error_helper
 from src.enum import MessageContentSchema
 from src.repositories.message_repository import MessageRepository
 
@@ -11,6 +12,7 @@ class MessageHelper:
             conversation_id
         )
 
+    @catch_error_helper(message=None)
     async def create_message(
         self,
         sender_id: int,

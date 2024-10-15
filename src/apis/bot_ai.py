@@ -2,7 +2,7 @@ import requests
 
 from src.config import config
 from src.core import HTTPEndpoint
-from src.core.exception import BadRequest, InternalServer
+from src.core.exception import BadRequest
 from src.enum import ErrorCode
 from src.schema.bot_service_schema import QuestionSchema
 
@@ -15,13 +15,10 @@ class BotServiceApi(HTTPEndpoint):
             )
             if response_data.status_code == 200:
                 return response_data.json()
+        except Exception:
             raise BadRequest(
                 error_code=ErrorCode.BAD_REQUEST.name,
-                errors={"message": "Bot service error"},
+                errors={
+                    "message": "Hiên tại tính năng đang update, vui lòng thử lại sau"
+                },
             )
-        except BadRequest as e:
-            raise e
-        except Exception as e:
-            raise InternalServer(
-                msg="Internal server error", error_code=ErrorCode.SERVER_ERROR.name
-            ) from e

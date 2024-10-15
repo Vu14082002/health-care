@@ -1,7 +1,7 @@
 import logging as log
 
 from src.core import HTTPEndpoint
-from src.core.exception import BadRequest, Forbidden, InternalServer
+from src.core.exception import BadRequest, BaseException, Forbidden, InternalServer
 from src.core.security.authentication import JsonWebToken
 from src.enum import ErrorCode, Role
 from src.factory import Factory
@@ -30,9 +30,7 @@ class AppointmentApiGET(HTTPEndpoint):
             ]:
                 raise Forbidden(
                     error_code=ErrorCode.UNAUTHORIZED.name,
-                    errors={
-                        "message": "You don't have permission to access this resource"
-                    },
+                    errors={"message": ErrorCode.msg_permission_denied.value},
                 )
 
             filter_params = query_params.model_dump()
@@ -52,15 +50,13 @@ class AppointmentApiGET(HTTPEndpoint):
                     **filter_params
                 )
             return appointments
-        except Forbidden as e:
-            log.error(e)
-            raise e
         except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
             log.error(e)
             raise InternalServer(
-                msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": "server is error, please try later"},
+                errors={"message": ErrorCode.msg_server_error.value},
             ) from e
 
 
@@ -68,18 +64,14 @@ class AppointmentApi(HTTPEndpoint):
     async def post(self, form_data: RequestRegisterAppointment, auth: JsonWebToken):
         try:
             user_role = auth.get("role", "")
-            if user_role not in ["ADMIN", "PATIENT"]:
+            if user_role not in [Role.ADMIN.value, Role.PATIENT.value]:
                 raise Forbidden(
-                    msg="Unauthorized access",
                     error_code=ErrorCode.UNAUTHORIZED.name,
-                    errors={
-                        "message": "Only patients or admins can create appointments"
-                    },
+                    errors={"message": ErrorCode.msg_server_error.value},
                 )
 
-            if user_role == "ADMIN" and not form_data.patient_id:
+            if user_role == Role.ADMIN.value and not form_data.patient_id:
                 raise Forbidden(
-                    msg="Unauthorized access",
                     error_code=ErrorCode.UNAUTHORIZED.name,
                     errors={"message": "patient_id is required for admin"},
                 )
@@ -88,7 +80,6 @@ class AppointmentApi(HTTPEndpoint):
             )
             if patient_id is None:
                 raise BadRequest(
-                    msg="Bad request",
                     error_code=ErrorCode.BAD_REQUEST.name,
                     errors={"message": "patient_id is required"},
                 )
@@ -103,11 +94,11 @@ class AppointmentApi(HTTPEndpoint):
                 form_data.pre_examination_notes,
             )
             return response_data
-        except (BadRequest, Forbidden) as e:
-            raise e
         except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
             log.error(e)
             raise InternalServer(
-                msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
             ) from e

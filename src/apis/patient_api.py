@@ -1,7 +1,7 @@
 import logging
 
 from src.core import HTTPEndpoint
-from src.core.exception import BadRequest, Forbidden, InternalServer
+from src.core.exception import BadRequest, BaseException, Forbidden, InternalServer
 from src.core.security.authentication import JsonWebToken
 from src.enum import ErrorCode, Role
 from src.factory import Factory
@@ -18,7 +18,7 @@ class PatientApi(HTTPEndpoint):
                 raise Forbidden(
                     error_code=ErrorCode.FORBIDDEN.name,
                     errors={
-                        "message": "You do not have permission to access this resource"
+                        "message": ErrorCode.msg_permission_denied.value,
                     },
                 )
 
@@ -27,13 +27,11 @@ class PatientApi(HTTPEndpoint):
                 curent_page=query_params.curent_page, page_size=query_params.page_size
             )
             return result
-        except (BadRequest, Forbidden, InternalServer) as e:
-            raise e
         except Exception as e:
-            logging.error(e)
+            if isinstance(e, BaseException):
+                raise e
+            logging.error(f"Error: {e}")
             raise InternalServer(
                 error_code=ErrorCode.SERVER_ERROR.name,
-                errors={
-                    "message": "Server currently unable to handle this request,please try again later"
-                },
-            )
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from e
