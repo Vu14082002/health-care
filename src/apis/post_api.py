@@ -52,6 +52,9 @@ class CreatePostApi(HTTPEndpoint):
     async def post(
         self, request: Request, form_data: RequestCreatePostSchema, auth: JsonWebToken
     ):
+        """
+        this api is used to create post ,  only admin can create post
+        """
         try:
             if auth.get("role") != Role.ADMIN.value:
                 raise Forbidden(
@@ -121,6 +124,9 @@ class CreatePostApi(HTTPEndpoint):
     async def put(
         self, request: Request, form_data: RequestUpdatePostSchema, auth: JsonWebToken
     ):
+        '''
+        this api is used to update post, only admin can update post
+        '''
         try:
             if auth.get("role") != Role.ADMIN.value:
                 raise Forbidden(
