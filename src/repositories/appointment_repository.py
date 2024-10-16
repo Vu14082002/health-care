@@ -1,8 +1,10 @@
 import logging as log
-from datetime import date
+from collections import defaultdict
+from datetime import date, datetime
 
 from sqlalchemy import (
     and_,
+    extract,
     func,
     or_,
     select,
@@ -48,7 +50,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                 raise BadRequest(
                     error_code=ErrorCode.YOU_HAVE_NOT_COMPLETE_OTHER_APPOINTMENT.name,
                     errors={
-                        "message": "You have must complete other appointment before create new appointment"
+                        "message": ErrorCode.msg_you_have_not_complete_other_appointment.value
                     },
                 )
 
@@ -350,3 +352,48 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             "page_size": page_size,
             "total_pages": total_pages,
         }
+
+    @catch_error_repository(message=None)
+    async def statistical_appointment(self, year: int):
+        current_month = datetime.now().month
+        current_year = datetime.now().year
+        months = (
+            list(range(1, current_month + 1))
+            if year == current_year
+            else list(range(1, 13))
+        )
+
+        query = (
+            select(
+                func.count(AppointmentModel.appointment_status),
+                AppointmentModel.appointment_status,
+                extract("month", func.to_timestamp(AppointmentModel.created_at)).label(
+                    "month"
+                ),
+                extract("year", func.to_timestamp(AppointmentModel.created_at)).label(
+                    "year"
+                ),
+            )
+            .where(extract("year", func.to_timestamp(AppointmentModel.created_at)) == year)
+            .group_by(AppointmentModel.appointment_status, "month", "year")
+            .order_by("year", "month", AppointmentModel.appointment_status)
+        )
+
+        result = await self.session.execute(query)
+        data = result.all()
+
+        appointment_status_by_year = defaultdict(
+            lambda: defaultdict(lambda: defaultdict(int))
+        )
+
+        for month in months:
+            for status in AppointmentModelStatus.all_statuses():
+                appointment_status_by_year[str(year)][str(month)][status] = 0
+
+        for count, status, month, year in data:
+            status_enum = AppointmentModelStatus(status).value
+            year_str = str(year).split(".")[0]
+            month_str = str(month).split(".")[0]
+            appointment_status_by_year[year_str][month_str][status_enum] = count
+
+        return appointment_status_by_year

@@ -1,7 +1,7 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, validator
 
 
 class RequestRegisterAppointment(BaseModel):
@@ -71,3 +71,20 @@ class RequestGetAllAppointmentSchema(BaseModel):
     #         except ValueError:
     #             raise ValueError("Invalid time format. Use HH:MM:SS")
     #     return value
+
+class RequestStatisticalAppointmentSchema(BaseModel):
+    year: int = Field(datetime.now().year, description="year for statistical appointment default is current year", examples=[2024])
+
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
+        extra = "forbid"
+
+    @field_validator("year",mode="before")
+    def year_must_be_positive(cls, v):
+        current_year = datetime.now().year
+        if int(v) < 1970 or int(v) > current_year:
+            raise ValueError(
+                f"Năm phải lớn hơn 1970 và nhỏ hơn hoặc bằng năm hiện tại là ({current_year})."
+            )
+        return v

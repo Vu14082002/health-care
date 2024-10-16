@@ -22,7 +22,6 @@ from src.apis.docter_api import (
     GetAllDoctorForeignAPi,
     GetAllDoctorLocalAPi,
     GetDetailtDoctorById,
-    StatisticalDoctorApi,
 )
 from src.apis.health_check import HealthCheck
 from src.apis.medical_records_api import (
@@ -33,6 +32,11 @@ from src.apis.medical_records_api import (
 from src.apis.message_api import MessageApi
 from src.apis.post_api import CommentApi, CreatePostApi, GetPostByIdApi
 from src.apis.rating_api import RatingApi
+from src.apis.statistical_api import (
+    StatisticalAppointment,
+    StatisticalCountPatientApi,
+    StatisticalDoctorApi,
+)
 from src.apis.user import ResetPassword, UserProfile
 from src.apis.working_time_api import (
     CreateDoctorWorkingTimeApi,
@@ -234,6 +238,18 @@ routes = [
     # thong ke
     RouteSwagger(
         "/statistical/doctor", StatisticalDoctorApi, methods=["GET"], tags=["ADMIN"]
+    ),
+    RouteSwagger(
+        "/statistical/patient/count",
+        StatisticalCountPatientApi,
+        methods=["GET"],
+        tags=["ADMIN"],
+    ),
+    RouteSwagger(
+        "/statistical/appointment/group",
+        StatisticalAppointment,
+        methods=["GET"],
+        tags=["ADMIN"],
     ),
     # chat bot
     RouteSwagger(

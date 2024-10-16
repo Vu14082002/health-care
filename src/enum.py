@@ -71,6 +71,9 @@ class ErrorCode(Enum):
         "Phải cung cấp ít nhất một trong các, content, media, or title"
     )
     msg_only_support_patient = "Tính năng này hiện chỉ hỗ trợ cho bệnh nhân"
+    msg_you_have_not_complete_other_appointment = (
+        "Bạn phải hoàn thành cuộc hẹn với bác sĩ trước khi đặt thêm lịch hẹn khác"
+    )
 
 
 CACHE_REFRESH_TOKEN = 60 * 60 * 5
@@ -96,6 +99,9 @@ class AppointmentModelStatus(Enum):
     REJECTED = "rejected"
     COMPLETED = "completed"
     PROCESSING = "processing"
+    @classmethod
+    def all_statuses(cls):
+        return [status.value for status in cls]
 
 
 class MessageContentSchema(BaseModel):

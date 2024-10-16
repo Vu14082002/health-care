@@ -106,3 +106,9 @@ class PatientRepository(PostgresRepository[PatientModel]):
         self.session.add(rating_model)
         await self.session.commit()
         return rating_model.as_dict
+
+
+    async def count_patient(self):
+        query = select(func.count(PatientModel.id))
+        result = await self.session.execute(query)
+        return result.scalar_one()

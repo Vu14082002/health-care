@@ -24,3 +24,8 @@ class PatientHelper:
             user_id, data_model
         )
         return result
+
+    @catch_error_helper(message=None)
+    async def count_patient(self):
+        result = await self.patient_repository.count_patient()
+        return {"total_patient": result}

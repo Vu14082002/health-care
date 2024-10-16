@@ -222,27 +222,3 @@ class DoctorGetPatientsByIdApi(HTTPEndpoint):
                 errors={"message": ErrorCode.msg_server_error.value},
             ) from e
 
-
-class StatisticalDoctorApi(HTTPEndpoint):
-    async def get(self, auth: JsonWebToken):
-        try:
-            if auth.get("role") != Role.ADMIN.name:
-                raise Forbidden(
-                    msg="Permission denied",
-                    error_code=ErrorCode.FORBIDDEN.name,
-                    errors={
-                        "message": ErrorCode.msg_permission_denied.value,
-                    },
-                )
-
-            doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
-            statistics = await doctor_helper.get_doctor_statistics()
-            return statistics
-        except Exception as e:
-            if isinstance(e, BaseException):
-                raise e
-            log.error(f"Error: {e}")
-            raise InternalServer(
-                error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": ErrorCode.msg_server_error.value},
-            ) from e

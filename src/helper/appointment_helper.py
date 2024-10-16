@@ -23,3 +23,7 @@ class AppointmentHelper:
     async def get_all_appointments(self, **kwargs):
         result = await self.appointment_repository.find(**kwargs)
         return result
+
+    @catch_error_helper(message=None)
+    async def statistical_appointment(self,year: int):
+        return await self.appointment_repository.statistical_appointment(year=year)
