@@ -33,6 +33,7 @@ from src.apis.message_api import MessageApi
 from src.apis.post_api import CommentApi, CreatePostApi, GetPostByIdApi
 from src.apis.rating_api import RatingApi
 from src.apis.statistical_api import (
+    StatisticalAgeDistributionPatientApi,
     StatisticalAppointment,
     StatisticalCountPatientApi,
     StatisticalDoctorApi,
@@ -242,6 +243,19 @@ routes = [
     RouteSwagger(
         "/statistical/patient/count",
         StatisticalCountPatientApi,
+        methods=["GET"],
+        tags=["ADMIN"],
+    ),
+    RouteSwagger(
+        "/statistical/patient/count",
+        StatisticalCountPatientApi,
+        methods=["GET"],
+        tags=["ADMIN"],
+    ),
+    # ti le benh nhan theo tuoi
+    RouteSwagger(
+        "/statistical/patient/age-distribution",
+        StatisticalAgeDistributionPatientApi,
         methods=["GET"],
         tags=["ADMIN"],
     ),

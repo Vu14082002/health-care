@@ -34,6 +34,30 @@ class StatisticalCountPatientApi(HTTPEndpoint):
             ) from e
 
 
+
+class StatisticalAgeDistributionPatientApi(HTTPEndpoint):
+    async def get(self, auth: JsonWebToken):
+        try:
+            if auth.get("role") != Role.ADMIN.name:
+                raise Forbidden(
+                    msg="Permission denied",
+                    error_code=ErrorCode.FORBIDDEN.name,
+                    errors={
+                        "message": ErrorCode.msg_permission_denied.value,
+                    },
+                )
+
+            patient_helper = await Factory().get_patient_helper()
+            statistics = await patient_helper.age_distribution_patient()
+            return statistics
+        except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
+            log.error(f"Error: {e}")
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from e
 class StatisticalDoctorApi(HTTPEndpoint):
     async def get(self, auth: JsonWebToken):
         try:

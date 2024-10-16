@@ -29,3 +29,8 @@ class PatientHelper:
     async def count_patient(self):
         result = await self.patient_repository.count_patient()
         return {"total_patient": result}
+
+    @catch_error_helper(message=None)
+    async def age_distribution_patient(self):
+        result = await self.patient_repository.age_distribution_patient_repository()
+        return result
