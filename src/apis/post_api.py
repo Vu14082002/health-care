@@ -19,8 +19,7 @@ from src.schema.post_schema import (
 )
 
 
-class CreatePostApi(HTTPEndpoint):
-
+class GetPostUserApi(HTTPEndpoint):
     async def get(self, query_params: RequestGetAllPostSchema):
         try:
             post_helper = await Factory().get_post_helper()
@@ -34,6 +33,21 @@ class CreatePostApi(HTTPEndpoint):
                 error_code=ErrorCode.SERVER_ERROR.name,
                 errors={"message": ErrorCode.msg_server_error.value},
             )
+class CreatePostApi(HTTPEndpoint):
+
+    # async def get(self, query_params: RequestGetAllPostSchema):
+    #     try:
+    #         post_helper = await Factory().get_post_helper()
+    #         result = await post_helper.get_post_helper(query=query_params.model_dump())
+    #         return result
+    #     except Exception as e:
+    #         if isinstance(e, BaseException):
+    #             raise e
+    #         logging.error(e)
+    #         raise InternalServer(
+    #             error_code=ErrorCode.SERVER_ERROR.name,
+    #             errors={"message": ErrorCode.msg_server_error.value},
+    #         )
 
     async def post(
         self, request: Request, form_data: RequestCreatePostSchema, auth: JsonWebToken

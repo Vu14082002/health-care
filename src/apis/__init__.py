@@ -30,7 +30,7 @@ from src.apis.medical_records_api import (
     MedicalRecordsApiPOST,
 )
 from src.apis.message_api import MessageApi
-from src.apis.post_api import CommentApi, CreatePostApi, GetPostByIdApi
+from src.apis.post_api import CommentApi, CreatePostApi, GetPostByIdApi, GetPostUserApi
 from src.apis.rating_api import RatingApi
 from src.apis.statistical_api import (
     StatisticalAgeDistributionPatientApi,
@@ -90,7 +90,7 @@ routes = [
     ),
     RouteSwagger(
         "/posts",
-        CreatePostApi,
+        GetPostUserApi,
         methods=["GET"],
         tags=["USERS", "ADMIN", "DOCTOR", "PATIENT"],
     ),
