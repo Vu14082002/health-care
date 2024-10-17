@@ -31,6 +31,7 @@ from src.apis.medical_records_api import (
 )
 from src.apis.message_api import MessageApi
 from src.apis.post_api import CommentApi, CreatePostApi, GetPostByIdApi, GetPostUserApi
+from src.apis.predict_api import ApiPredictData
 from src.apis.rating_api import RatingApi
 from src.apis.statistical_api import (
     StatisticalAgeDistributionPatientApi,
@@ -147,6 +148,12 @@ routes = [
         tags=["PATIENT", "DOCTOR"],
     ),
     # Doctor api
+    RouteSwagger(
+        "/doctor/predict-disease",
+        ApiPredictData,
+        methods=["POST"],
+        tags=["DOCTOR","ADMIN"],
+    ),
     RouteSwagger(
         "/doctor/working-time",
         DoctorWorkingTimeApi,
