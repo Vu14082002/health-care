@@ -242,6 +242,9 @@ class PostRepository(PostgresRepository[PostModel]):
                 "created_at": datetime.fromtimestamp(
                     post.created_at, timezone.utc
                 ).strftime("%Y-%m-%d %H:%M:%S"),
+                "updated_at": datetime.fromtimestamp(
+                    post.updated_at, timezone.utc
+                ).strftime("%Y-%m-%d %H:%M:%S"),
             }
 
             items.append(item)
