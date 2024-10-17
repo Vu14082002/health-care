@@ -33,7 +33,7 @@ from src.schema.register import (
 class AdminRegisterApi(HTTPEndpoint):
     async def post(self, request: Request, form_data: RequestAdminRegisterSchema):
         """
-        This function is used to register admin
+        this api is used to register admin, only admin can access
         """
         try:
             form_request = await request.form()
@@ -61,7 +61,7 @@ class AdminNotifyRegisterMail(HTTPEndpoint):
 
     async def post(self, form_data: RequestNotifyMail, auth: JsonWebToken):
         """
-        This function is used to request notify mail
+        this api is used to send mail request additional info, only admin can access
         """
         try:
             if auth.get("role", "") != Role.ADMIN.name:
@@ -92,7 +92,7 @@ class PatientRegisterApi(HTTPEndpoint):
     async def post(self, form_data: RequestRegisterPatientSchema):
         """
         _summary_
-        This function is used to register patient
+        this api is used to register patient
         """
         try:
             avatar = None
@@ -117,13 +117,14 @@ class PatientRegisterApi(HTTPEndpoint):
 
 
 class DoctorLocalRegisterApi(HTTPEndpoint):
-    """
-    This function is used to register doctor local
-    """
+
 
     async def post(
         self, form_data: RequestRegisterDoctorLocalSchema, auth: JsonWebToken
     ):
+        """
+        this api is used to register doctor local, only admin can access
+        """
         try:
             if auth.get("role", "") != Role.ADMIN.name:
                 raise BadRequest(
@@ -203,6 +204,9 @@ class DoctorOtherVerifyApi(HTTPEndpoint):
 
 class DoctorOtherRejectApiPut(HTTPEndpoint):
     async def put(self, path_params: RequestVerifyDoctorSchema, auth: JsonWebToken):
+        '''
+        this api is used to reject doctor then send mail template Reject, only admin can access
+        '''
         try:
             if auth.get("role", "") != Role.ADMIN.name:
                 raise Forbidden(
@@ -234,6 +238,9 @@ class DoctorOtherRejectApiPut(HTTPEndpoint):
 
 class DoctorOtherVerifyApiPut(HTTPEndpoint):
     async def put(self, path_params: RequestVerifyDoctorSchema, auth: JsonWebToken):
+        '''
+        this api is used to verify doctor status 1, only admin can access
+        '''
         try:
             if auth.get("role", "") != Role.ADMIN.name:
                 raise Forbidden(
@@ -268,6 +275,9 @@ class DoctorOtherVerifyApiPut(HTTPEndpoint):
 
 class DoctorForeignRegisterApi(HTTPEndpoint):
     async def post(self, form_data: RequestRegisterDoctorSchema):
+        '''
+        this api is used to register doctor foreign, verify_status = 0
+        '''
         try:
             avatar = None
             if isinstance(form_data.avatar, UploadFile):
@@ -297,6 +307,9 @@ class DoctorForeignRegisterApi(HTTPEndpoint):
 class DoctorForeignRejectApi(HTTPEndpoint):
 
     async def put(self, path_params: RequestVerifyDoctorSchema, auth: JsonWebToken):
+        '''
+        this api is used to reject doctor then send mail template Reject, only admin can access
+        '''
         try:
             if auth.get("role", "") != Role.ADMIN.name:
                 raise Forbidden(
@@ -370,6 +383,9 @@ class DoctorOtherVerifyFinalApiPut(HTTPEndpoint):
         form_data: RequestVerifyFinalDoctorSchema,
         auth: JsonWebToken,
     ):
+        '''
+        this api is used to verify doctor status 2, only admin can access
+        '''
         try:
             if auth.get("role", "") != Role.ADMIN.name:
                 raise Forbidden(

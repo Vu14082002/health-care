@@ -38,10 +38,13 @@ class ErrorCode(Enum):
     INVALID_FILE_TYPE = "INVALID_FILE_TYPE"
     INVALID_REQUEST = "INVALID_REQUEST"
     VALIDATION_ERROR = "VALIDATION_ERROR"
+    msg_user_not_found = "Tài khoản không tồn tại"
     msg_permission_denied = "Bạn không có quyền truy cập tài nguyên này"
     msg_delete_account_before = "Tài khoản của bạn đã bị xóa trước đó, nếu bạn muốn sử dụng tài khoản này vui lòng liên hệ với quản trị viên"
     msg_wrong_password = "Mật khẩu sai"
-    msg_phone_not_registered = "Phone number is not registered"
+    msg_phone_not_registered = "Số điện thoại chưa được đăng ký"
+    msg_phone_have_been_registered = "Số điện thoại đã được đăng ký"
+    msg_email_have_been_registered = "Email đã được đăng ký"
     msg_error_login = "Phone number or password is incorrect"
     msg_server_error = "Máy chủ bị lỗi, vui lòng thử lại sau"
     msg_permission_rating = (
@@ -51,7 +54,7 @@ class ErrorCode(Enum):
     msg_verify_step_one_befor_verify_two = (
         "Bạn phải xác minh bác sĩ ở trạng thái 1 trước khi xác minh ở trạng thái 2"
     )
-    msg_invalid_medical_record = "media must be file"
+    msg_invalid_medical_record = "media phải là file"
     msg_server_error_procesing = (
         " Máy chủ lỗi khi thực hiện tác vụ này, vui lòng thử lại sau"
     )
@@ -74,6 +77,7 @@ class ErrorCode(Enum):
     msg_you_have_not_complete_other_appointment = (
         "Bạn phải hoàn thành cuộc hẹn với bác sĩ trước khi đặt thêm lịch hẹn khác"
     )
+    msg_incorrect_old_password = "Mật khẩu cũ không chính xác"
 
 
 CACHE_REFRESH_TOKEN = 60 * 60 * 5

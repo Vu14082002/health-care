@@ -23,75 +23,68 @@ from src.schema.register import RequestAdminRegisterSchema, RequestRegisterPatie
 
 class UserRepository(PostgresRepository[UserModel]):
 
-    @catch_error_repository("Failed to register amdin, please try again later")
+    @catch_error_repository(message=None)
     async def register_admin(self, data: RequestAdminRegisterSchema):
-        async with get_session() as session:
-            is_phone_exists, is_mail_exists = await asyncio.gather(
-                self._is_phone_exist(phone_number=data.phone_number, session=session),
-                self._is_email_exist(email=data.email, session=session),
-                return_exceptions=False,
-            )
-            if is_phone_exists:
-                raise BadRequest(
-                    error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
-                    errors={
-                        "message": "This phone number has been used by another user"
-                    },
-                )
-            if is_mail_exists:
-                raise BadRequest(
-                    error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
-                    errors={"message": "This email has been used by another user"},
-                )
-            password_hash = PasswordHandler.hash(data.password_hash)
-            user_model = UserModel()
-            user_model.phone_number = data.phone_number
-            user_model.password_hash = password_hash
-            user_model.role = Role.ADMIN.value
-            staff_model = StaffModel(**data.model_dump(exclude={"password_hash"}))
-            user_model.staff = staff_model
-            # add user and staff to session
-            self.session.add(user_model)
-            _ = await session.commit()
-            return staff_model.as_dict
 
-    @catch_error_repository("Failed to create patient, please try again later")
+        is_phone_exists = await self._is_phone_exist(phone_number=data.phone_number)
+        is_mail_exists = await self._is_email_exist(email=data.email)
+        if is_phone_exists:
+            raise BadRequest(
+                error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
+                errors={
+                    "message": ErrorCode.msg_phone_have_been_registered.value
+                },
+            )
+        if is_mail_exists:
+            raise BadRequest(
+                error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
+                errors={"message": ErrorCode.msg_email_have_been_registered.value},
+            )
+        password_hash = PasswordHandler.hash(data.password_hash)
+        user_model = UserModel()
+        user_model.phone_number = data.phone_number
+        user_model.password_hash = password_hash
+        user_model.role = Role.ADMIN.value
+        staff_model = StaffModel(**data.model_dump(exclude={"password_hash"}))
+        user_model.staff = staff_model
+        # add user and staff to session
+        self.session.add(user_model)
+        _ = await self.session.commit()
+        return staff_model.as_dict
+
+    @catch_error_repository(message=None)
     async def register_patient(self, data: RequestRegisterPatientSchema):
-        async with get_session() as session:
-            is_phone_exists, is_mail_exists = await asyncio.gather(
-                self._is_phone_exist(phone_number=data.phone_number, session=session),
-                self._is_email_exist(email=data.email, session=session),
-                return_exceptions=False,
+        is_phone_exists = await self._is_phone_exist(phone_number=data.phone_number)
+        is_mail_exists = await self._is_email_exist(email=data.email)
+        if is_phone_exists:
+            raise BadRequest(
+                error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
+                errors={
+                    "message": ErrorCode.msg_phone_have_been_registered.value
+                },
             )
-            if is_phone_exists:
-                raise BadRequest(
-                    error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
-                    errors={
-                        "message": "This phone number has been used by another user"
-                    },
-                )
-            if is_mail_exists:
-                raise BadRequest(
-                    error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
-                    errors={"message": "This email has been used by another user"},
-                )
-            password_hash = PasswordHandler.hash(data.password_hash)
-            user_model = UserModel(
-                phone_number=data.phone_number,
-                password_hash=password_hash,
-                role=Role.PATIENT.value,
+        if is_mail_exists:
+            raise BadRequest(
+                error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
+                errors={"message": ErrorCode.msg_email_have_been_registered.value},
             )
-            patient_model = PatientModel(**data.model_dump(exclude={"password_hash"}))
-            user_model.patient = patient_model
-            self.session.add(user_model)
-            await self.session.commit()
-            return patient_model.as_dict
+        password_hash = PasswordHandler.hash(data.password_hash)
+        user_model = UserModel(
+            phone_number=data.phone_number,
+            password_hash=password_hash,
+            role=Role.PATIENT.value,
+        )
+        patient_model = PatientModel(**data.model_dump(exclude={"password_hash"}))
+        user_model.patient = patient_model
+        self.session.add(user_model)
+        await self.session.commit()
+        return patient_model.as_dict
 
-    @catch_error_repository("Failed to insert user, please try again later")
+    @catch_error_repository(message=None)
     async def get_by_id(self, user_id: int):
         return await self.get_by("id", user_id)
 
-    @catch_error_repository("Failed to insert user, please try again later")
+    @catch_error_repository(message=None)
     async def get_one(self, where: Dict[str, Any]):
         conditions = destruct_where(self.model_class, where)
         query = select(self.model_class)
@@ -101,7 +94,7 @@ class UserRepository(PostgresRepository[UserModel]):
         user_model: UserModel | None = result.unique().scalars().first()
         return user_model
 
-    @catch_error_repository("Failed to update profile, please try again later")
+    @catch_error_repository(message=None)
     async def update_profile(self, user_id: int, data: dict[str, Any]):
         user_model = await self.get_one({"id": user_id})
         if user_model is None:
@@ -130,7 +123,7 @@ class UserRepository(PostgresRepository[UserModel]):
                 raise BadRequest(
                     error_code=ErrorCode.INVALID_PARAMETER.name,
                     errors={
-                        "message": "This phone number has been used by another user"
+                        "message": ErrorCode.msg_phone_have_been_registered.value
                     },
                 )
         if value_check.get("email", None) is not None:
@@ -140,13 +133,12 @@ class UserRepository(PostgresRepository[UserModel]):
             if is_email_exists:
                 raise BadRequest(
                     error_code=ErrorCode.INVALID_PARAMETER.name,
-                    msg="You can't update email to an existing one",
-                    errors={"message": "This email has been used by another user"},
+                    errors={"message": ErrorCode.msg_email_have_been_registered.value},
                 )
         if value_update:
             for key, value in value_update.items():
                 setattr(model, key, value)
-            await self.session.commit()
+            # await self.session.commit()
         return model.as_dict
 
     async def _is_phone_exist(
@@ -158,11 +150,6 @@ class UserRepository(PostgresRepository[UserModel]):
         """
         this function is used to check if phone number is exist in database
 
-        Args:
-            phone_number (str): check phone number
-            user_id (int | None, optional): _description_. Defaults to None.
-        Returns:
-            _type_: _description_
         """
         _session = session or self.session
         user_filter = UserModel.phone_number == phone_number
@@ -210,48 +197,37 @@ class UserRepository(PostgresRepository[UserModel]):
             is_doctor_email_exists or is_patient_email_exists or is_staff_email_exists
         )
 
-    @catch_error_repository("Failed to handle reset password, please try again later")
+    @catch_error_repository(message=None)
     async def reset_pwd(self, user_id: int, password_hash: str, old_password: str):
-        try:
-            user_query = select(UserModel).where(UserModel.id == user_id)
-            result_user_query = await self.session.execute(user_query)
-            user = result_user_query.scalar_one_or_none()
-            if not user:
-                raise BadRequest(
-                    error_code=ErrorCode.NOT_FOUND.name,
-                    errors={"message": "User not found, something went wrong"},
-                )
-            if not PasswordHandler.verify(
-                user.password_hash, plain_password=old_password
-            ):
-                raise BadRequest(
-                    msg="Password is incorrect",
-                    error_code=ErrorCode.UNAUTHORIZED.name,
-                    errors={"message": "Old password is incorrect"},
-                )
-            update_statement = (
-                update(UserModel)
-                .where(UserModel.id == user_id)
-                .values(password_hash=password_hash)
-                .returning(UserModel)
+        user_query = select(UserModel).where(UserModel.id == user_id)
+        result_user_query = await self.session.execute(user_query)
+        user = result_user_query.scalar_one_or_none()
+        if not user:
+            raise BadRequest(
+                error_code=ErrorCode.NOT_FOUND.name,
+                errors={"message": ErrorCode.msg_user_not_found.value},
             )
-            result_update_statement = await self.session.execute(update_statement)
-            await self.session.commit()
+        if not PasswordHandler.verify(
+            user.password_hash, plain_password=old_password
+        ):
+            raise BadRequest(
+                error_code=ErrorCode.UNAUTHORIZED.name,
+                errors={"message": ErrorCode.msg_incorrect_old_password.value},
+            )
+        update_statement = (
+            update(UserModel)
+            .where(UserModel.id == user_id)
+            .values(password_hash=password_hash)
+            .returning(UserModel)
+        )
+        result_update_statement = await self.session.execute(update_statement)
+        await self.session.commit()
 
-            # Fetch the updated value
-            data_update_statement = result_update_statement.scalars().first()
-            if not data_update_statement:
-                raise BadRequest(
-                    error_code=ErrorCode.NOT_FOUND.name,
-                    errors={"message": "Something went wrong when updating password"},
-                )
-            return data_update_statement.as_dict
-        except BadRequest as e:
-            raise e
-        except Exception as e:
-            logging.error("Error on reset_pwd: %s", e)
-            raise InternalServer(
-                error_code=ErrorCode.SERVER_ERROR.name,
-                msg="Something went wrong when updating password",
+        # Fetch the updated value
+        data_update_statement = result_update_statement.scalars().first()
+        if not data_update_statement:
+            raise BadRequest(
+                error_code=ErrorCode.NOT_FOUND.name,
                 errors={"message": "Something went wrong when updating password"},
-            ) from e
+            )
+        return data_update_statement.as_dict

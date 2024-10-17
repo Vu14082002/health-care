@@ -87,6 +87,9 @@ class GetMedicalRecordByAppointId(HTTPEndpoint):
     async def get(
         self, path_params: RequestGetAppointmentByIdSchema, auth: JsonWebToken
     ):
+        '''
+        this api is used to get medical record by appointment id, only admin, patient and doctor can get medical record
+        '''
         try:
             user_role = auth.get("role", "")
             if user_role not in ["ADMIN", "PATIENT", "DOCTOR"]:

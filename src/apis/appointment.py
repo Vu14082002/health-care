@@ -16,6 +16,9 @@ class AppointmentApiGET(HTTPEndpoint):
     async def get(
         self, query_params: RequestGetAllAppointmentSchema, auth: JsonWebToken
     ):
+        '''
+        this api is used to get all appointments, only admin, doctor and patient can get all appointments
+        '''
         try:
             appointment_helper: AppointmentHelper = (
                 await Factory().get_appointment_helper()
@@ -62,6 +65,9 @@ class AppointmentApiGET(HTTPEndpoint):
 
 class AppointmentApi(HTTPEndpoint):
     async def post(self, form_data: RequestRegisterAppointment, auth: JsonWebToken):
+        '''
+        this api is used to create appointment, only admin and patient can create appointment
+        '''
         try:
             user_role = auth.get("role", "")
             if user_role not in [Role.ADMIN.value, Role.PATIENT.value]:

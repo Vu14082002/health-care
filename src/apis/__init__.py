@@ -92,13 +92,13 @@ routes = [
         "/posts",
         GetPostUserApi,
         methods=["GET"],
-        tags=["USERS", "ADMIN", "DOCTOR", "PATIENT"],
+        tags=["USER", "ADMIN", "DOCTOR", "PATIENT"],
     ),
     RouteSwagger(
         "/posts/{post_id}",
         GetPostByIdApi,
         methods=["GET"],
-        tags=["USERS", "ADMIN", "DOCTOR", "PATIENT"],
+        tags=["USER", "ADMIN", "DOCTOR", "PATIENT"],
     ),
     RouteSwagger(
         "/post/comment",
