@@ -303,6 +303,12 @@ class PostRepository(PostgresRepository[PostModel]):
         await self.session.commit()
         return {
             **post.as_dict,
+            "created_at": datetime.fromtimestamp(
+                post.created_at, timezone.utc
+            ).strftime("%Y-%m-%d %H:%M:%S"),
+            "updated_at": datetime.fromtimestamp(
+                post.updated_at, timezone.utc
+            ).strftime("%Y-%m-%d %H:%M:%S"),
             "first_name": "admin",
             "last_name": "admin",
             "comments": comments,
