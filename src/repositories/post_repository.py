@@ -301,15 +301,23 @@ class PostRepository(PostgresRepository[PostModel]):
                 }
             )
         await self.session.commit()
+        auth_data =post.author
+        auth_data = auth_data.patient or auth_data.doctor or auth_data.staff
+        auth_custom = {
+                "auth_id": auth_data.id,
+                "email": auth_data.email,
+                "first_name": auth_data.first_name,
+                "last_name": auth_data.last_name,
+                "avatar": auth_data.avatar,
+        }
         return {
             **post.as_dict,
+            **auth_custom,
             "created_at": datetime.fromtimestamp(
                 post.created_at, timezone.utc
             ).strftime("%Y-%m-%d %H:%M:%S"),
             "updated_at": datetime.fromtimestamp(
                 post.updated_at, timezone.utc
             ).strftime("%Y-%m-%d %H:%M:%S"),
-            "first_name": "admin",
-            "last_name": "admin",
             "comments": comments,
         }
