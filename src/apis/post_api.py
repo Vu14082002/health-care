@@ -12,6 +12,8 @@ from src.helper.s3_helper import S3Service
 from src.schema.post_schema import (
     RequestCreateComment,
     RequestCreatePostSchema,
+    RequestDeleteCommentSchema,
+    RequestDeletePostSchema,
     RequestGetAllPostSchema,
     RequestGetPostByIdSchema,
     RequestUpdateComment,
@@ -203,6 +205,30 @@ class CreatePostApi(HTTPEndpoint):
                 errors={"message": ErrorCode.msg_server_error.value},
             )
 
+    async def delete(self, form_data: RequestDeletePostSchema, auth: JsonWebToken):
+        '''
+        this api is used to delete post, only admin can delete post
+        '''
+        try:
+            if auth.get("role") != Role.ADMIN.value:
+                raise Forbidden(
+                    error_code=ErrorCode.FORBIDDEN.name,
+                    errors={"message": ErrorCode.msg_permission_denied.value},
+                )
+            post_helper = await Factory().get_post_helper()
+            result = await post_helper.delete_post_helper(
+                post_id=form_data.post_id
+            )
+            return result
+        except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
+            logging.error(e)
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            )
+
 
 class GetPostByIdApi(HTTPEndpoint):
 
@@ -339,6 +365,27 @@ class CommentApi(HTTPEndpoint):
                 auth_id=auth.get("id"),
                 comment_id=form_data.comment_id,
                 content_schema=content_schema,
+            )
+            return result
+        except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
+            logging.error(e)
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            )
+
+    async def delete(self, form_data: RequestDeleteCommentSchema, auth: JsonWebToken):
+        try:
+
+            is_admin = True if auth.get("role") == Role.ADMIN.value else False
+            comment_id = form_data.comment_id
+            auth_comment_id = auth.get("id") if not is_admin else None
+            post_helper = await Factory().get_post_helper()
+            result = await post_helper.delete_comment_helper(
+                comment_id=comment_id,
+                auth_comment_id=auth_comment_id,
             )
             return result
         except Exception as e:

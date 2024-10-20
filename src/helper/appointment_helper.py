@@ -27,3 +27,11 @@ class AppointmentHelper:
     @catch_error_helper(message=None)
     async def statistical_appointment(self,year: int):
         return await self.appointment_repository.statistical_appointment(year=year)
+
+
+
+    @catch_error_helper(message=None)
+    async def delete_appointment(self, appointment_id: int, patient_id: int):
+        return await self.appointment_repository.delete_appointment(
+            appointment_id, patient_id
+        )

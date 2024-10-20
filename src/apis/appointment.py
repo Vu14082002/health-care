@@ -7,6 +7,7 @@ from src.enum import ErrorCode, Role
 from src.factory import Factory
 from src.helper.appointment_helper import AppointmentHelper
 from src.schema.appointment_schema import (
+    RequestDeleteAppointment,
     RequestGetAllAppointmentSchema,
     RequestRegisterAppointment,
 )
@@ -108,3 +109,32 @@ class AppointmentApi(HTTPEndpoint):
                 error_code=ErrorCode.SERVER_ERROR.name,
                 errors={"message": ErrorCode.msg_server_error.value},
             ) from e
+
+    async def delete(self,form_data:RequestDeleteAppointment,auth:JsonWebToken):
+        '''
+        this api for patient delele appointment
+        '''
+        user_role = auth.get("role")
+        if user_role not in [Role.ADMIN.value,Role.PATIENT.value]:
+            raise Forbidden(
+                error_code=ErrorCode.FORBIDDEN.name,
+                errors={
+                    "message":ErrorCode.msg_permission_denied.value
+                }
+            )
+        if user_role is Role.ADMIN.value and not form_data.patient_id:
+            raise BadRequest(
+                error_code=ErrorCode.BAD_REQUEST.name,
+                errors={
+                    "message":ErrorCode.msg_patient_id_is_required.value
+                }
+            )
+        patient_id = (
+            form_data.patient_id
+            if user_role is Role.ADMIN.value
+            else auth.get("id")
+        )
+        appointment_id = form_data.appointment_id
+        appointment_helper = await Factory().get_appointment_helper()
+        result =await appointment_helper.delete_appointment(appointment_id, patient_id)
+        return result

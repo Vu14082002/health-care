@@ -84,6 +84,14 @@ class RequestUpdatePostSchema(BaseModel):
         extra = "forbid"
 
 
+class RequestDeletePostSchema(BaseModel):
+    post_id: int = Field(..., title="Post id will be delete", examples=[1])
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
+        extra = "forbid"
+
+
 class RequestCreateComment(BaseModel):
     post_id: int = Field(..., title="Post id will comment", examples=[1])
 
@@ -119,6 +127,14 @@ class RequestUpdateComment(BaseModel):
         None, description="content of post", examples=["Hi! ......"]
     )
 
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
+        extra = "forbid"
+
+
+class RequestDeleteCommentSchema(BaseModel):
+    comment_id: int = Field(..., description="Comment id will be delete, only this user can delete this comment, ADMIN have permiss to delete this comment ", examples=[1])
     class Config:
         from_attributes = True
         arbitrary_types_allowed = True

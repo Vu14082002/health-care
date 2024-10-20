@@ -56,7 +56,25 @@ class CommentModel(Model):
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True, index=True, autoincrement=True
     )
+
+    rep_id:Mapped[int] = mapped_column(Integer, ForeignKey("comment.id", ondelete="CASCADE"), nullable=True)
+
+    parent: Mapped["CommentModel"] = relationship(
+        "CommentModel",
+        back_populates="chills",
+        remote_side=[id],
+        lazy="joined",
+        passive_deletes=True,
+    )
+
+    chills: Mapped[List["CommentModel"]] = relationship(
+        "CommentModel",
+        back_populates="parent",
+        cascade="all, delete-orphan",
+        lazy="joined",
+    )
     content: Mapped[MessageContentSchema] = mapped_column(JSONB, nullable=False)
+
     user_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("user.id", ondelete="CASCADE"),

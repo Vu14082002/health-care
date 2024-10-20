@@ -86,7 +86,7 @@ routes = [
     RouteSwagger(
         "/admin/post",
         CreatePostApi,
-        methods=["POST", "PUT"],
+        methods=["POST", "PUT","DELETE"],
         tags=["ADMIN"],
     ),
     RouteSwagger(
@@ -104,7 +104,7 @@ routes = [
     RouteSwagger(
         "/post/comment",
         CommentApi,
-        methods=["POST", "PUT"],
+        methods=["POST", "PUT","DELETE"],
         tags=["ADMIN", "PATIENT", "DOCTOR"],
     ),
     # change status verify doctor from 0 to -1
@@ -216,7 +216,7 @@ routes = [
     ),
     # appointment api
     RouteSwagger(
-        "/appointment", AppointmentApi, methods=["POST"], tags=["PATIENT", "ADMIN"]
+        "/appointment", AppointmentApi, methods=["POST","DELETE"], tags=["PATIENT", "ADMIN"]
     ),
     RouteSwagger(
         "/appointment",

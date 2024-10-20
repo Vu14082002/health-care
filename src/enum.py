@@ -77,7 +77,27 @@ class ErrorCode(Enum):
     msg_you_have_not_complete_other_appointment = (
         "Bạn phải hoàn thành cuộc hẹn với bác sĩ trước khi đặt thêm lịch hẹn khác"
     )
-    msg_incorrect_old_password = "Mật khẩu cũ không chính xác"
+    msg_incorrect_old_password = "Mật khẩu cũ không chính xác",
+    msg_patient_id_is_required = "Phải cung cấp mã bênh nhân để thực hiên hành động này"
+    msg_cancel_appointment: str = "Hủy cuộc hẹn thành công"
+    msg_create_appointment_successfully = "Tạo cuộc hẹn thành công"
+    msg_not_found_appointment = "Không tìm thấy cuộc hẹn phù hợp với yêu cầu của bạn"
+    msg_not_caceled_appointment_alrealdy_finish = "Cuộc hẹn đã hoàn thành không thể hủy"
+    msg_appointment_already_order = (
+        "Cuộc hẹn này đã được đặt, vui lòng chọn cuộc hẹn khác"
+    )
+    msg_not_caceled_appointment_less_than_48_hours= "Cuộc hẹn không thể hủy khi còn ít hơn 48 giờ"
+    msg_delete_appointment_successfully = "Hủy cuộc hẹn thành công"
+    msg_can_not_delete_comment = "Bạn không thể thực hiện hành động xóa binh luận này"
+    # post message
+    msg_post_not_found = "Không tìm thấy bài viết hoặc bài viết đã bị xóa từ trước"
+    msg_comment_not_found = "Không tìm thấy bình luận hoặc bình luận đã bị xóa từ trước"
+    msg_create_post_successfully = "Tạo bài viết thành công"
+    msg_update_post_successfully = "Cập nhật bài viết thành công"
+    msg_delete_post_successfully = "Xóa bài viết thành công"
+    msg_create_comment_successfully = "Tạo bình luận thành công"
+    msg_update_comment_successfully = "Cập nhật bình luận thành công"
+    msg_delete_comment_successfully = "Xóa bình luận thành công"
 
 
 CACHE_REFRESH_TOKEN = 60 * 60 * 5

@@ -17,6 +17,15 @@ class RequestRegisterAppointment(BaseModel):
         extra = "forbid"
 
 
+class RequestDeleteAppointment(BaseModel):
+    patient_id: int | None = Field(None, description="is id patient admin cancel")
+    appointment_id:int = Field(...,description="is appointment id will cancel")
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
+        extra = "forbid"
+
+
 class RequestGetAllAppointmentSchema(BaseModel):
     appointment_status: Literal["pending", "approved", "completed"] | None = Field(
         default=None,

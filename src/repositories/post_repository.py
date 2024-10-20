@@ -21,9 +21,7 @@ class PostRepository(PostgresRepository[PostModel]):
     def __init__(self, model: PostModel, db_session: AsyncSession):
         super().__init__(model, db_session)
 
-    @catch_error_repository(
-        message="Server error when handling create post, pls try later"
-    )
+    @catch_error_repository(message=None)
     async def create_post_repository(
         self, auth_id: int, title: str, content_schema: MessageContentSchema
     ):
@@ -48,9 +46,7 @@ class PostRepository(PostgresRepository[PostModel]):
         await self.session.commit()
         return data_insert_statment.as_dict
 
-    @catch_error_repository(
-        "Server error when handling add comment this post, pls try later"
-    )
+    @catch_error_repository(message=None)
     async def add_comment_repository(
         self, auth_id: int, post_id: int, content_schema: MessageContentSchema
     ):
@@ -58,7 +54,7 @@ class PostRepository(PostgresRepository[PostModel]):
         if is_exists is False:
             raise BadRequest(
                 error_code=ErrorCode.NOT_FOUND.name,
-                errors=({"message": "post not found"}),
+                errors=({"message": ErrorCode.msg_post_not_found.value}),
             )
         insert_data = (
             insert(CommentModel)
@@ -111,7 +107,7 @@ class PostRepository(PostgresRepository[PostModel]):
         }
         return data
 
-    @catch_error_repository("Server error when handling update comment, pls try later")
+    @catch_error_repository(message=None)
     async def update_comment_repository(
         self, auth_id: int, comment_id: int, content_schema: MessageContentSchema
     ):
@@ -148,7 +144,7 @@ class PostRepository(PostgresRepository[PostModel]):
         }
         return data
 
-    @catch_error_repository("Server error when handling update post, pls try later")
+    @catch_error_repository(message=None)
     async def update_post_repository(
         self,
         auth_id: int,
@@ -156,19 +152,19 @@ class PostRepository(PostgresRepository[PostModel]):
         title: str | None,
         content_schema: MessageContentSchema | None,
     ):
-        post_statment = select(PostModel).where(PostModel.id == post_id)
+        post_statment = select(PostModel).where(PostModel.id == post_id, PostModel.is_deleted == False)
         result_post_statment = await self.session.execute(post_statment)
         post = result_post_statment.unique().scalars().first()
         if not post:
             raise BadRequest(
                 error_code=ErrorCode.NOT_FOUND.name,
-                errors=({"message": "post not found"}),
+                errors=({"message": ErrorCode.msg_post_not_found.value}),
             )
-        if post.author_id != auth_id:
-            raise BadRequest(
-                error_code=ErrorCode.FORBIDDEN.name,
-                errors=({"message": "you can't update this post"}),
-            )
+        # if post.author_id != auth_id:
+        #     raise BadRequest(
+        #         error_code=ErrorCode.FORBIDDEN.name,
+        #         errors=({"message": "you can't update this post"}),
+        #     )
         if title:
             post.title = title
         if content_schema:
@@ -178,11 +174,11 @@ class PostRepository(PostgresRepository[PostModel]):
         return post.as_dict
 
     async def _is_post_by_id(self, post_id: int):
-        check_statment = select(exists().where(PostModel.id == post_id))
+        check_statment = select(exists().where(PostModel.id == post_id, PostModel.is_deleted == False))
         result_check_statment = await self.session.execute(check_statment)
         return result_check_statment.scalar_one()
 
-    @catch_error_repository("Server error when handling get post, please try later")
+    @catch_error_repository(message=None)
     async def get_post_repository(self, query: Dict[str, Any]):
         title: str = query.get("title", None)
         current_page: int = query.get("current_page", 1)
@@ -256,15 +252,15 @@ class PostRepository(PostgresRepository[PostModel]):
             "total_page": math.ceil(total_posts / page_size),
         }
 
-    @catch_error_repository("Server error when handling get post, pls try later")
+    @catch_error_repository(message=None)
     async def get_post_repository_by_id(self, post_id: int):
-        query_statment = select(PostModel).where(PostModel.id == post_id)
+        query_statment = select(PostModel).where(PostModel.id == post_id, PostModel.is_deleted == False)
         result = await self.session.execute(query_statment)
         post = result.unique().scalars().first()
         if post is None:
             raise BadRequest(
                 error_code=ErrorCode.NOT_FOUND.name,
-                errors=({"message": "post not found"}),
+                errors=({"message": ErrorCode.msg_post_not_found.value}),
             )
         # plus view
         post.viewed += 1
@@ -320,4 +316,40 @@ class PostRepository(PostgresRepository[PostModel]):
                 post.updated_at, timezone.utc
             ).strftime("%Y-%m-%d %H:%M:%S"),
             "comments": comments,
+        }
+
+    @catch_error_repository(message=None)
+    async def delete_post_repository(self,post_id: int):
+        post_statment = select(PostModel).where(PostModel.id == post_id, PostModel.is_deleted == False)
+        result_post_statment = await self.session.execute(post_statment)
+        post = result_post_statment.unique().scalars().first()
+        if not post:
+            raise BadRequest(
+                error_code=ErrorCode.NOT_FOUND.name,
+                errors=({"message": ErrorCode.msg_post_not_found.value}),
+            )
+        post.is_deleted = True
+        await self.session.commit()
+        return {
+            "message": ErrorCode.msg_delete_post_successfully.value
+        }
+    @catch_error_repository(message=None)
+    async def delete_comment_repository(self, comment_id: int, auth_comment_id: int | None = None):
+        comment_statment = select(CommentModel).where(CommentModel.id == comment_id)
+        result_comment_statment = await self.session.execute(comment_statment)
+        comment = result_comment_statment.unique().scalars().first()
+        if not comment:
+            raise BadRequest(
+                error_code=ErrorCode.NOT_FOUND.name,
+                errors=({"message": ErrorCode.msg_comment_not_found.value}),
+            )
+        if auth_comment_id is not None and comment.user_id != auth_comment_id:
+            raise BadRequest(
+                error_code=ErrorCode.FORBIDDEN.name,
+                errors=({"message": ErrorCode.msg_can_not_delete_comment.value}),
+            )
+        await self.session.delete(comment)
+        await self.session.commit()
+        return {
+            "message": ErrorCode.msg_delete_comment_successfully.value
         }

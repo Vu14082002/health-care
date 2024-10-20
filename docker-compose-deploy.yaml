@@ -91,7 +91,19 @@ services:
             - '9999:8080'
         networks:
             - app-network
-
+    pgamdin:
+        container_name: pgadmin_health_care
+        image: dpage/pgadmin4:snapshot
+        restart: always
+        ports:
+            - '9000:80'
+        environment:
+            PGADMIN_DEFAULT_EMAIL: admin@gmail.com
+            PGADMIN_DEFAULT_PASSWORD: admin
+        depends_on:
+            - postgres
+        networks:
+            - app-network
 networks:
     app-network:
         driver: bridge

@@ -9,9 +9,7 @@ class PostHelper:
     def __init__(self, post_repository: PostRepository) -> None:
         self.post_repository = post_repository
 
-    @catch_error_helper(
-        "Server error when handling business logic on create post,pls try later"
-    )
+    @catch_error_helper(message=None)
     async def create_post_helper(
         self, auth_id: int, title: str, content_schema: MessageContentSchema
     ):
@@ -60,4 +58,14 @@ class PostHelper:
     @catch_error_helper(message=None)
     async def get_post_by_id_helper(self, post_id: int):
         data = await self.post_repository.get_post_repository_by_id(post_id)
+        return data
+
+    @catch_error_helper(message=None)
+    async def delete_post_helper(self, post_id: int):
+        data = await self.post_repository.delete_post_repository( post_id)
+        return data
+
+    @catch_error_helper(message=None)
+    async def delete_comment_helper(self, comment_id: int, auth_comment_id:int | None = None):
+        data = await self.post_repository.delete_comment_repository(comment_id, auth_comment_id)
         return data

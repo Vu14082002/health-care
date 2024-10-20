@@ -1,6 +1,6 @@
 import logging as log
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from sqlalchemy import (
     and_,
@@ -26,6 +26,7 @@ from src.repositories.global_helper_repository import redis_working
 
 class AppointmentRepository(PostgresRepository[AppointmentModel]):
     # start::create_appointment[]
+    @catch_error_repository(message=None)
     async def create_appointment(
         self,
         patient_id: int,
@@ -34,87 +35,80 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         work_schedule_id: int,
         pre_examination_notes: str | None = None,
     ):
-        try:
-            # first check exist appointment with doctor is approved
-            appointment_exist = await self.session.execute(
-                select(AppointmentModel).where(
-                    and_(
-                        AppointmentModel.patient_id == patient_id,
-                        AppointmentModel.appointment_status
-                        == AppointmentModelStatus.APPROVED.value,
-                    )
+        # first check exist appointment with doctor is approved
+        appointment_exist = await self.session.execute(
+            select(AppointmentModel).where(
+                and_(
+                    AppointmentModel.patient_id == patient_id,
+                    AppointmentModel.appointment_status
+                    == AppointmentModelStatus.APPROVED.value,
                 )
             )
-            appointment_exist = appointment_exist.scalar_one_or_none()
-            if appointment_exist:
-                raise BadRequest(
-                    error_code=ErrorCode.YOU_HAVE_NOT_COMPLETE_OTHER_APPOINTMENT.name,
-                    errors={
-                        "message": ErrorCode.msg_you_have_not_complete_other_appointment.value
-                    },
-                )
-
-            # check work schedule is ordered
-            patient_model = await self._get_patient_model_by_id(patient_id)
-            doctor_model = await self._get_doctor_model_by_id(doctor_id)
-            work_schedule_model = self._get_work_schedule_model_by_id(
-                work_schedule_id, doctor_model
-            )
-            if work_schedule_model.ordered:
-                raise BadRequest(
-                    error_code=ErrorCode.ALLREADY_ORDERED.name,
-                    errors={"message": "Work schedule is ordered"},
-                )
-            fee_examprice = self._get_fee_examination(doctor_model, work_schedule_model)
-            # validate appointment
-            appointment = AppointmentModel()
-            # logic save redos if online and payment id bank
-            # if work_schedule_model.examination_type.lower() == "offline":
-            #     appointment.appointment_status = "approved"
-            # else:
-            #     # FIXME:check logic for online appointment and offline if choose payment id bank
-            #     appointment.appointment_status = "pending"
-            #     await redis_working.set({"doctor_id": doctor_id, "patient_id": patient_id, "work_schedule_id": work_schedule_id},
-            #                             work_schedule_id, 300)
-            #     return {"message": "Create appointment successfully"}
-            # FXIME: check logic for payment id bank
-            appointment.appointment_status = "approved"
-            appointment.name = name
-            appointment.patient = patient_model
-            appointment.doctor = work_schedule_model.doctor
-            appointment.work_schedule_id = work_schedule_id
-            appointment.doctor_id = doctor_id
-            appointment.patient_id = patient_id
-            appointment.examination_type = work_schedule_model.examination_type
-            appointment.pre_examination_notes = (
-                pre_examination_notes if pre_examination_notes else ""
-            )
-            appointment.total_amount = fee_examprice
-            work_schedule_model.ordered = True
-            self.session.add(appointment)
-            patient_id = patient_id
-            query_update_medical_record_by_patient = (
-                update(MedicalRecordModel)
-                .where(MedicalRecordModel.patient_id == patient_id)
-                .values({"doctor_read_id": doctor_id})
+        )
+        appointment_exist = appointment_exist.scalar_one_or_none()
+        if appointment_exist:
+            raise BadRequest(
+                error_code=ErrorCode.YOU_HAVE_NOT_COMPLETE_OTHER_APPOINTMENT.name,
+                errors={
+                    "message": ErrorCode.msg_you_have_not_complete_other_appointment.value
+                },
             )
 
-            query_update_patient = (
-                update(PatientModel)
-                .where(PatientModel.id == patient_id)
-                .values({"doctor_manage_id": doctor_id})
+        # check work schedule is ordered
+        patient_model = await self._get_patient_model_by_id(patient_id)
+        doctor_model = await self._get_doctor_model_by_id(doctor_id)
+        work_schedule_model = self._get_work_schedule_model_by_id(
+            work_schedule_id, doctor_model
+        )
+        if work_schedule_model.ordered:
+            raise BadRequest(
+                error_code=ErrorCode.ALLREADY_ORDERED.name,
+                errors={"message": ErrorCode.msg_appointment_already_order.value},
             )
-            _ = await self.session.execute(query_update_medical_record_by_patient)
-            _ = await self.session.execute(query_update_patient)
-            await self.session.commit()
-            await redis_working.set(work_schedule_model.as_dict, work_schedule_id, 300)
-            return {"message": "Create appointment successfully"}
-        except BadRequest as e:
-            log.error(e)
-            raise e
-        except Exception as e:
-            log.error(e)
-            raise e
+        fee_examprice = self._get_fee_examination(doctor_model, work_schedule_model)
+        # validate appointment
+        appointment = AppointmentModel()
+        # logic save redos if online and payment id bank
+        # if work_schedule_model.examination_type.lower() == "offline":
+        #     appointment.appointment_status = "approved"
+        # else:
+        #     # FIXME:check logic for online appointment and offline if choose payment id bank
+        #     appointment.appointment_status = "pending"
+        #     await redis_working.set({"doctor_id": doctor_id, "patient_id": patient_id, "work_schedule_id": work_schedule_id},
+        #                             work_schedule_id, 300)
+        #     return {"message": "Create appointment successfully"}
+        # FXIME: check logic for payment id bank
+        appointment.appointment_status = "approved"
+        appointment.name = name
+        appointment.patient = patient_model
+        appointment.doctor = work_schedule_model.doctor
+        appointment.work_schedule_id = work_schedule_id
+        appointment.doctor_id = doctor_id
+        appointment.patient_id = patient_id
+        appointment.examination_type = work_schedule_model.examination_type
+        appointment.pre_examination_notes = (
+            pre_examination_notes if pre_examination_notes else ""
+        )
+        appointment.total_amount = fee_examprice
+        work_schedule_model.ordered = True
+        self.session.add(appointment)
+        patient_id = patient_id
+        query_update_medical_record_by_patient = (
+            update(MedicalRecordModel)
+            .where(MedicalRecordModel.patient_id == patient_id)
+            .values({"doctor_read_id": doctor_id})
+        )
+        # FIXME: update doctor_manage_id in patient
+        query_update_patient = (
+            update(PatientModel)
+            .where(PatientModel.id == patient_id)
+            .values({"doctor_manage_id": doctor_id})
+        )
+        _ = await self.session.execute(query_update_medical_record_by_patient)
+        _ = await self.session.execute(query_update_patient)
+        await self.session.commit()
+        await redis_working.set(work_schedule_model.as_dict, work_schedule_id, 300)
+        return {"message":ErrorCode.msg_create_appointment_successfully.value}
 
     async def _get_doctor_model_by_id(self, doctor_id: int):
         try:
@@ -352,6 +346,45 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             "page_size": page_size,
             "total_pages": total_pages,
         }
+
+    @catch_error_repository(message=None)
+    async def delete_appointment(self, appointment_id: int, patient_id: int):
+        statment_appointment =select(AppointmentModel).where(
+            AppointmentModel.patient_id == patient_id,
+            AppointmentModel.id == appointment_id,
+        ).options(
+            joinedload(AppointmentModel.work_schedule)
+        )
+        result_appointment = await self.session.execute(statment_appointment)
+        appointment = result_appointment.scalar_one_or_none()
+        if appointment is None:
+            raise BadRequest(
+                error_code=ErrorCode.BAD_REQUEST.name,
+                errors={"message": ErrorCode.msg_not_found_appointment.value},
+            )
+        if appointment.appointment_status == AppointmentModelStatus.COMPLETED.value:
+            raise BadRequest(
+                error_code=ErrorCode.BAD_REQUEST.name,
+                errors={
+                    "message": ErrorCode.msg_not_caceled_appointment_alrealdy_finish.value
+                },
+            )
+        working_date = appointment.work_schedule.work_date
+        working_time = appointment.work_schedule.start_time
+        date_time_working = datetime.combine(working_date, working_time)
+        current_time = datetime.now()
+        time_diff = date_time_working - current_time
+        if time_diff <= timedelta(hours=48):
+            raise BadRequest(
+                error_code=ErrorCode.BAD_REQUEST.name,
+                errors={
+                    "message": ErrorCode.msg_not_caceled_appointment_less_than_48_hours.value
+                },
+            )
+        appointment.work_schedule.ordered = False
+        await self.session.delete(appointment)
+        await self.session.commit()
+        return {"message": ErrorCode.msg_delete_appointment_successfully.value}
 
     @catch_error_repository(message=None)
     async def statistical_appointment(self, year: int):
