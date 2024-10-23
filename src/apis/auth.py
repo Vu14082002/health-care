@@ -82,7 +82,6 @@ class AdminNotifyRegisterMail(HTTPEndpoint):
                 raise ex
             logging.error(f"Error: {ex}")
             raise InternalServer(
-                msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
                 errors={"message": ErrorCode.msg_server_error.value},
             ) from ex
@@ -91,7 +90,6 @@ class AdminNotifyRegisterMail(HTTPEndpoint):
 class PatientRegisterApi(HTTPEndpoint):
     async def post(self, form_data: RequestRegisterPatientSchema):
         """
-        _summary_
         this api is used to register patient
         """
         try:
@@ -110,7 +108,6 @@ class PatientRegisterApi(HTTPEndpoint):
                 raise ex
             logging.error(f"Error: {ex}")
             raise InternalServer(
-                msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
                 errors={"message": ErrorCode.msg_server_error.value},
             ) from ex

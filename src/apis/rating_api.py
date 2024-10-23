@@ -11,6 +11,9 @@ from src.schema.rating_schema import RequestCreateRatingSchema
 class RatingApi(HTTPEndpoint):
 
     async def post(self, form_data: RequestCreateRatingSchema, auth: JsonWebToken):
+        '''
+        this api is used to patient create rating for doctor
+        '''
         try:
             user_role = auth.get("role")
             if user_role != Role.PATIENT.name:
@@ -19,11 +22,6 @@ class RatingApi(HTTPEndpoint):
                     errors={"message": ErrorCode.msg_only_support_patient.value},
                 )
             user_id = auth.get("id")
-            if not user_id:
-                raise BadRequest(
-                    error_code=ErrorCode.BAD_REQUEST.name,
-                    errors={"message": "access token invalid"},
-                )
             patient_helper = await Factory().get_patient_helper()
             result = await patient_helper.create_rating_helper(user_id, form_data)
             return result
@@ -35,3 +33,11 @@ class RatingApi(HTTPEndpoint):
                 error_code=ErrorCode.SERVER_ERROR.name,
                 errors={"message": ErrorCode.msg_server_error.value},
             ) from e
+
+    async def delete(self, form_data: RequestCreateRatingSchema, auth: JsonWebToken):
+
+        '''
+        this api is used to patient delete rating for doctor
+
+        '''
+        return {"message": "this api is not implemented yet"}

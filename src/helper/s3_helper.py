@@ -51,7 +51,7 @@ class S3Service(object):
             )
         except ClientError as e:
             logging.error(f"Error uploading file to s3: {e}")
-            return None
+            raise e
 
         link = f"{config.S3_ENDPOINT}/{bucket_name}/{key}"
         return link

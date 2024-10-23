@@ -308,7 +308,7 @@ routes = [
     RouteSwagger(
         "/rating",
         RatingApi,
-        methods=["POST"],
-        tags=["PATIENT", "DOCTOR", "ADMIN"],
+        methods=["POST","DELETE"],
+        tags=["PATIENT"],
     ),
 ]
