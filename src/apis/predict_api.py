@@ -10,9 +10,14 @@ from src.enum import ErrorCode, Role
 from src.helper.s3_helper import S3Service
 from src.schema.predict_schema import PredictSchema
 
-new_model2_load = tf.keras.models.load_model(
+try:
+    new_model2_load = tf.keras.models.load_model(
     "src/ai/my_model_vgg16_1.h5", custom_objects=None, compile=True, safe_mode=True
-)
+    )
+
+except Exception as e:
+    new_model2_load= None
+    print(e)
 # Class names
 class_names = [
     "Acne and Rosacea Photos",
