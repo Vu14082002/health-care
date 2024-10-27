@@ -138,7 +138,7 @@ class UserRepository(PostgresRepository[UserModel]):
         if value_update:
             for key, value in value_update.items():
                 setattr(model, key, value)
-            # await self.session.commit()
+            await self.session.commit()
         return model.as_dict
 
     async def _is_phone_exist(
