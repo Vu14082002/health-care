@@ -1,28 +1,35 @@
 import logging as log
 from collections import defaultdict
 from datetime import date, datetime, timedelta
+from typing import Final
 
+import requests
 from sqlalchemy import (
     and_,
     extract,
     func,
+    insert,
     or_,
     select,
     update,
 )
 from sqlalchemy.orm import joinedload
 
+from src.config import config
 from src.core.database.postgresql import PostgresRepository
 from src.core.decorator.exception_decorator import catch_error_repository
-from src.core.exception import BadRequest
+from src.core.exception import BadRequest, InternalServer
 from src.enum import AppointmentModelStatus, ErrorCode
+from src.helper.payos_helper import PaymentHelper
 from src.models.appointment_model import AppointmentModel
 from src.models.doctor_model import DoctorExaminationPriceModel, DoctorModel
 from src.models.medical_records_model import MedicalRecordModel
 from src.models.patient_model import PatientModel
+from src.models.payment_model import PaymentModel
 from src.models.work_schedule_model import WorkScheduleModel
 from src.repositories.global_helper_repository import redis_working
 
+payment_helper=PaymentHelper()
 
 class AppointmentRepository(PostgresRepository[AppointmentModel]):
     # start::create_appointment[]
@@ -34,6 +41,8 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         doctor_id: int,
         work_schedule_id: int,
         pre_examination_notes: str | None = None,
+        is_payment: bool = False,
+        call_back_url: str | None = None,
     ):
         # first check exist appointment with doctor is approved
         appointment_exist = await self.session.execute(
@@ -69,16 +78,14 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         # validate appointment
         appointment = AppointmentModel()
         # logic save redos if online and payment id bank
-        # if work_schedule_model.examination_type.lower() == "offline":
-        #     appointment.appointment_status = "approved"
-        # else:
-        #     # FIXME:check logic for online appointment and offline if choose payment id bank
-        #     appointment.appointment_status = "pending"
-        #     await redis_working.set({"doctor_id": doctor_id, "patient_id": patient_id, "work_schedule_id": work_schedule_id},
-        #                             work_schedule_id, 300)
-        #     return {"message": "Create appointment successfully"}
+        if work_schedule_model.examination_type.lower() == "online" and not is_payment:
+            raise BadRequest(
+                error_code=ErrorCode.PAYMENT_REQUIRED.name,
+                errors={"message": ErrorCode.msg_payment_required.value},
+            )
+
         # FXIME: check logic for payment id bank
-        appointment.appointment_status = "approved"
+        appointment.appointment_status = AppointmentModelStatus.APPROVED.value
         appointment.name = name
         appointment.patient = patient_model
         appointment.doctor = work_schedule_model.doctor
@@ -90,25 +97,135 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             pre_examination_notes if pre_examination_notes else ""
         )
         appointment.total_amount = fee_examprice
+        # 0: update work_schedule_model
         work_schedule_model.ordered = True
+        # 1 save appointment
         self.session.add(appointment)
         patient_id = patient_id
+        # 2:  update medical record by patient data doctor_read_id
         query_update_medical_record_by_patient = (
             update(MedicalRecordModel)
             .where(MedicalRecordModel.patient_id == patient_id)
             .values({"doctor_read_id": doctor_id})
-        )
+        ).returning(MedicalRecordModel)
         # FIXME: update doctor_manage_id in patient
+        # 3: update doctor_manage_id in patient
         query_update_patient = (
             update(PatientModel)
             .where(PatientModel.id == patient_id)
             .values({"doctor_manage_id": doctor_id})
+        ).returning(PatientModel)
+        result_medical_record_by_patient = await self.session.execute(
+            query_update_medical_record_by_patient
         )
-        _ = await self.session.execute(query_update_medical_record_by_patient)
-        _ = await self.session.execute(query_update_patient)
+        result_patient_model = await self.session.execute(query_update_patient)
+        data_patient = result_patient_model.scalar_one_or_none()
+        data_medical_record_by_patient = result_medical_record_by_patient.scalar_one_or_none()
+        if not data_patient:
+            log.info("Update doctor_manage_id in patient error")
+            raise InternalServer(
+                error_code=ErrorCode.BAD_REQUEST.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            )
+
+        if is_payment:
+            data = await self._process_payment(
+                appoint_model=appointment,
+                work_schedule_model=work_schedule_model,
+                data_patient=data_patient,
+                medical_record_by_patient=data_medical_record_by_patient,
+                call_back_url=call_back_url,
+            )
+            return data
         await self.session.commit()
-        await redis_working.set(work_schedule_model.as_dict, work_schedule_id, 300)
         return {"message":ErrorCode.msg_create_appointment_successfully.value}
+
+    @catch_error_repository(message=None)
+    async def create_appointment_with_payment(self, payment_id: str,status_code:str):
+        obj_payment=payment_helper.get_payment_info(payment_id)
+
+        if not obj_payment:
+            raise BadRequest(
+                error_code=ErrorCode.BAD_REQUEST.name,
+                errors={"message": ErrorCode.msg_payment_not_found.value},
+            )
+        transactions = obj_payment.get("transactions", [])
+        transaction = transactions[0].get("description")
+        work_schedule_id = transaction.split("ma ")[1]
+
+        value_redis = await redis_working.get(work_schedule_id)
+        if not value_redis:
+            log.error("Value redis not found")
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            )
+
+        # assign value fot instance
+        appointment_data = value_redis.get("appointment")
+        del appointment_data["id"]
+
+        patient_id: Final[int] = value_redis.get("patient").get("id")
+        work_schedule_id:Final[str]= value_redis.get("work_schedule").get("id")
+        insert_appointment= insert(AppointmentModel).values(**appointment_data).returning(AppointmentModel.id)
+        update_work_schedule = (
+            update(WorkScheduleModel)
+            .values({"ordered": True})
+            .where(WorkScheduleModel.id == int(work_schedule_id))
+        )
+        update_patient = (
+            update(PatientModel)
+            .values(
+                {"doctor_manage_id": value_redis.get("patient").get("doctor_manage_id")}
+            )
+            .where(PatientModel.id == patient_id)
+        )
+        update_medical_record_by_patient=None
+        if value_redis.get("medical_record_by_patient"):
+            update_medical_record_by_patient = (
+                update(MedicalRecordModel).values(
+                    {"doctor_read_id": value_redis.get("medical_record_by_patient").get("doctor_read_id")}
+                ).where(MedicalRecordModel.patient_id == patient_id)
+            )
+        result_appointment =await self.session.execute(insert_appointment)
+        appointment_id = result_appointment.scalar_one_or_none()
+        if not appointment_id:
+            log.error("Insert appointment error")
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            )
+        _= await self.session.execute(update_work_schedule)
+        _= await self.session.execute(update_patient)
+        _= await self.session.execute(update_medical_record_by_patient) if update_medical_record_by_patient else None
+        # add instance to session
+        payment_model = PaymentModel()
+        payment_model.appointment_id = appointment_id
+        payment_model.amount = obj_payment.get("amountPaid")
+        payment_model.payment_time = datetime.fromisoformat(
+            obj_payment.get("createdAt")
+        ).replace(tzinfo=None)
+        self.session.add(payment_model)
+        await redis_working.delete(work_schedule_id)
+        url_chat_service = f"{config.BASE_URL_CHAT_SERVICE}/api/payment"
+        json_data = {
+            "userId": patient_id,
+            "isSuccess": True if status_code == "00" else False,
+        }
+        data = requests.post(url_chat_service, json=json_data)
+        if data.status_code != 200:
+            log.error("Service chat current not working")
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            )
+        if status_code != "00":
+            raise BadRequest(
+                error_code=ErrorCode.BAD_REQUEST.name,
+                errors={"message": ErrorCode.msg_payment_fail.value},
+            )
+        await self.session.commit()
+        return {"message": ErrorCode.msg_create_appointment_successfully.value}
 
     async def _get_doctor_model_by_id(self, doctor_id: int):
         try:
@@ -135,6 +252,54 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         except Exception as e:
             log.error(e)
             raise e
+
+    async def _process_payment(
+        self,
+        appoint_model: AppointmentModel,
+        work_schedule_model: WorkScheduleModel,
+        data_patient:PatientModel,
+        medical_record_by_patient:MedicalRecordModel|None,
+        call_back_url,
+    ):
+        try:
+            time_session = 300
+            work_schedule_id= work_schedule_model.id
+            medical_examination_fee = work_schedule_model.medical_examination_fee
+            # assign value to for instance
+            payos_helper= PaymentHelper()
+            data = payos_helper.create_payment(
+                amount=int(medical_examination_fee),
+                description=f"Thanh toan don hang, ma: {work_schedule_id}",
+                returnUrl=call_back_url,
+                time_session=time_session,
+            )
+            # save redis
+            json_data = {
+                "appointment": appoint_model.as_dict,
+                "work_schedule":{
+                    "id":work_schedule_model.id,
+                    "ordered":work_schedule_model.ordered,
+                },
+                "patient":{
+                    "id":data_patient.id,
+                    "doctor_manage_id":data_patient.doctor_manage_id
+                },
+            }
+            if  medical_record_by_patient:
+                json_data["medical_record_by_patient"] = {
+                    "doctor_read_id": medical_record_by_patient.doctor_read_id
+                }
+
+            await redis_working.set(json_data, str(work_schedule_id), time_session)
+            if not data:
+                raise BadRequest(
+                    error_code=ErrorCode.BAD_REQUEST.name,
+                    errors={"message": ErrorCode.msg_payment_error.value},
+                )
+            return data
+        except Exception as e:
+            log.error(e)
+            raise e from e
 
     async def _get_patient_model_by_id(self, patient_id: int):
         try:

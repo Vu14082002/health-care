@@ -1,5 +1,8 @@
 import logging as log
 
+from starlette.datastructures import URL, QueryParams
+from starlette.requests import Request
+
 from src.core import HTTPEndpoint
 from src.core.exception import BadRequest, BaseException, Forbidden, InternalServer
 from src.core.security.authentication import JsonWebToken
@@ -12,6 +15,26 @@ from src.schema.appointment_schema import (
     RequestRegisterAppointment,
 )
 
+
+class PaymentApi(HTTPEndpoint):
+    async def get(self, request: Request):
+        '''
+        this api is used to get all appointments, only admin, doctor and patient can get all appointments
+        '''
+        data: QueryParams =request.query_params
+        payment_id= data.get("id")
+        if not payment_id:
+            raise BadRequest(
+                error_code=ErrorCode.BAD_REQUEST.name,
+                errors={"message":"payment_id is required"}
+            )
+        status_code= data.get("code")
+        appointment_helper = await Factory().get_appointment_helper()
+
+        data = await appointment_helper.create_appointment_with_payment(
+            payment_id, status_code=status_code
+        )
+        return data
 
 class AppointmentApiGET(HTTPEndpoint):
     async def get(
@@ -65,12 +88,13 @@ class AppointmentApiGET(HTTPEndpoint):
 
 
 class AppointmentApi(HTTPEndpoint):
-    async def post(self, form_data: RequestRegisterAppointment, auth: JsonWebToken):
+    async def post(self, request:Request,form_data: RequestRegisterAppointment, auth: JsonWebToken):
         '''
         this api is used to create appointment, only admin and patient can create appointment
         '''
         try:
             user_role = auth.get("role", "")
+
             if user_role not in [Role.ADMIN.value, Role.PATIENT.value]:
                 raise Forbidden(
                     error_code=ErrorCode.UNAUTHORIZED.name,
@@ -93,12 +117,16 @@ class AppointmentApi(HTTPEndpoint):
             appointment_helper: AppointmentHelper = (
                 await Factory().get_appointment_helper()
             )
+            return_url: URL = request.url
+            call_back_url: str = f"{return_url.scheme}://{return_url.netloc}/payment-appointment"
             response_data = await appointment_helper.create_appointment(
-                patient_id,
-                form_data.name,
-                form_data.doctor_id,
-                form_data.work_schedule_id,
-                form_data.pre_examination_notes,
+                patient_id=patient_id,
+                name=form_data.name,
+                doctor_id=form_data.doctor_id,
+                work_schedule_id=form_data.work_schedule_id,
+                pre_examination_notes=form_data.pre_examination_notes,
+                is_payment=form_data.is_payment,
+                call_back_url=call_back_url,
             )
             return response_data
         except Exception as e:

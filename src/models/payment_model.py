@@ -1,4 +1,5 @@
 import enum
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
@@ -33,10 +34,10 @@ class PaymentModel(Model):
 
     amount: Mapped[float] = mapped_column(Float, nullable=False)
 
-    payment_time: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
+    payment_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     payment_method: Mapped[str] = mapped_column(
-        String, nullable=False, default=PaymentMethod.CASH.value
+        String, nullable=False, default=PaymentMethod.BANK_TRANSFER.value
     )
 
     appointment: Mapped["AppointmentModel"] = relationship(

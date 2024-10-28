@@ -1,5 +1,7 @@
+
 from typing import Any, Dict, List, Optional, Union
 
+from payos import PayOS
 from pydantic import Field
 from pydantic_settings import BaseSettings
 from starlette.websockets import WebSocket
@@ -49,9 +51,19 @@ class Config(BaseSettings):
     SMTP_HOST: str = ""
     SMTP_PORT: int = ""
     LINK_VERIFY_EMAIL: str = "localhost:8000/v1/admin/auth/verify-email"
-
+    PAYOS_CLIENT_ID:str = ""
+    PAYOS_API_KEY:str = ""
+    PAYOS_CHECK_SUM:str = ""
+    BASE_URL_CHAT_SERVICE: str = ""
 
 config = Config()
+
+
+payOsIns = PayOS(
+    client_id=config.PAYOS_CLIENT_ID,
+    api_key=config.PAYOS_API_KEY,
+    checksum_key=config.PAYOS_CHECK_SUM,
+)
 
 
 class ConnectionManager:

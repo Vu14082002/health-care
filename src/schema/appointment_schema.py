@@ -9,6 +9,7 @@ class RequestRegisterAppointment(BaseModel):
     name: str = Field(..., description="name of appointment", examples=["Kham Thuong"])
     doctor_id: int
     work_schedule_id: int
+    is_payment:bool = Field(False,description="is payment for appointment, default is False")
     pre_examination_notes: str | None = None
 
     class Config:

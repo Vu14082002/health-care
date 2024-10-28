@@ -14,10 +14,24 @@ class AppointmentHelper:
         doctor_id: int,
         work_schedule_id: int,
         pre_examination_notes: str | None = "",
+        is_payment: bool = False,
+        call_back_url: str | None = None,
     ):
         return await self.appointment_repository.create_appointment(
-            patient_id, name, doctor_id, work_schedule_id, pre_examination_notes
+            patient_id,
+            name,
+            doctor_id,
+            work_schedule_id,
+            pre_examination_notes,
+            is_payment=is_payment,
+            call_back_url=call_back_url,
         )
+    @catch_error_helper(message=None)
+    async def create_appointment_with_payment(self, payment_id: str, status_code:str):
+        _result = await self.appointment_repository.create_appointment_with_payment(
+            payment_id, status_code=status_code
+        )
+        return _result
 
     @catch_error_helper(message=None)
     async def get_all_appointments(self, **kwargs):
@@ -27,8 +41,6 @@ class AppointmentHelper:
     @catch_error_helper(message=None)
     async def statistical_appointment(self,year: int):
         return await self.appointment_repository.statistical_appointment(year=year)
-
-
 
     @catch_error_helper(message=None)
     async def delete_appointment(self, appointment_id: int, patient_id: int):

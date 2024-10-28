@@ -38,6 +38,7 @@ class ErrorCode(Enum):
     INVALID_FILE_TYPE = "INVALID_FILE_TYPE"
     INVALID_REQUEST = "INVALID_REQUEST"
     VALIDATION_ERROR = "VALIDATION_ERROR"
+    PAYMENT_REQUIRED="PAYMENT_REQUIRED"
     msg_user_not_found = "Tài khoản không tồn tại"
     msg_permission_denied = "Bạn không có quyền truy cập tài nguyên này"
     msg_delete_account_before = "Tài khoản của bạn đã bị xóa trước đó, nếu bạn muốn sử dụng tài khoản này vui lòng liên hệ với quản trị viên"
@@ -98,7 +99,10 @@ class ErrorCode(Enum):
     msg_create_comment_successfully = "Tạo bình luận thành công"
     msg_update_comment_successfully = "Cập nhật bình luận thành công"
     msg_delete_comment_successfully = "Xóa bình luận thành công"
-
+    msg_payment_required="Cuộc hẹn này yêu cầu bạn thanh toán trước khi xác nhận đặt lịch. Vui lòng thực hiện thanh toán để hoàn tất quá trình đặt hẹn."
+    msg_payment_error = "Hệ thống thanh toán hiện tại đang gặp sự cố, vui lòng thử lại sau"
+    msg_payment_not_found="Không tìm thấy thông tin thanh toán"
+    msg_payment_fail = "Thanh toán thất bại, nêu bạn chắc chắn đã thanh toán thành công  xin vui lòng liên hệ với chúng tôi đễ hỗ trợ!!!"
 
 CACHE_REFRESH_TOKEN = 60 * 60 * 5
 CACHE_ACCESS_TOKEN = 60 * 60 * 5

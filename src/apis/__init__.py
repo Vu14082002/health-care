@@ -1,4 +1,4 @@
-from src.apis.appointment import AppointmentApi, AppointmentApiGET
+from src.apis.appointment import AppointmentApi, AppointmentApiGET, PaymentApi
 from src.apis.auth import (
     AdminNotifyRegisterMail,
     AdminRegisterApi,
@@ -217,6 +217,8 @@ routes = [
     # appointment api
     RouteSwagger(
         "/appointment", AppointmentApi, methods=["POST","DELETE"], tags=["PATIENT", "ADMIN"]
+    ),RouteSwagger(
+        "/payment-appointment", PaymentApi, methods=["GET"], tags=["PATIENT", "ADMIN"]
     ),
     RouteSwagger(
         "/appointment",
