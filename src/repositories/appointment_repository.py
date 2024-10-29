@@ -18,7 +18,7 @@ from sqlalchemy.orm import joinedload
 from src.config import config
 from src.core.database.postgresql import PostgresRepository
 from src.core.decorator.exception_decorator import catch_error_repository
-from src.core.exception import BadRequest, InternalServer
+from src.core.exception import BadRequest, BaseException, InternalServer
 from src.enum import AppointmentModelStatus, ErrorCode
 from src.helper.payos_helper import PaymentHelper
 from src.models.appointment_model import AppointmentModel
@@ -101,14 +101,12 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         work_schedule_model.ordered = True
         # 1 save appointment
         self.session.add(appointment)
-        patient_id = patient_id
         # 2:  update medical record by patient data doctor_read_id
         query_update_medical_record_by_patient = (
             update(MedicalRecordModel)
             .where(MedicalRecordModel.patient_id == patient_id)
             .values({"doctor_read_id": doctor_id})
         ).returning(MedicalRecordModel)
-        # FIXME: update doctor_manage_id in patient
         # 3: update doctor_manage_id in patient
         query_update_patient = (
             update(PatientModel)
@@ -308,15 +306,19 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             patient_model = result.scalar_one_or_none()
 
             if patient_model is None:
+                log.error("admin send request with patient not found")
                 raise BadRequest(
                     error_code=ErrorCode.NOT_FOUND.name,
-                    errors={"message": "Patient not found"},
+                    errors={"message": ErrorCode.msg_patient_not_found.value},
                 )
             return patient_model
         except BadRequest as e:
             raise e
         except Exception as e:
-            raise e
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            )from e
 
     def _get_work_schedule_model_by_id(
         self, work_scheduling_id: int, doctor: DoctorModel
@@ -352,7 +354,6 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             is_ot = not (8 <= work_scheduling.start_time.hour <= 17)
             is_online = work_scheduling.examination_type.lower() == "online"
             fee = 0.0
-            # FIXME: LOGIC OT
             if is_online and is_ot:
                 fee = ex.online_price * 2
             elif is_online:
@@ -362,10 +363,13 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             else:
                 fee = ex.offline_price
             return fee
-        except BadRequest as e:
-            raise e
         except Exception as e:
-            raise e
+            if isinstance(e, BaseException):
+                raise e
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from e
 
     # end::create_appointment[]
     @catch_error_repository(message=None)
@@ -381,7 +385,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         page_size: int = kwargs.get("page_size", 10)
         doctor_id: int = kwargs.get("doctor_id", None)
         patient_id: int = kwargs.get("patient_id", None)
-        is_join_WorkScheduleModel = True
+        is_join_work_schedule_model = True
         if appointment_status:
             query = query.filter(
                 self.model_class.appointment_status == appointment_status
@@ -402,9 +406,9 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                 )
             )
         else:
-            is_join_WorkScheduleModel = False
+            is_join_work_schedule_model = False
         if examination_type:
-            if is_join_WorkScheduleModel:
+            if is_join_work_schedule_model:
                 query = query.filter(
                     WorkScheduleModel.examination_type == examination_type
                 )
@@ -437,10 +441,6 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                 for part in name_parts
             ]
             query = query.join(self.model_class.patient).filter(or_(*conditions))
-        # query = query.options(
-        #     joinedload(self.model_class.doctor),
-        #     joinedload(self.model_class.patient)
-        # )
         total_count = await self.session.execute(
             select(func.count()).select_from(query)
         )
@@ -448,12 +448,11 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
 
         result = await self.session.execute(query)
         data = result.scalars().all()
-        # item = [{**item.as_dict, "work_schedule": item.work_schedule.as_dict}
-        #         for item in data]
         items = []
 
         for item in data:
             dict_item = item.as_dict
+            dict_item["is_payment"] = True if item.payment else False
             dict_item["work_schedule"] = item.work_schedule.as_dict
             if doctor_id:
                 dict_item["work_schedule"].update(

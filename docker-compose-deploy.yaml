@@ -45,7 +45,7 @@ services:
         image: sherlockvufullsnack/health_care_bot-api:latest
         restart: always
         ports:
-            - '8080:8080'
+            - '6000:8080'
         networks:
             - app-network
     redis:

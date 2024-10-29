@@ -49,6 +49,9 @@ class ErrorCode(Enum):
     msg_email_have_been_registered = "Email đã được đăng ký"
     msg_error_login = "Phone number or password is incorrect"
     msg_server_error = "Máy chủ bị lỗi, vui lòng thử lại sau"
+    msg_email_or_license_number_have_been_registered = (
+        "Email hoặc số mã số bác sĩ này đã được đăng ký"
+    )
     msg_permission_rating = (
         "Bạn phải có và thực hiện cuộc hẹn với bác sĩ trước khi bình luận"
     )
@@ -63,6 +66,7 @@ class ErrorCode(Enum):
     msg_doctor_not_found_or_verify_status_1 = (
         "Không tìm thấy bác sĩ hoặc đã được xác minh ở trạng thái 1"
     )
+    msg_doctor_not_verify_to_create_working = "Bác sĩ chưa được xác minh ở bước 2 vì thế không thể thực hiện tạo lịch làm việc"
     msg_doctor_not_found_or_verify_status_2 = (
         "Không tìm thấy bác sĩ hoặc đã được xác minh ở trạng thái 2"
     )
@@ -104,11 +108,18 @@ class ErrorCode(Enum):
     msg_payment_error = "Hệ thống thanh toán hiện tại đang gặp sự cố, vui lòng thử lại sau"
     msg_payment_not_found="Không tìm thấy thông tin thanh toán"
     msg_payment_fail = "Thanh toán thất bại, nêu bạn chắc chắn đã thanh toán thành công  xin vui lòng liên hệ với chúng tôi đễ hỗ trợ!!!"
+    msg_patient_not_found = "Không tìm thấy thông tin bệnh nhân"
+    msg_conflict_working_schedule_with_appointment = "Phát hiện có cuộc hẹn đã được lên lịch vì thế bạn không thể thay đổi thời gian này !!!"
 
 class MsgEnumBase(Enum):
     DES_MEDIA_FILE: Final[str] = "is video of post, and accept one file"
     DES_POST_CONTENT: Final[str] = "content of post"
     DES_POST_EXAMPLE: Final[str] = "How to clean your skin"
+
+    MSG_CREATE_WORK_SCHEDULE_SUCCESSFULLY: Final[str] = "Bạn đã tạo lịch làm việc thành công"
+    CONFLICT_SCHEDULE_EXAMINATION_TYPE: Final[str] = (
+        "Lịch làm việc bị xung đột với loại lịch làm việc khác, bạn vui lòng kiêm tra lại"
+    )
 
 
 CACHE_REFRESH_TOKEN = 60 * 60 * 5

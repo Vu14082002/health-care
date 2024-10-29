@@ -50,7 +50,7 @@ from src.apis.working_time_api import (
 from src.core.route import RouteSwagger
 
 routes = [
-    RouteSwagger("/health_check", HealthCheck, methods=["GET"], tags=["USER"]),
+    RouteSwagger("/health-check", HealthCheck, methods=["GET"], tags=["USER"]),
     # auth
     RouteSwagger("/auth/admin/register", AdminRegisterApi, tags=["ADMIN"]),
     RouteSwagger(
