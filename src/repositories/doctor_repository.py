@@ -26,7 +26,7 @@ from src.core.database.postgresql import PostgresRepository
 from src.core.decorator.exception_decorator import catch_error_repository
 from src.core.exception import BadRequest, InternalServer
 from src.core.security.password import PasswordHandler
-from src.enum import ErrorCode
+from src.enum import ErrorCode, MsgEnumBase
 from src.helper.email_helper import (
     send_mail_register_success_foreign,
     send_mail_register_success_local,
@@ -312,7 +312,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         if doctor_exists or patient_exists or staff_exists:
             raise BadRequest(
                 error_code=ErrorCode.EMAIL_OR_LICENSE_NUMBER_HAVE_BEEN_REGISTERED.name,
-                errors={"email": "Email or license number has already been registered"},
+                errors={"email": ErrorCode.msg_email_or_license_number_have_been_registered.value},
             )
 
     def _create_user_model(self, data: dict[str, Any]) -> UserModel:
@@ -437,13 +437,13 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             if data_check_model is None:
                 raise BadRequest(
                     error_code=ErrorCode.DOCTOR_NOT_FOUND.name,
-                    errors={"message": "doctor not found"},
+                    errors={"message": ErrorCode.msg_doctor_not_found_or_reject.value},
                 )
             if data_check_model.verify_status != 2:
                 raise BadRequest(
                     error_code=ErrorCode.DOCTOR_NOT_FOUND.name,
                     errors={
-                        "message": "doctor is not verify, pls varyfi and try again"
+                        "message": ErrorCode.msg_doctor_not_verify_to_create_working.value
                     },
                 )
             if data_check_model.type_of_disease != "both":
@@ -452,7 +452,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                     raise BadRequest(
                         error_code=ErrorCode.FORBIDDEN.name,
                         errors={
-                            "message": f"You can't create working schedule for this {data.examination_type}"
+                            "message": f"Bạn không thẻ tạo lịch làm việc với lịch : {data.examination_type}"
                         },
                     )
             new_schedules = []
@@ -480,7 +480,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                             raise BadRequest(
                                 error_code=ErrorCode.SCHEDULE_CONFLICT.name,
                                 errors={
-                                    "message": "Conflicts detected with existing appointments",
+                                    "message": ErrorCode.msg_conflict_working_schedule_with_appointment.value,
                                     "conflicts": [
                                         {
                                             "work_date": existing_schedule.work_date.isoformat(),
@@ -522,13 +522,13 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 raise BadRequest(
                     error_code=ErrorCode.SCHEDULE_CONFLICT.name,
                     errors={
-                        "message": "Conflicts detected with different examination types",
+                        "message": MsgEnumBase.CONFLICT_SCHEDULE_EXAMINATION_TYPE.value,
                         "conflicts": conflicts,
                     },
                 )
             self.session.add_all(new_schedules)
             await self.session.commit()
-            return {"message": "Work schedule updated successfully"}
+            return {"message": MsgEnumBase.MSG_CREATE_WORK_SCHEDULE_SUCCESSFULLY.value}
         except BadRequest as e:
             logging.error("Error in add_workingschedule: %s", e)
             await self.session.rollback()
@@ -869,8 +869,8 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             await self.session.rollback()
             raise BadRequest(
                 error_code=ErrorCode.DOCTOR_NOT_FOUND.name,
-                errors={"message": "Doctor not found, or already rejected"},
+                errors={"message": ErrorCode.msg_doctor_not_found_or_reject.value},
             )
         await self.session.commit()
 
-        return {"message": "Doctor has been rejected"}, task
+        return {"message": MsgEnumBase.MsgEnumBaseREJECT_DOCTOR_SUCCESSFULLY.value}, task

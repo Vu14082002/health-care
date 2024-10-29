@@ -134,6 +134,7 @@ routes = [
     RouteSwagger(
         "/auth/logout", LogoutApi, methods=["POST"], tags=["ADMIN", "PATIENT", "DOCTOR"]
     ),
+    # FIXME TOP PASS
     # user detail
     RouteSwagger(
         "/user-settings/profile",

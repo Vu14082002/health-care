@@ -353,3 +353,4 @@ class RequestVerifyFinalDoctorSchema(BaseModel):
     def online_price_validator(cls, v):
         if v <= 0:
             raise ValueError("Invalid online price, must be greater than 0")
+        return v

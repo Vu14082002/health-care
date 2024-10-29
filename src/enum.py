@@ -71,7 +71,7 @@ class ErrorCode(Enum):
         "Không tìm thấy bác sĩ hoặc đã được xác minh ở trạng thái 2"
     )
     msg_doctor_not_found_or_reject = (
-        "Không tìm thấy bác sĩ hoặc đã được xác minh ở trạng thái -1"
+        "Không tìm thấy bác sĩ hoặc bác sĩ đã bị từ chối tham gia vào hệ thống"
     )
     msg_content_message_required = (
         "Phải cung cấp ít nhất một trong các, content, media, or image"
@@ -119,6 +119,9 @@ class MsgEnumBase(Enum):
     MSG_CREATE_WORK_SCHEDULE_SUCCESSFULLY: Final[str] = "Bạn đã tạo lịch làm việc thành công"
     CONFLICT_SCHEDULE_EXAMINATION_TYPE: Final[str] = (
         "Lịch làm việc bị xung đột với loại lịch làm việc khác, bạn vui lòng kiêm tra lại"
+    )
+    REJECT_DOCTOR_SUCCESSFULLY: Final[str] = (
+        "Bạn đã từ chối bác sĩ này tham gia vào hệ thống khám bệnh  thành công"
     )
 
 
