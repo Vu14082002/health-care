@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Final
 
 from pydantic import BaseModel
 
@@ -103,6 +104,12 @@ class ErrorCode(Enum):
     msg_payment_error = "Hệ thống thanh toán hiện tại đang gặp sự cố, vui lòng thử lại sau"
     msg_payment_not_found="Không tìm thấy thông tin thanh toán"
     msg_payment_fail = "Thanh toán thất bại, nêu bạn chắc chắn đã thanh toán thành công  xin vui lòng liên hệ với chúng tôi đễ hỗ trợ!!!"
+
+class MsgEnumBase(Enum):
+    DES_MEDIA_FILE: Final[str] = "is video of post, and accept one file"
+    DES_POST_CONTENT: Final[str] = "content of post"
+    DES_POST_EXAMPLE: Final[str] = "How to clean your skin"
+
 
 CACHE_REFRESH_TOKEN = 60 * 60 * 5
 CACHE_ACCESS_TOKEN = 60 * 60 * 5

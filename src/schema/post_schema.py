@@ -2,6 +2,8 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from src.enum import MsgEnumBase
+
 
 class RequestGetPostByIdSchema(BaseModel):
     post_id: int = Field(..., title="Post id will get", examples=[1])
@@ -45,14 +47,16 @@ class RequestCreatePostSchema(BaseModel):
     )
     media: Optional[Any] = Field(
         default=None,
-        description="is video of post, and accept one file",
+        description=MsgEnumBase.DES_MEDIA_FILE.value,
     )
     images: Optional[Any] = Field(
         default=None,
-        description="is img of post and accept multiple files",
+        description=MsgEnumBase.DES_MEDIA_FILE.value,
     )
     content: Optional[str] = Field(
-        None, description="content of post", examples=["Hi! ......"]
+        None,
+        description=MsgEnumBase.DES_POST_CONTENT.value,
+        examples=[MsgEnumBase.DES_POST_EXAMPLE.value],
     )
 
     class Config:
@@ -75,7 +79,9 @@ class RequestUpdatePostSchema(BaseModel):
         description="is img of post and accept multiple files or url img",
     )
     content: Optional[str] = Field(
-        None, description="content of post", examples=["Hi! ......"]
+        None,
+        description=MsgEnumBase.DES_POST_CONTENT.value,
+        examples=[MsgEnumBase.DES_POST_EXAMPLE.value],
     )
 
     class Config:
@@ -104,7 +110,9 @@ class RequestCreateComment(BaseModel):
         description="is img of post and accept multiple files",
     )
     content: Optional[str] = Field(
-        None, description="content of post", examples=["Hi! ......"]
+        None,
+        description=MsgEnumBase.DES_POST_CONTENT.value,
+        examples=[MsgEnumBase.DES_POST_EXAMPLE.value],
     )
 
     class Config:
@@ -124,7 +132,9 @@ class RequestUpdateComment(BaseModel):
         description="is img of post and accept multiple files",
     )
     content: Optional[str] = Field(
-        None, description="content of post", examples=["Hi! ......"]
+        None,
+        description=MsgEnumBase.DES_POST_CONTENT.value,
+        examples=[MsgEnumBase.DES_POST_EXAMPLE.value],
     )
 
     class Config:
