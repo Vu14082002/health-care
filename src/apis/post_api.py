@@ -376,11 +376,13 @@ class CommentApi(HTTPEndpoint):
                 errors={"message": ErrorCode.msg_server_error.value},
             )
 
-    async def delete(self, form_data: RequestDeleteCommentSchema, auth: JsonWebToken):
+    async def delete(
+        self, query_params: RequestDeleteCommentSchema, auth: JsonWebToken
+    ):
         try:
 
             is_admin = True if auth.get("role") == Role.ADMIN.value else False
-            comment_id = form_data.comment_id
+            comment_id = query_params.comment_id
             auth_comment_id = auth.get("id") if not is_admin else None
             post_helper = await Factory().get_post_helper()
             result = await post_helper.delete_comment_helper(
