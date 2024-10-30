@@ -72,6 +72,13 @@ class UserHelper:
         if role_name == Role.ADMIN.value:
             payload = {**user.staff.as_dict, "role": role_name}
         elif role_name == Role.DOCTOR.value:
+            if "verify_status" in user.doctor.as_dict:
+                verify_status = user.doctor.as_dict["verify_status"]
+                if verify_status not in [1,2]:
+                    raise Unauthorized(
+                        error_code=ErrorCode.UNAUTHORIZED.name,
+                        errors={"message": ErrorCode.msg_not_verify.value},
+                    )
             payload = {**user.doctor.as_dict, "role": role_name}
         elif role_name == Role.PATIENT.value:
             payload = {**user.patient.as_dict, "role": role_name}

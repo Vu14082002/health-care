@@ -111,6 +111,8 @@ class ErrorCode(Enum):
     msg_patient_not_found = "Không tìm thấy thông tin bệnh nhân"
     msg_conflict_working_schedule_with_appointment = "Phát hiện có cuộc hẹn đã được lên lịch vì thế bạn không thể thay đổi thời gian này !!!"
 
+    msg_not_verify = "Bác sĩ chưa được xác minh, vui lòng chờ xác minh từ quản trị viên"
+
 class MsgEnumBase(Enum):
     DES_MEDIA_FILE: Final[str] = "is video of post, and accept one file"
     DES_POST_CONTENT: Final[str] = "content of post"
