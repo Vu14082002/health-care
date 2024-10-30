@@ -38,6 +38,10 @@ services:
             - SMTP_HOST=${SMTP_HOST}
             - SMTP_PORT=${SMTP_PORT}
             - LINK_VERIFY_EMAIL=${LINK_VERIFY_EMAIL}
+            - PAYOS_CLIENT_ID=${PAYOS_CLIENT_ID}
+            - PAYOS_API_KEY=${PAYOS_API_KEY}
+            - PAYOS_CHECK_SUM=${PAYOS_CHECK_SUM}
+            - BASE_URL_CHAT_SERVICE=${BASE_URL_CHAT_SERVICE}
         volumes:
             - .:/app
     bot_chat:
