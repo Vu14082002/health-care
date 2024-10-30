@@ -1,4 +1,6 @@
 import logging as log
+import re
+import time
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from typing import Final
@@ -140,16 +142,26 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
 
     @catch_error_repository(message=None)
     async def create_appointment_with_payment(self, payment_id: str,status_code:str):
+        MAX_RETRY:Final[int]=3
         obj_payment=payment_helper.get_payment_info(payment_id)
-
+        while obj_payment is None and MAX_RETRY > 0:
+            time.sleep(2)
+            obj_payment=payment_helper.get_payment_info(payment_id)
+            MAX_RETRY-=1
         if not obj_payment:
             raise BadRequest(
                 error_code=ErrorCode.BAD_REQUEST.name,
                 errors={"message": ErrorCode.msg_payment_not_found.value},
             )
         transactions = obj_payment.get("transactions", [])
-        transaction = transactions[0].get("description")
-        work_schedule_id = transaction.split("ma ")[1]
+        description = transactions[0].get("description")
+        match = re.search(r"Ma giao dich (\d+)", description)
+        if not match:
+            raise BadRequest(
+                error_code=ErrorCode.PAYMENT_CONTENT_ERROR.name,
+                errors={"message": ErrorCode.msg_payment_content_error.value},
+            )
+        work_schedule_id = match.group(1)
 
         value_redis = await redis_working.get(work_schedule_id)
         if not value_redis:
@@ -260,14 +272,15 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         call_back_url,
     ):
         try:
-            time_session = 300
+            time_session = 600
+            time_session_redis=700
             work_schedule_id= work_schedule_model.id
             medical_examination_fee = work_schedule_model.medical_examination_fee
             # assign value to for instance
             payos_helper= PaymentHelper()
             data = payos_helper.create_payment(
                 amount=int(medical_examination_fee),
-                description=f"Thanh toan don hang, ma: {work_schedule_id}",
+                description = f"Ma giao dich {work_schedule_id}.",
                 returnUrl=call_back_url,
                 time_session=time_session,
             )
@@ -288,7 +301,9 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                     "doctor_read_id": medical_record_by_patient.doctor_read_id
                 }
 
-            await redis_working.set(json_data, str(work_schedule_id), time_session)
+            await redis_working.set(
+                json_data, str(work_schedule_id), time_session_redis
+            )
             if not data:
                 raise BadRequest(
                     error_code=ErrorCode.BAD_REQUEST.name,
