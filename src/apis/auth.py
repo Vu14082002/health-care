@@ -241,9 +241,8 @@ class DoctorOtherVerifyApiPut(HTTPEndpoint):
         try:
             if auth.get("role", "") != Role.ADMIN.name:
                 raise Forbidden(
-                    msg="Unauthorized access",
                     error_code=ErrorCode.UNAUTHORIZED.name,
-                    errors={"message": "only admin can access"},
+                    errors={"message": ErrorCode.msg_permission_denied.value},
                 )
 
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
