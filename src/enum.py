@@ -40,6 +40,7 @@ class ErrorCode(Enum):
     INVALID_REQUEST = "INVALID_REQUEST"
     VALIDATION_ERROR = "VALIDATION_ERROR"
     PAYMENT_REQUIRED="PAYMENT_REQUIRED"
+    PAYMENT_CONTENT_ERROR="PAYMENT_CONTENT_ERROR"
     msg_user_not_found = "Tài khoản không tồn tại"
     msg_permission_denied = "Bạn không có quyền truy cập tài nguyên này"
     msg_delete_account_before = "Tài khoản của bạn đã bị xóa trước đó, nếu bạn muốn sử dụng tài khoản này vui lòng liên hệ với quản trị viên"
@@ -49,6 +50,7 @@ class ErrorCode(Enum):
     msg_email_have_been_registered = "Email đã được đăng ký"
     msg_error_login = "Phone number or password is incorrect"
     msg_server_error = "Máy chủ bị lỗi, vui lòng thử lại sau"
+    msg_payment_content_error = "Nội dung thanh toán không hợp lệ"
     msg_email_or_license_number_have_been_registered = (
         "Email hoặc số mã số bác sĩ này đã được đăng ký"
     )
