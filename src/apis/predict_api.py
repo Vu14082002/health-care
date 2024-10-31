@@ -14,9 +14,11 @@ try:
     new_model2_load = tf.keras.models.load_model(
     "src/ai/my_model_vgg16_1.h5", custom_objects=None, compile=True, safe_mode=True
     )
+    print("Load model success::::::::::::::::")
 
 except Exception as e:
     new_model2_load= None
+    print("Load model fail::::::::::::::::")
     print(e)
 # Class names
 class_names = [
