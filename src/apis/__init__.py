@@ -283,12 +283,12 @@ routes = [
         tags=["USER", "PATIENT", "DOCTOR", "ADMIN"],
     ),
     # message
-    RouteSwagger(
-        "/conversation",
-        ConversationApi,
-        methods=["GET", "POST"],
-        tags=["PATIENT", "DOCTOR", "ADMIN"],
-    ),
+    # RouteSwagger(
+    #     "/conversation",
+    #     ConversationApi,
+    #     methods=["GET", "POST"],
+    #     tags=["PATIENT", "DOCTOR", "ADMIN"],
+    # ),
     RouteSwagger(
         "/patient/daily-health-check",
         DailyDealthCheckApi,

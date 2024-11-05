@@ -1,7 +1,7 @@
 import logging
 
 from src.core import HTTPEndpoint
-from src.core.exception import BadRequest, BaseException, InternalServer
+from src.core.exception import BaseException, InternalServer
 from src.core.security.authentication import JsonWebToken
 from src.enum import ErrorCode
 from src.factory import Factory

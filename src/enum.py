@@ -114,6 +114,7 @@ class ErrorCode(Enum):
     msg_conflict_working_schedule_with_appointment = "Phát hiện có cuộc hẹn đã được lên lịch vì thế bạn không thể thay đổi thời gian này !!!"
 
     msg_not_verify = "Bác sĩ chưa được xác minh, vui lòng chờ xác minh từ quản trị viên"
+    msg_not_found_appointment_for_conversation = "Không tìm thấy cuộc hẹn hoặc bạn không được phép tạo cuộc trò chuyện trong cuộc hẹn này"
 
 class MsgEnumBase(Enum):
     DES_MEDIA_FILE: Final[str] = "is video of post, and accept one file"

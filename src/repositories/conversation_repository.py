@@ -38,7 +38,7 @@ class ConversationRepoitory(PostgresRepository[ConversationModel]):
             raise BadRequest(
                 error_code=ErrorCode.NOT_FOUND.name,
                 errors={
-                    "message": "Appointment not found or you are not permission to create conversation this appointment"
+                    "message": ErrorCode.msg_not_found_appointment_for_conversation.value
                 },
             )
 
@@ -105,13 +105,44 @@ class ConversationRepoitory(PostgresRepository[ConversationModel]):
             for message in conversation_model.messages:
                 if message.sender_id != user_create and not message.is_read:
                     unread += 1
-                if not latest_message or message.created_at > message.created_at:
+                if not latest_message or message.created_at > latest_message.created_at:
                     latest_message = message
         if latest_message:
             user_sender_query = await self.session.execute(
                 select(PatientModel).where(PatientModel.id == latest_message.sender_id)
             )
             result_user_sender_query = user_sender_query.unique().scalar_one_or_none()
+            if result_user_sender_query:
+                exclue_fields = [
+                    "address",
+                    "doctor_manage_id",
+                    "occupation",
+                    "emergancy_contact_number",
+                    "blood_type",
+                    "allergies",
+                    "chronic_conditions",
+                    "height",
+                    "weight",
+                    "account_number",
+                    "bank_name",
+                    "beneficiary_name",
+                    "branch_name",
+                    "created_at",
+                    "updated_at",
+                    "is_deleted",
+                ]
+                create_at = datetime.datetime.fromtimestamp(
+                    latest_message.created_at, datetime.timezone.utc
+                )
+                latest_message = {
+                    **latest_message.as_dict,
+                    "sender": {
+                        k: v
+                        for k, v in result_user_sender_query.as_dict.items()
+                        if k not in exclue_fields
+                    },
+                    "created_at": create_at.isoformat(),
+                }
             if not result_user_sender_query:
                 user_sender_query = await self.session.execute(
                     select(DoctorModel).where(
