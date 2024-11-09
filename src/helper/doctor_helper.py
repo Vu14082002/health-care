@@ -2,7 +2,6 @@ import logging
 from datetime import date, datetime, time, timedelta
 from typing import Any, Dict, List, Literal
 
-
 from src.core.decorator.exception_decorator import catch_error_helper
 from src.core.exception import BadRequest
 from src.enum import ErrorCode, TypeOfDisease
@@ -266,5 +265,5 @@ class DoctorHelper:
 
 
     @catch_error_helper(message=None)
-    async def get_doctor_conversation_statistics(self,from_date:date|None,to_date:date|None,doctor_id:int|None=None,examination_type:Literal["online","offline",None]=None):
+    async def get_doctor_conversation_statistics(self,from_date:date|None=None,to_date:date|None=None,doctor_id:int|None=None,examination_type:Literal["online","offline",None]=None):
         return await self.doctor_repository.get_doctor_conversation_statistics(from_date=from_date,to_date=to_date,doctor_id=doctor_id,examination_type=examination_type)
