@@ -3,18 +3,10 @@ import re
 import time
 from collections import defaultdict
 from datetime import date, datetime, timedelta
-from typing import Final
+from typing import Final, Optional
 
 import requests
-from sqlalchemy import (
-    and_,
-    extract,
-    func,
-    insert,
-    or_,
-    select,
-    update,
-)
+from sqlalchemy import and_, case, extract, func, insert, or_, select, update
 from sqlalchemy.orm import joinedload
 
 from src.config import config
@@ -23,7 +15,7 @@ from src.core.decorator.exception_decorator import catch_error_repository
 from src.core.exception import BadRequest, BaseException, InternalServer
 from src.enum import AppointmentModelStatus, ErrorCode
 from src.helper.payos_helper import PaymentHelper
-from src.models.appointment_model import AppointmentModel
+from src.models.appointment_model import AppointmentModel, AppointmentModelTypeStatus
 from src.models.doctor_model import DoctorExaminationPriceModel, DoctorModel
 from src.models.medical_records_model import MedicalRecordModel
 from src.models.patient_model import PatientModel
@@ -609,3 +601,123 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             appointment_status_by_year[year_str][month_str][status_enum] = count
 
         return appointment_status_by_year
+
+    @catch_error_repository(message=None)
+    async def statistical_price(self, year: Optional[int]):
+        data_response = {
+            "today_price": {
+                "total_price": 0,
+                "online_price": 0,
+                "offline_price": 0,
+            },
+            "previous_price": {
+                "total_price": 0,
+                "online_price": 0,
+                "offline_price": 0,
+            },
+            "monthly_price": {
+                "total_price": 0,
+                "online_price": 0,
+                "offline_price": 0,
+            },
+            "yearly_price": {
+                "total_price": 0,
+                "online_price": 0,
+                "offline_price": 0,
+            },
+            "monthly_details": {month: {
+                "total_price": 0,
+                "online_price": 0,
+                "offline_price": 0,
+            } for month in range(1, 13)},
+        }
+
+        today = datetime.now()
+        yesterday = today - timedelta(days=1)
+
+        def build_price_query(day=None, month=None, year=None):
+            """Helper function to build query based on given day, month, and year."""
+            filters = [AppointmentModel.appointment_status == AppointmentModelStatus.COMPLETED.value]
+            if year:
+                filters.append(extract("year", WorkScheduleModel.work_date) == year)
+            if month:
+                filters.append(extract("month", WorkScheduleModel.work_date) == month)
+            if day:
+                filters.append(extract("day", WorkScheduleModel.work_date) == day)
+
+            total_price = func.sum(WorkScheduleModel.medical_examination_fee).label("total_price")
+
+            online_price = func.sum(
+                    case(
+                        (
+                            WorkScheduleModel.examination_type == AppointmentModelTypeStatus.ONLINE.value,
+                            WorkScheduleModel.medical_examination_fee,
+                        ),
+                        else_=0,
+                    )
+                ).label("online_price")
+
+            offline_price = func.sum(
+                case(
+                    (
+                        WorkScheduleModel.examination_type
+                        == AppointmentModelTypeStatus.OFFLINE.value,
+                        WorkScheduleModel.medical_examination_fee,
+                    ),
+                    else_=0,
+                )
+            ).label("offline_price")
+
+            return (
+                select(total_price, online_price, offline_price)
+                .join(AppointmentModel)
+                .where(*filters)
+            )
+
+        # Doanh thu hôm nay
+        result_today_price = await self.session.execute(build_price_query(day=today.day, month=today.month, year=today.year))
+        today_price_data = result_today_price.fetchone()
+        if today_price_data:
+            data_response["today_price"]["total_price"] = today_price_data.total_price or 0
+            data_response["today_price"]["online_price"] = today_price_data.online_price or 0
+            data_response["today_price"]["offline_price"] = today_price_data.offline_price or 0
+
+        # Doanh thu hôm trước
+        result_previous_price = await self.session.execute(build_price_query(day=yesterday.day, month=yesterday.month, year=yesterday.year))
+        previous_price_data = result_previous_price.fetchone()
+        if previous_price_data:
+            data_response["previous_price"]["total_price"] = previous_price_data.total_price or 0
+            data_response["previous_price"]["online_price"] = previous_price_data.online_price or 0
+            data_response["previous_price"]["offline_price"] = previous_price_data.offline_price or 0
+
+        # Doanh thu tháng hiện tại
+        result_monthly_price = await self.session.execute(build_price_query(month=today.month, year=today.year))
+        monthly_price_data = result_monthly_price.fetchone()
+        if monthly_price_data:
+            data_response["monthly_price"]["total_price"] = monthly_price_data.total_price or 0
+            data_response["monthly_price"]["online_price"] = monthly_price_data.online_price or 0
+            data_response["monthly_price"]["offline_price"] = monthly_price_data.offline_price or 0
+
+        # Doanh thu từng tháng trong năm
+        for month in range(1, 13):
+            if not year:
+                year = today.year
+            result_month_detail = await self.session.execute(build_price_query(month=month, year=year))
+            month_detail_data = result_month_detail.fetchone()
+            if month_detail_data:
+                data_response["monthly_details"][month]["total_price"] = month_detail_data.total_price or 0
+                data_response["monthly_details"][month]["online_price"] = month_detail_data.online_price or 0
+                data_response["monthly_details"][month]["offline_price"] = month_detail_data.offline_price or 0
+
+        # Tổng doanh thu năm
+        data_response["yearly_price"]["total_price"] = sum(
+            data_response["monthly_details"][month]["total_price"] for month in range(1, 13)
+        )
+        data_response["yearly_price"]["online_price"] = sum(
+            data_response["monthly_details"][month]["online_price"] for month in range(1, 13)
+        )
+        data_response["yearly_price"]["offline_price"] = sum(
+            data_response["monthly_details"][month]["offline_price"] for month in range(1, 13)
+        )
+
+        return data_response

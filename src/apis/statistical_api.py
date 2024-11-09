@@ -7,7 +7,7 @@ from src.enum import ErrorCode, Role
 from src.factory import Factory
 from src.helper.doctor_helper import DoctorHelper
 from src.schema.appointment_schema import RequestStatisticalAppointmentSchema
-from src.schema.statistical_schema import StatisticalConversation
+from src.schema.statistical_schema import StatisticalConversation, StatisticalPrice
 
 
 class StatisticalCountPatientApi(HTTPEndpoint):
@@ -33,7 +33,6 @@ class StatisticalCountPatientApi(HTTPEndpoint):
                 error_code=ErrorCode.SERVER_ERROR.name,
                 errors={"message": ErrorCode.msg_server_error.value},
             ) from e
-
 
 
 class StatisticalAgeDistributionPatientApi(HTTPEndpoint):
@@ -112,7 +111,6 @@ class StatisticalAppointment(HTTPEndpoint):
             ) from e
 
 
-
 class StatisticalConversationDoctorApi(HTTPEndpoint):
     async def get(self,query_params:StatisticalConversation  , auth: JsonWebToken):
         try:
@@ -127,6 +125,31 @@ class StatisticalConversationDoctorApi(HTTPEndpoint):
 
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             statistics = await doctor_helper.get_doctor_conversation_statistics(**query_params.model_dump())
+            return statistics
+        except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
+            log.error(f"Error: {e}")
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from e
+
+
+class StatisticalPriceApi(HTTPEndpoint):
+    async def get(self, query_params:StatisticalPrice,auth:JsonWebToken):
+        try:
+            if auth.get("role") != Role.ADMIN.name:
+                raise Forbidden(
+                    msg="Permission denied",
+                    error_code=ErrorCode.FORBIDDEN.name,
+                    errors={
+                        "message": ErrorCode.msg_permission_denied.value,
+                    },
+                )
+
+            appointment_helper = await Factory().get_appointment_helper()
+            statistics = await appointment_helper.statistical_price(query_params.year)
             return statistics
         except Exception as e:
             if isinstance(e, BaseException):

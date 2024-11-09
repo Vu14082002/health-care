@@ -39,6 +39,7 @@ from src.apis.statistical_api import (
     StatisticalConversationDoctorApi,
     StatisticalCountPatientApi,
     StatisticalDoctorApi,
+    StatisticalPriceApi,
 )
 from src.apis.user import ResetPassword, UserProfile
 from src.apis.working_time_api import (
@@ -87,7 +88,7 @@ routes = [
     RouteSwagger(
         "/admin/post",
         CreatePostApi,
-        methods=["POST", "PUT","DELETE"],
+        methods=["POST", "PUT", "DELETE"],
         tags=["ADMIN"],
     ),
     RouteSwagger(
@@ -105,7 +106,7 @@ routes = [
     RouteSwagger(
         "/post/comment",
         CommentApi,
-        methods=["POST", "PUT","DELETE"],
+        methods=["POST", "PUT", "DELETE"],
         tags=["ADMIN", "PATIENT", "DOCTOR"],
     ),
     # change status verify doctor from 0 to -1
@@ -154,7 +155,7 @@ routes = [
         "/doctor/predict-disease",
         ApiPredictData,
         methods=["POST"],
-        tags=["DOCTOR","ADMIN"],
+        tags=["DOCTOR", "ADMIN"],
     ),
     RouteSwagger(
         "/doctor/working-time",
@@ -218,8 +219,12 @@ routes = [
     ),
     # appointment api
     RouteSwagger(
-        "/appointment", AppointmentApi, methods=["POST","DELETE"], tags=["PATIENT", "ADMIN"]
-    ),RouteSwagger(
+        "/appointment",
+        AppointmentApi,
+        methods=["POST", "DELETE"],
+        tags=["PATIENT", "ADMIN"],
+    ),
+    RouteSwagger(
         "/payment-appointment", PaymentApi, methods=["GET"], tags=["PATIENT", "ADMIN"]
     ),
     RouteSwagger(
@@ -277,6 +282,12 @@ routes = [
         tags=["ADMIN"],
     ),
     RouteSwagger(
+        "/statistical/prices",
+        StatisticalPriceApi,
+        methods=["GET"],
+        tags=["ADMIN"],
+    ),
+    RouteSwagger(
         "/statistical/appointment/group",
         StatisticalAppointment,
         methods=["GET"],
@@ -318,7 +329,7 @@ routes = [
     RouteSwagger(
         "/rating",
         RatingApi,
-        methods=["POST","DELETE"],
+        methods=["POST", "DELETE"],
         tags=["PATIENT"],
     ),
 ]

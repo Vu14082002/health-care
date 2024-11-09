@@ -1,3 +1,5 @@
+from typing import Optional
+
 from src.core.decorator.exception_decorator import catch_error_helper
 from src.repositories.appointment_repository import AppointmentRepository
 
@@ -47,3 +49,6 @@ class AppointmentHelper:
         return await self.appointment_repository.delete_appointment(
             appointment_id, patient_id
         )
+    @catch_error_helper(message=None)
+    async def statistical_price(self, year:Optional[int]):
+        return await self.appointment_repository.statistical_price(year=year)
