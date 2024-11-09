@@ -874,3 +874,73 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         await self.session.commit()
 
         return {"message": MsgEnumBase.MsgEnumBaseREJECT_DOCTOR_SUCCESSFULLY.value}, task
+
+    @catch_error_repository(message=None)
+    async def get_doctor_conversation_statistics(
+        self,
+        from_date: date | None,
+        to_date: date | None,
+        doctor_id: int | None,
+        examination_type: Literal["online", "offline"] | None
+    ):
+        # Khởi tạo truy vấn cơ bản
+        query_work_schedule = select(WorkScheduleModel)
+        if from_date:
+            query_work_schedule = query_work_schedule.where(WorkScheduleModel.work_date >= from_date)
+        if to_date:
+            query_work_schedule = query_work_schedule.where(WorkScheduleModel.work_date <= to_date)
+        if doctor_id:
+            query_work_schedule = query_work_schedule.where(WorkScheduleModel.doctor_id == doctor_id)
+        if examination_type:
+            query_work_schedule = query_work_schedule.where(WorkScheduleModel.examination_type == examination_type)
+
+        result_work_schedule = await self.session.execute(query_work_schedule)
+        work_schedules = result_work_schedule.unique().scalars().all()
+
+        response = {
+            "percentage": 0.0,
+            "total": 0,
+            "ordered": 0,
+            "not_ordered": 0,
+            "doctors": []
+        }
+
+        if not work_schedules:
+            return response
+
+        response["total"] = len(work_schedules)
+        doctor_stats = {}
+
+        for work_schedule in work_schedules:
+            if work_schedule.ordered:
+                response["ordered"] += 1
+            else:
+                response["not_ordered"] += 1
+            doctor_id = work_schedule.doctor_id
+            if doctor_id not in doctor_stats:
+                doctor_model = work_schedule.doctor
+                doctor_stats[doctor_id] = {
+
+                    "doctor_id": doctor_id,
+                    "avatar": doctor_model.avatar,
+                    "first_name": doctor_model.first_name,
+                    "last_name": doctor_model.last_name,
+                    "total": 0,
+                    "ordered": 0,
+                    "not_ordered": 0,
+                    "percentage": 0.0
+                }
+
+            doctor_stats[doctor_id]["total"] += 1
+            if work_schedule.ordered:
+                doctor_stats[doctor_id]["ordered"] += 1
+            else:
+                doctor_stats[doctor_id]["not_ordered"] += 1
+
+        response["percentage"] = (response["ordered"] / response["total"]) * 100
+
+        for doctor in doctor_stats.values():
+            if doctor["total"] > 0:
+                doctor["percentage"] = (doctor["ordered"] / doctor["total"]) * 100
+            response["doctors"].append(doctor)
+        return response

@@ -36,6 +36,7 @@ from src.apis.rating_api import RatingApi
 from src.apis.statistical_api import (
     StatisticalAgeDistributionPatientApi,
     StatisticalAppointment,
+    StatisticalConversationDoctorApi,
     StatisticalCountPatientApi,
     StatisticalDoctorApi,
 )
@@ -256,16 +257,22 @@ routes = [
         methods=["GET"],
         tags=["ADMIN"],
     ),
-    RouteSwagger(
-        "/statistical/patient/count",
-        StatisticalCountPatientApi,
-        methods=["GET"],
-        tags=["ADMIN"],
-    ),
+    # RouteSwagger(
+    #     "/statistical/patient/count",
+    #     StatisticalCountPatientApi,
+    #     methods=["GET"],
+    #     tags=["ADMIN"],
+    # ),
     # ti le benh nhan theo tuoi
     RouteSwagger(
         "/statistical/patient/age-distribution",
         StatisticalAgeDistributionPatientApi,
+        methods=["GET"],
+        tags=["ADMIN"],
+    ),
+    RouteSwagger(
+        "/statistical/doctor/conversation",
+        StatisticalConversationDoctorApi,
         methods=["GET"],
         tags=["ADMIN"],
     ),
