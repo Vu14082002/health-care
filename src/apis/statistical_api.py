@@ -114,7 +114,7 @@ class StatisticalAppointment(HTTPEndpoint):
 class StatisticalConversationDoctorApi(HTTPEndpoint):
     async def get(self,query_params:StatisticalConversation  , auth: JsonWebToken):
         try:
-            if auth.get("role") != Role.ADMIN.name:
+            if auth.get("role") not in [Role.ADMIN.name, Role.DOCTOR.name]:
                 raise Forbidden(
                     msg="Permission denied",
                     error_code=ErrorCode.FORBIDDEN.name,
@@ -122,7 +122,8 @@ class StatisticalConversationDoctorApi(HTTPEndpoint):
                         "message": ErrorCode.msg_permission_denied.value,
                     },
                 )
-
+            if auth.get("role") == Role.DOCTOR.name:
+                query_params.doctor_id = auth.get("id")
             doctor_helper: DoctorHelper = await Factory().get_doctor_helper()
             statistics = await doctor_helper.get_doctor_conversation_statistics(**query_params.model_dump())
             return statistics

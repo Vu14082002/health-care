@@ -85,6 +85,7 @@ routes = [
         methods=["POST"],
         tags=["ADMIN"],
     ),
+    # PASS TOP
     RouteSwagger(
         "/admin/post",
         CreatePostApi,
@@ -279,7 +280,7 @@ routes = [
         "/statistical/doctor/conversation",
         StatisticalConversationDoctorApi,
         methods=["GET"],
-        tags=["ADMIN"],
+        tags=["ADMIN","DOCTOR"],
     ),
     RouteSwagger(
         "/statistical/prices",

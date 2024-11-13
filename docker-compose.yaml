@@ -27,6 +27,7 @@ services:
             - REDIS_HOSTS=local:redis:6379
         networks:
             - local
+
     postgres:
         container_name: postgres_health_care
         image: postgres:13.15
@@ -34,9 +35,17 @@ services:
         ports:
             - '5432:5432'
         environment:
-            - POSTGRES_USER=admin
-            - POSTGRES_PASSWORD=admin
-            - POSTGRES_DB=health_care
+            # - POSTGRES_USER=admin
+            # - POSTGRES_PASSWORD=admin
+            # - POSTGRES_DB=health_care
+            # - PGDATA: "/data"
+            POSTGRES_USER: "admin"
+            POSTGRES_PASSWORD: "admin"
+            POSTGRES_DB: "health_care"
+            PGDATA: "/data"
+        volumes:
+        - ./postgres/pgdata:/data
+        - ./postgres/config:/config/
         networks:
             - local
     adminer:
