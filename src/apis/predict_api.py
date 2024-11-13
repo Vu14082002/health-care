@@ -1,3 +1,4 @@
+import logging
 import requests
 import tensorflow as tf
 from starlette.datastructures import FormData, UploadFile
@@ -17,6 +18,7 @@ try:
     print("Load model success::::::::::::::::")
 
 except Exception as e:
+    logging.error("Load model fail::::::::::::::::",e)
     new_model2_load= None
     print("Load model fail::::::::::::::::")
     print(e)
