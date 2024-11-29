@@ -36,10 +36,12 @@ from src.apis.rating_api import RatingApi
 from src.apis.statistical_api import (
     StatisticalAgeDistributionPatientApi,
     StatisticalAppointment,
+    StatisticalAppointmentOrder,
     StatisticalConversationDoctorApi,
     StatisticalCountPatientApi,
     StatisticalDoctorApi,
     StatisticalPriceApi,
+    StatisticalPricePersonApi,
 )
 from src.apis.user import ResetPassword, UserProfile
 from src.apis.working_time_api import (
@@ -282,6 +284,7 @@ routes = [
         methods=["GET"],
         tags=["ADMIN","DOCTOR"],
     ),
+    #  percent work/with appointment
     RouteSwagger(
         "/statistical/prices",
         StatisticalPriceApi,
@@ -289,10 +292,23 @@ routes = [
         tags=["ADMIN"],
     ),
     RouteSwagger(
+        "/statistical/prices/person",
+        StatisticalPricePersonApi,
+        methods=["GET"],
+        tags=["DOCTOR","PATIENT","ADMIN"],
+    ),
+    RouteSwagger(
         "/statistical/appointment/group",
         StatisticalAppointment,
         methods=["GET"],
         tags=["ADMIN"],
+    ),
+    # FIXME
+    RouteSwagger(
+    "/statistical/appointment/order",
+    StatisticalAppointmentOrder,
+    methods=["GET"],
+    tags=["ADMIN","DOCTOR"],
     ),
     # chat bot
     RouteSwagger(

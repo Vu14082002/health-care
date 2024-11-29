@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Optional
 
 from src.core.decorator.exception_decorator import catch_error_helper
@@ -52,3 +53,7 @@ class AppointmentHelper:
     @catch_error_helper(message=None)
     async def statistical_price(self, year:Optional[int]):
         return await self.appointment_repository.statistical_price(year=year)
+
+    @catch_error_helper(message=None)
+    async def statistical_price_person(self, from_date:date, to_date:date ,user_id:int):
+        return await self.appointment_repository.statistical_price_person(from_date,to_date,user_id)

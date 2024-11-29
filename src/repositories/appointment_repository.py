@@ -721,3 +721,25 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         )
 
         return data_response
+    @catch_error_repository(message=None)
+    async def statistical_price_person(self,from_date:date, to_date:date , user_id, *args,**kwargs):
+        # convert date to datetime
+        from_date = datetime.combine(from_date, datetime.min.time())
+        to_date = datetime.combine(to_date, datetime.max.time())
+        _select_payment = (
+            select(func.sum(PaymentModel.amount).label("total_price"))
+            .join(AppointmentModel)
+            .where(
+                or_(
+                    AppointmentModel.doctor_id == user_id,
+                    AppointmentModel.patient_id == user_id
+                ),
+                PaymentModel.payment_time >= from_date,
+                PaymentModel.payment_time <= to_date
+            )
+        )
+        _result_payment = await self.session.execute(_select_payment)
+        _total_payment = _result_payment.scalar_one()
+        if not _total_payment:
+            _total_payment = 0
+        return {"total_price": _total_payment,"from_date":from_date.isoformat(),"to_date":to_date.isoformat()}

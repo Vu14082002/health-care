@@ -12,8 +12,6 @@ class StatisticalConversation(BaseModel):
 
 
 class StatisticalPrice(BaseModel):
-    year: int = Field(
-        default_factory=lambda: datetime.now().year,
-        description="Year to get statistical price, default is current year",
-        examples=["2021"],
-    )
+    from_date:date = Field(..., description="From date", examples=["2021-01-01"])
+    to_date:date = Field(..., description="To date", examples=["2021-01-01"])
+    user_id: int | None = Field(None, description="User id", examples=["1"])

@@ -41,6 +41,7 @@ class ErrorCode(Enum):
     VALIDATION_ERROR = "VALIDATION_ERROR"
     PAYMENT_REQUIRED="PAYMENT_REQUIRED"
     PAYMENT_CONTENT_ERROR="PAYMENT_CONTENT_ERROR"
+    msg_user_id_is_required = "Phải cung cấp mã người dùng để thực hiện hành động này"
     msg_user_not_found = "Tài khoản không tồn tại"
     msg_permission_denied = "Bạn không có quyền truy cập tài nguyên này"
     msg_delete_account_before = "Tài khoản của bạn đã bị xóa trước đó, nếu bạn muốn sử dụng tài khoản này vui lòng liên hệ với quản trị viên"
