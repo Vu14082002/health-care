@@ -12,8 +12,36 @@ services:
             - postgres
         networks:
             - app-network
-        env_file:
-            - .env
+        environment:
+            - ENV=${ENV}
+            - POSTGRES_URL_MASTER=${POSTGRES_URL_MASTER}
+            - POSTGRES_URL_SLAVE=${POSTGRES_URL_SLAVE}
+            - POSTGRES_URL_ELAMBIC=${POSTGRES_URL_ELAMBIC}
+            - BROKER_URL=${BROKER_URL}
+            - REDIS_URL=${REDIS_URL}
+            - REDIS_URL_WORKING_TIME=${REDIS_URL_WORKING_TIME}
+            - PORT=${PORT}
+            - ACCESS_TOKEN=${ACCESS_TOKEN}
+            - REFRESH_TOKEN=${REFRESH_TOKEN}
+            - ALGORITHM=${ALGORITHM}
+            - PREFIX_URL=${PREFIX_URL}
+            - ACCOUNT_SID=${ACCOUNT_SID}
+            - AUTH_TOKEN=${AUTH_TOKEN}
+            - S3_BUCKET=${S3_BUCKET}
+            - S3_KEY=${S3_KEY}
+            - S3_SECRET=${S3_SECRET}
+            - REGION=${REGION}
+            - S3_ENDPOINT=${S3_ENDPOINT}
+            - BOT_SERVICE_URL=${BOT_SERVICE_URL}
+            - SMTP_MAIL=${SMTP_MAIL}
+            - SMTP_PASSWORD=${SMTP_PASSWORD}
+            - SMTP_HOST=${SMTP_HOST}
+            - SMTP_PORT=${SMTP_PORT}
+            - LINK_VERIFY_EMAIL=${LINK_VERIFY_EMAIL}
+            - PAYOS_CLIENT_ID=${PAYOS_CLIENT_ID}
+            - PAYOS_API_KEY=${PAYOS_API_KEY}
+            - PAYOS_CHECK_SUM=${PAYOS_CHECK_SUM}
+            - BASE_URL_CHAT_SERVICE=${BASE_URL_CHAT_SERVICE}
         volumes:
             - .:/app
     bot_chat:
