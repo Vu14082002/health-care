@@ -721,6 +721,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         )
 
         return data_response
+
     @catch_error_repository(message=None)
     async def statistical_price_person(self,from_date:date, to_date:date , user_id, *args,**kwargs):
         # convert date to datetime
@@ -743,3 +744,41 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         if not _total_payment:
             _total_payment = 0
         return {"total_price": _total_payment,"from_date":from_date.isoformat(),"to_date":to_date.isoformat()}
+
+
+    async def statistical_price_all_doctor(self,from_date:date, to_date:date):
+        # convert date to datetime
+        from_date = datetime.combine(from_date, datetime.min.time())
+        to_date=datetime.combine(to_date, datetime.max.time())
+        _query = (
+            select(
+                DoctorModel,
+                func.coalesce(func.sum(PaymentModel.amount), 0).label("total_price"),
+            )
+            .select_from(DoctorModel)  # Xác định bảng chính
+            .outerjoin(AppointmentModel, AppointmentModel.doctor_id == DoctorModel.id)
+            .outerjoin(PaymentModel, PaymentModel.appointment_id == AppointmentModel.id)
+            .where(
+                (PaymentModel.payment_time.is_(None)) |
+                ((PaymentModel.payment_time >= from_date) & (PaymentModel.payment_time <= to_date))
+            )
+            .group_by(DoctorModel)
+        )
+
+
+        _result_statment = await self.session.execute(_query)
+        _data_result = _result_statment.all()
+        _include_field_doctor=["id","first_name","last_name","certification","specialization","phone_number","date_of_birth","gender","type_of_disease","is_local_person"]
+        data = []
+
+        for item in _data_result:
+            doctor_model = item[0]
+            _total_price = item[1]
+            _doctor_data = doctor_model.as_dict
+            # remove field
+            for key in list(_doctor_data.keys()):
+                if key not in _include_field_doctor:
+                    del _doctor_data[key]
+            _doctor_data["total_price"] = _total_price
+            data.append(_doctor_data)
+        return data

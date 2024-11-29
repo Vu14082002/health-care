@@ -6,8 +6,8 @@ from src.core.security import JsonWebToken
 from src.enum import ErrorCode, Role
 from src.factory import Factory
 from src.helper.doctor_helper import DoctorHelper
-from src.schema.appointment_schema import RequestStatisticalAppointmentSchema
-from src.schema.statistical_schema import StatisticalConversation, StatisticalPrice
+from src.schema.appointment_schema import RequestStatisticalAppointmentOrderSchema, RequestStatisticalAppointmentSchema
+from src.schema.statistical_schema import StatisticalConversation, StatisticalPrice, StatisticalPriceAllDoctor
 
 
 class StatisticalCountPatientApi(HTTPEndpoint):
@@ -112,19 +112,25 @@ class StatisticalAppointment(HTTPEndpoint):
 
 class StatisticalAppointmentOrder(HTTPEndpoint):
     async def get(
-        self, query_params: RequestStatisticalAppointmentSchema, auth: JsonWebToken
+        self, query_params: RequestStatisticalAppointmentOrderSchema, auth: JsonWebToken
     ):
         try:
-            if auth.get("role") != Role.ADMIN.name:
+            user_role:str = auth.get("role")
+            user_id: int = auth.get("id")
+            if user_role == Role.PATIENT.name or not user_id:
                 raise Forbidden(
                     error_code=ErrorCode.FORBIDDEN.name,
                     errors={
                         "message": ErrorCode.msg_permission_denied.value,
                     },
                 )
-            year = query_params.year
+            user_id = query_params.user_id if user_role == Role.ADMIN.name else user_id
+            from_date= query_params.from_date
+            to_date= query_params.to_date
             appointment_helper = await Factory().get_appointment_helper()
-            statistics = await appointment_helper.statistical_appointment(year)
+            statistics = await appointment_helper.statistical_appointment_with_work(
+                from_date=from_date, to_date=to_date, user_id=user_id
+            )
             return statistics
         except Exception as e:
             if isinstance(e, BaseException):
@@ -174,6 +180,31 @@ class StatisticalPriceApi(HTTPEndpoint):
 
             appointment_helper = await Factory().get_appointment_helper()
             statistics = await appointment_helper.statistical_price(query_params.year)
+            return statistics
+        except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
+            log.error(f"Error: {e}")
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from e
+
+
+class StatisticalPriceDoctorAllApi(HTTPEndpoint):
+    async def get(self, query_params:StatisticalPriceAllDoctor,auth:JsonWebToken):
+        try:
+            if auth.get("role") != Role.ADMIN.name:
+                raise Forbidden(
+                    msg="Permission denied",
+                    error_code=ErrorCode.FORBIDDEN.name,
+                    errors={
+                        "message": ErrorCode.msg_permission_denied.value,
+                    },
+                )
+
+            appointment_helper = await Factory().get_appointment_helper()
+            statistics = await appointment_helper.statistical_price_all_doctor(query_params.from_date, query_params.to_date)
             return statistics
         except Exception as e:
             if isinstance(e, BaseException):

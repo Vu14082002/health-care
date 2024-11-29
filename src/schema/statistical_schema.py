@@ -15,3 +15,7 @@ class StatisticalPrice(BaseModel):
     from_date:date = Field(..., description="From date", examples=["2021-01-01"])
     to_date:date = Field(..., description="To date", examples=["2021-01-01"])
     user_id: int | None = Field(None, description="User id", examples=["1"])
+
+class StatisticalPriceAllDoctor(BaseModel):
+    from_date:date = Field(..., description="From date", examples=["2021-01-01"])
+    to_date:date = Field(..., description="To date", examples=["2021-01-01"])

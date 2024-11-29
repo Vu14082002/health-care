@@ -41,6 +41,7 @@ from src.apis.statistical_api import (
     StatisticalCountPatientApi,
     StatisticalDoctorApi,
     StatisticalPriceApi,
+    StatisticalPriceDoctorAllApi,
     StatisticalPricePersonApi,
 )
 from src.apis.user import ResetPassword, UserProfile
@@ -288,6 +289,13 @@ routes = [
     RouteSwagger(
         "/statistical/prices",
         StatisticalPriceApi,
+        methods=["GET"],
+        tags=["ADMIN"],
+    ),
+    # thong ke gia so tine bac si mang lai cho he thong theo thoi gian table
+    RouteSwagger(
+        "/statistical/prices/doctors",
+        StatisticalPriceDoctorAllApi,
         methods=["GET"],
         tags=["ADMIN"],
     ),
