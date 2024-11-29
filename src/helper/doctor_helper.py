@@ -15,43 +15,52 @@ class DoctorHelper:
         self.doctor_repository = doctor_repository
 
     @catch_error_helper(message=None)
-    async def get_doctor_statistics(self) -> Dict[str, Any]:
-        total_doctors = await self.doctor_repository.count_record(
-            {"verify_status": {"$eq": 2}, "is_local_person": True}
-        )
-        total_doctor_online = await self.doctor_repository.count_record(
-            {
-                "$or": [
-                    {"type_of_disease": TypeOfDisease.ONLINE.value},
-                    {"type_of_disease": TypeOfDisease.BOTH.value},
-                ],
-                "verify_status": {"$eq": 2},
-                "is_local_person": True,
-            }
-        )
-        total_doctor_ofline = await self.doctor_repository.count_record(
-            {
-                "$or": [
-                    {"type_of_disease": TypeOfDisease.ONLINE.value},
-                    {"type_of_disease": TypeOfDisease.BOTH.value},
-                ],
-                "verify_status": {"$eq": 2},
-                "is_local_person": True,
-            }
-        )
-        total_doctor_both = await self.doctor_repository.count_record(
-            {
-                "type_of_disease": TypeOfDisease.BOTH.value,
-                "verify_status": {"$eq": 2},
-                "is_local_person": True,
-            }
-        )
-        return {
-            "total_doctors": total_doctors,
-            "total_doctor_online": total_doctor_online,
-            "total_doctor_ofline": total_doctor_ofline,
-            "total_doctor_both": total_doctor_both,
-        }
+    async def get_doctor_statistics(self) :
+        # total_doctors = await self.doctor_repository.count_record(
+        #     {"verify_status": {"$eq": 2}}
+        # )
+        # total_doctors_local = await self.doctor_repository.count_record(
+        #     {"verify_status": {"$eq": 2}, "is_local_person": True}
+        # )
+        # total_doctors_foreign = await self.doctor_repository.count_record(
+        #     {"verify_status": {"$eq": 2}, "is_local_person": False}
+        # )
+        # total_doctor_online = await self.doctor_repository.count_record(
+        #     {
+        #         "$or": [
+        #             {"type_of_disease": TypeOfDisease.ONLINE.value},
+        #             {"type_of_disease": TypeOfDisease.BOTH.value},
+        #         ],
+        #         "verify_status": {"$eq": 2},
+        #         # "is_local_person": True,
+        #     }
+        # )
+        # total_doctor_offline = await self.doctor_repository.count_record(
+        #     {
+        #         "$or": [
+        #             {"type_of_disease": TypeOfDisease.ONLINE.value},
+        #             {"type_of_disease": TypeOfDisease.BOTH.value},
+        #         ],
+        #         "verify_status": {"$eq": 2},
+        #         # "is_local_person": True,
+        #     }
+        # )
+        # total_doctor_both = await self.doctor_repository.count_record(
+        #     {
+        #         "type_of_disease": TypeOfDisease.BOTH.value,
+        #         "verify_status": {"$eq": 2},
+        #         "is_local_person": True,
+        #     }
+        # )
+        # return {
+        #     "total_doctors": total_doctors,
+        #     "total_doctors_local": total_doctors_local,
+        #     "total_doctors_foreign": total_doctors_foreign,
+        #     "total_doctor_online": total_doctor_online,
+        #     "total_doctor_ofline": total_doctor_offline,
+        #     "total_doctor_both": total_doctor_both,
+        # }
+        return await self.doctor_repository.count_record_v2()
 
     @catch_error_helper(message=None)
     async def get_all_doctor(

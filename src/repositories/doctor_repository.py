@@ -26,7 +26,7 @@ from src.core.database.postgresql import PostgresRepository
 from src.core.decorator.exception_decorator import catch_error_repository
 from src.core.exception import BadRequest, InternalServer
 from src.core.security.password import PasswordHandler
-from src.enum import ErrorCode, MsgEnumBase
+from src.enum import ErrorCode, MsgEnumBase, TypeOfDisease
 from src.helper.email_helper import (
     send_mail_register_success_foreign,
     send_mail_register_success_local,
@@ -357,6 +357,85 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         except SQLAlchemyError as e:
             logging.error(f"Error in count_record: {e}")
             raise
+
+    @catch_error_repository(message=None)
+    async def count_record_v2(self):
+        _select_count = (
+            select(
+                func.count(DoctorModel.id).label("total_doctors"),
+
+                # Số bác sĩ là người trong nước
+                func.count(
+                    case(
+                        (DoctorModel.is_local_person == True, DoctorModel.id),
+                        else_=None
+                    )
+                ).label("total_doctors_local"),
+
+                # Số bác sĩ là người nước ngoài
+                func.count(
+                    case(
+                        (DoctorModel.is_local_person == False, DoctorModel.id),
+                        else_=None
+                    )
+                ).label("total_doctors_foreign"),
+                func.count(
+                    case(
+                        (DoctorModel.type_of_disease == TypeOfDisease.ONLINE.value, DoctorModel.id),
+                        (DoctorModel.type_of_disease == TypeOfDisease.BOTH.value, DoctorModel.id),
+                        else_=None
+                    )
+                ).label("total_doctor_online"),
+
+                # Số bác sĩ offline hoặc cả online và offline
+                func.count(
+                    case(
+                        (DoctorModel.type_of_disease == TypeOfDisease.OFFLINE.value, DoctorModel.id),
+                        (DoctorModel.type_of_disease == TypeOfDisease.BOTH.value, DoctorModel.id),
+                        else_=None
+                    )
+                ).label("total_doctor_offline"),
+
+                # Số bác sĩ có bệnh cả online và offline
+                func.count(
+                    case(
+                        (DoctorModel.type_of_disease == TypeOfDisease.BOTH.value, DoctorModel.id),
+                        else_=None
+                    )
+                ).label("total_doctor_both")
+            )
+            .where(DoctorModel.verify_status == 2)  # Chỉ tính bác sĩ đã xác minh
+        )
+
+        # Thực hiện truy vấn và lấy kết quả
+        result = await self.session.execute(_select_count)
+        data = result.tuples().first()
+        if data is None:
+            return {
+                "total_doctors": 0,
+                "total_doctors_local": 0,
+                "total_doctors_foreign": 0,
+                "total_doctor_online": 0,
+                "total_doctor_offline": 0,
+                "total_doctor_both": 0
+            }
+
+        # Lấy kết quả
+        total_doctors = data[0]
+        total_doctors_local = data[1]
+        total_doctors_foreign = data[2]
+        total_doctor_online = data[3]
+        total_doctor_offline = data[4]
+        total_doctor_both = data[5]
+
+        return {
+            "total_doctors": total_doctors,
+            "total_doctors_local": total_doctors_local,
+            "total_doctors_foreign": total_doctors_foreign,
+            "total_doctor_online": total_doctor_online,
+            "total_doctor_offline": total_doctor_offline,
+            "total_doctor_both": total_doctor_both
+        }
 
     @catch_error_repository("Server error when get doctor by id")
     async def get_doctor_with_ratings(self, doctor_id: int) -> Optional[Dict[str, Any]]:
