@@ -7,7 +7,7 @@ from src.enum import ErrorCode, Role
 from src.factory import Factory
 from src.helper.doctor_helper import DoctorHelper
 from src.schema.appointment_schema import RequestStatisticalAppointmentOrderSchema, RequestStatisticalAppointmentSchema
-from src.schema.statistical_schema import StatisticalConversation, StatisticalPrice, StatisticalPriceAllDoctor
+from src.schema.statistical_schema import StatisticalConversation, StatisticalPrice, StatisticalPriceAllDoctor, StatisticalPricePerson
 
 
 class StatisticalCountPatientApi(HTTPEndpoint):
@@ -215,7 +215,7 @@ class StatisticalPriceDoctorAllApi(HTTPEndpoint):
                 errors={"message": ErrorCode.msg_server_error.value},
             ) from e
 class StatisticalPricePersonApi(HTTPEndpoint):
-    async def get(self, query_params:StatisticalPrice,auth:JsonWebToken):
+    async def get(self, query_params:StatisticalPricePerson,auth:JsonWebToken):
         try:
             user_id = query_params.user_id if auth.get("role") == Role.ADMIN.name else auth.get("id")
             if not user_id:

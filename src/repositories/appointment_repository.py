@@ -559,13 +559,14 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
 
     @catch_error_repository(message=None)
     async def statistical_appointment(self, year: int):
-        current_month = datetime.now().month
+        current_month = datetime.now().month +1
         current_year = datetime.now().year
-        months = (
-            list(range(1, current_month + 1))
-            if year == current_year
-            else list(range(1, 13))
-        )
+        # months = (
+        #     list(range(1, current_month))
+        #     if year == current_year
+        #     else list(range(1, 13))
+        # )
+        months = list(range(1, 13))
 
         query = (
             select(
