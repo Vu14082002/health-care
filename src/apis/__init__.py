@@ -42,6 +42,7 @@ from src.apis.statistical_api import (
     StatisticalDoctorApi,
     StatisticalPriceApi,
     StatisticalPriceDoctorAllApi,
+    StatisticalPricePatientAllApi,
     StatisticalPricePersonApi,
 )
 from src.apis.user import ResetPassword, UserProfile
@@ -285,7 +286,7 @@ routes = [
         methods=["GET"],
         tags=["ADMIN","DOCTOR"],
     ),
-    #  percent work/with appointment
+    #  thong ke tien thoe thoi gian
     RouteSwagger(
         "/statistical/prices",
         StatisticalPriceApi,
@@ -300,11 +301,19 @@ routes = [
         tags=["ADMIN"],
     ),
     RouteSwagger(
+        "/statistical/prices/patients",
+        StatisticalPricePatientAllApi,
+        methods=["GET"],
+        tags=["ADMIN"],
+    ),
+    # thong ke tien kiem duoc theo bac si hoac benh nhan
+    RouteSwagger(
         "/statistical/prices/person",
         StatisticalPricePersonApi,
         methods=["GET"],
         tags=["DOCTOR","PATIENT","ADMIN"],
     ),
+    # thong ke bieu do lich hen
     RouteSwagger(
         "/statistical/appointment/group",
         StatisticalAppointment,

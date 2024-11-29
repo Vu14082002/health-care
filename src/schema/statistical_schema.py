@@ -22,3 +22,6 @@ class StatisticalPricePerson(BaseModel):
 class StatisticalPriceAllDoctor(BaseModel):
     from_date:date = Field(..., description="From date", examples=["2021-01-01"])
     to_date:date = Field(..., description="To date", examples=["2021-01-01"])
+class StatisticalPriceAllPatient(BaseModel):
+    from_date:date = Field(..., description="From date", examples=["2021-01-01"])
+    to_date:date = Field(..., description="To date", examples=["2021-01-01"])

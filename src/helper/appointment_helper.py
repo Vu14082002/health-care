@@ -19,6 +19,7 @@ class AppointmentHelper:
         pre_examination_notes: str | None = "",
         is_payment: bool = False,
         call_back_url: str | None = None,
+        cancel_url:str|None =None
     ):
         return await self.appointment_repository.create_appointment(
             patient_id,
@@ -28,6 +29,7 @@ class AppointmentHelper:
             pre_examination_notes,
             is_payment=is_payment,
             call_back_url=call_back_url,
+            cancel_url=cancel_url
         )
     @catch_error_helper(message=None)
     async def create_appointment_with_payment(self, payment_id: str, status_code:str):
@@ -61,6 +63,10 @@ class AppointmentHelper:
     @catch_error_helper(message=None)
     async def statistical_price_all_doctor(self,from_date:date, to_date:date):
         return await self.appointment_repository.statistical_price_all_doctor( from_date, to_date)
+
+    @catch_error_helper(message=None)
+    async def statistical_price_all_patient(self,from_date:date, to_date:date):
+        return await self.appointment_repository.statistical_price_all_patients( from_date, to_date)
 
     @catch_error_helper(message=None)
     async def statistical_price_person(self, from_date:date, to_date:date ,user_id:int):

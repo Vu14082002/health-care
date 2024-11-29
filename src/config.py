@@ -55,6 +55,9 @@ class Config(BaseSettings):
     PAYOS_API_KEY:str = ""
     PAYOS_CHECK_SUM:str = ""
     BASE_URL_CHAT_SERVICE: str = ""
+    MAX_TIME_QR_CODE:int = 600
+    MAX_TIME_WORKING_TIME:int = 700
+    MAX_TIME_DATA_API:int = 700
 
 config = Config()
 

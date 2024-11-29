@@ -37,7 +37,13 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         pre_examination_notes: str | None = None,
         is_payment: bool = False,
         call_back_url: str | None = None,
+        cancel_url:str|None =None
     ):
+        if not is_payment:
+            raise BadRequest(
+                error_code=ErrorCode.PAYMENT_REQUIRED.name,
+                errors={"message": ErrorCode.msg_payment_required.value},
+            )
         # first check exist appointment with doctor is approved
         appointment_exist = await self.session.execute(
             select(AppointmentModel).where(
@@ -92,6 +98,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         )
         appointment.total_amount = fee_examprice
         # 0: update work_schedule_model
+        # saving all params to redis
         work_schedule_model.ordered = True
         # 1 save appointment
         self.session.add(appointment)
@@ -119,7 +126,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                 error_code=ErrorCode.BAD_REQUEST.name,
                 errors={"message": ErrorCode.msg_server_error.value},
             )
-
+        # saving to redis
         if is_payment:
             data = await self._process_payment(
                 appoint_model=appointment,
@@ -127,6 +134,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                 data_patient=data_patient,
                 medical_record_by_patient=data_medical_record_by_patient,
                 call_back_url=call_back_url,
+                cancel_url=cancel_url
             )
             return data
         await self.session.commit()
@@ -262,10 +270,9 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         data_patient:PatientModel,
         medical_record_by_patient:MedicalRecordModel|None,
         call_back_url,
+        cancel_url:str|None=None
     ):
         try:
-            time_session = 600
-            time_session_redis=700
             work_schedule_id= work_schedule_model.id
             medical_examination_fee = work_schedule_model.medical_examination_fee
             # assign value to for instance
@@ -274,7 +281,8 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                 amount=int(medical_examination_fee),
                 description = f"Ma giao dich {work_schedule_id}.",
                 returnUrl=call_back_url,
-                time_session=time_session,
+                cancelUrl=cancel_url,
+                time_session=config.MAX_TIME_QR_CODE,
             )
             # save redis
             json_data = {
@@ -294,7 +302,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                 }
 
             await redis_working.set(
-                json_data, str(work_schedule_id), time_session_redis
+                json_data, str(work_schedule_id), config.MAX_TIME_WORKING_TIME
             )
             if not data:
                 raise BadRequest(
@@ -746,7 +754,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             _total_payment = 0
         return {"total_price": _total_payment,"from_date":from_date.isoformat(),"to_date":to_date.isoformat()}
 
-
+    @catch_error_repository(message=None)
     async def statistical_price_all_doctor(self,from_date:date, to_date:date):
         # convert date to datetime
         from_date = datetime.combine(from_date, datetime.min.time())
@@ -782,4 +790,42 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                     del _doctor_data[key]
             _doctor_data["total_price"] = _total_price
             data.append(_doctor_data)
+        return data
+
+    @catch_error_repository(message=None)
+    async def statistical_price_all_patients(self,from_date:date, to_date:date):
+        # convert date to datetime
+        from_date = datetime.combine(from_date, datetime.min.time())
+        to_date=datetime.combine(to_date, datetime.max.time())
+        _query = (
+            select(
+                PatientModel,
+                func.coalesce(func.sum(PaymentModel.amount), 0).label("total_price"),
+            )
+            .select_from(PatientModel)  # Xác định bảng chính
+            .outerjoin(AppointmentModel, AppointmentModel.patient_id == PatientModel.id)
+            .outerjoin(PaymentModel, PaymentModel.appointment_id == AppointmentModel.id)
+            .where(
+                (PaymentModel.payment_time.is_(None)) |
+                ((PaymentModel.payment_time >= from_date) & (PaymentModel.payment_time <= to_date))
+            )
+            .group_by(PatientModel)
+        )
+
+
+        _result_statment = await self.session.execute(_query)
+        _data_result = _result_statment.all()
+        _include_field_patients=["id","first_name","last_name","phone_number","date_of_birth","gender","email","address","emergancy_contact_number"]
+        data = []
+
+        for item in _data_result:
+            patient_model = item[0]
+            _total_price = item[1]
+            _patient_data = patient_model.as_dict
+            # remove patient_model
+            for key in list(_patient_data.keys()):
+                if key not in _include_field_patients:
+                    del _patient_data[key]
+            _patient_data["total_price"] = _total_price
+            data.append(_patient_data)
         return data

@@ -7,7 +7,7 @@ from src.enum import ErrorCode, Role
 from src.factory import Factory
 from src.helper.doctor_helper import DoctorHelper
 from src.schema.appointment_schema import RequestStatisticalAppointmentOrderSchema, RequestStatisticalAppointmentSchema
-from src.schema.statistical_schema import StatisticalConversation, StatisticalPrice, StatisticalPriceAllDoctor, StatisticalPricePerson
+from src.schema.statistical_schema import StatisticalConversation, StatisticalPrice, StatisticalPriceAllDoctor, StatisticalPriceAllPatient, StatisticalPricePerson
 
 
 class StatisticalCountPatientApi(HTTPEndpoint):
@@ -205,6 +205,32 @@ class StatisticalPriceDoctorAllApi(HTTPEndpoint):
 
             appointment_helper = await Factory().get_appointment_helper()
             statistics = await appointment_helper.statistical_price_all_doctor(query_params.from_date, query_params.to_date)
+            return statistics
+        except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
+            log.error(f"Error: {e}")
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from e
+
+
+
+class StatisticalPricePatientAllApi(HTTPEndpoint):
+    async def get(self, query_params:StatisticalPriceAllPatient,auth:JsonWebToken):
+        try:
+            if auth.get("role") != Role.ADMIN.name:
+                raise Forbidden(
+                    msg="Permission denied",
+                    error_code=ErrorCode.FORBIDDEN.name,
+                    errors={
+                        "message": ErrorCode.msg_permission_denied.value,
+                    },
+                )
+
+            appointment_helper = await Factory().get_appointment_helper()
+            statistics = await appointment_helper.statistical_price_all_patient(query_params.from_date, query_params.to_date)
             return statistics
         except Exception as e:
             if isinstance(e, BaseException):
