@@ -24,7 +24,7 @@ class PatientApi(HTTPEndpoint):
 
             patient_helper = await Factory().get_patient_helper()
             result = await patient_helper.get_all_patient(
-                curent_page=query_params.curent_page, page_size=query_params.page_size
+                curent_page=query_params.current_page, page_size=query_params.page_size
             )
             return result
         except Exception as e:
