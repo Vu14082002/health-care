@@ -217,6 +217,8 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         ).replace(tzinfo=None)
         self.session.add(payment_model)
         await redis_working.delete(work_schedule_id)
+
+        # send socket to patient
         url_chat_service = f"{config.BASE_URL_CHAT_SERVICE}/api/payment"
         json_data = {
             "userId": patient_id,
@@ -234,6 +236,21 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                 error_code=ErrorCode.BAD_REQUEST.name,
                 errors={"message": ErrorCode.msg_payment_fail.value},
             )
+
+        # send socket to doctor
+        url_socket = f"{config.BASE_URL_CHAT_SERVICE}/api/notify/appointment/new"
+        _select_work = select(WorkScheduleModel).where(WorkScheduleModel.id == int(work_schedule_id))
+        _result_select_work = await self.session.execute(_select_work)
+        _work_schedule = _result_select_work.scalar_one()
+        data={
+            "userId": _work_schedule.doctor_id,
+            "fromTime": _work_schedule.start_time.isoformat(),
+            "toTime": _work_schedule.end_time.isoformat(),
+        }
+        result_reponse= requests.post(url_socket, json={"doctor_id": appointment_data.get("doctor_id")})
+        if (result_reponse.status_code != 200):
+            log.error("Service chat current not working,")
+
         await self.session.commit()
         return {"message": ErrorCode.msg_create_appointment_successfully.value}
 
