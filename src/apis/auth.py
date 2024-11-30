@@ -13,7 +13,7 @@ from src.core.security.authentication import JsonWebToken
 from src.enum import ErrorCode, Role, TypeOfDisease
 from src.factory import Factory
 from src.helper.doctor_helper import DoctorHelper
-from src.helper.email_helper import send_mail_request_additional_info
+from src.helper.email_helper import send_mail_request_additional_info, send_mail_request_final_success
 from src.helper.s3_helper import S3Service
 from src.helper.user_helper import UserHelper
 from src.models.doctor_model import DoctorModel
@@ -395,7 +395,14 @@ class DoctorOtherVerifyFinalApiPut(HTTPEndpoint):
                 online_price=form_data.online_price,
             )
             if result:
-                return {"message": "Bác sĩ đã xác minh thành công ở trạng thái 2"}
+                task = BackgroundTask(
+                send_mail_request_final_success, result
+                )
+                return JSONResponse(
+                    content={"data":{"message": "Bác sĩ đã xác minh thành công ở trạng thái 2"}},
+                    status_code=200,
+                    background=task,
+                )
             else:
                 raise BadRequest(
                     error_code=ErrorCode.NOT_FOUND.name,

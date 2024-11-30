@@ -147,7 +147,7 @@ class DoctorHelper:
     @catch_error_helper(message=None)
     async def verify_doctor(
         self, doctor_id: int, verify_status: int, online_price: float | None
-    ) -> bool:
+    ) -> bool|str:
         doctor = await self.doctor_repository.get_by("id", doctor_id, unique=True)
         if doctor and doctor.verify_status in [0, 1, -1]:
             if verify_status == 2 and doctor.verify_status != 1:
@@ -168,7 +168,10 @@ class DoctorHelper:
                     doctor, doctor_examination_price
                 )
             )
-            return isinstance(updated_doctor, DoctorModel)
+            if isinstance(updated_doctor, DoctorModel):
+                if updated_doctor.verify_status == 2:
+                    return updated_doctor.email
+                return True
         return False
 
     @catch_error_helper(message=None)

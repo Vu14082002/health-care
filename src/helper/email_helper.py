@@ -31,6 +31,10 @@ async def send_mail_request_additional_info(email: str, message: str) -> str:
     html_body = template_mail.send_mail_request_additional_info_template(message)
     return await send_mail_action(email, html_body)
 
+async def send_mail_request_final_success(email: str) -> str:
+    html_body = template_mail.send_mail_request_final_success()
+    return await send_mail_action(email, html_body)
+
 
 @catch_error_helper("Failed to send mail")
 async def send_mail_action(email: str, HTML_BODY, subject: str | None = None):

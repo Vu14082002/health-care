@@ -11,6 +11,9 @@ from src.helper.template_mail.send_mail_register_success_local_template import (
 from src.helper.template_mail.send_mail_request_additional_info_template import (
     send_mail_request_additional_info_template,
 )
+from src.helper.template_mail.send_mail_request_final_success import (
+    send_mail_request_final_success,
+)
 
 __all__ = [
     "send_mail_reject_register",
@@ -18,4 +21,5 @@ __all__ = [
     "send_mail_register_success_local_template",
     "send_mail_register_success_foreign_template",
     "send_mail_request_additional_info_template",
+    "send_mail_request_final_success",
 ]
