@@ -2,7 +2,7 @@ import enum
 import logging
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Index, Integer, String, Text
+from sqlalchemy import ForeignKey, Index, Integer, String, Text,Sequence
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database.postgresql import Model
@@ -41,7 +41,7 @@ class AppointmentModel(Model):
         Index("idx_appointment_status", "appointment_status"),
     )
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, Sequence('id_seq', start=1000000, increment=1),primary_key=True, autoincrement=True,)
 
     name: Mapped[str] = mapped_column(String, nullable=True)
 
