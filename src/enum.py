@@ -32,6 +32,7 @@ class ErrorCode(Enum):
     INVALID_APPOINTMENT = "INVALID_APPOINTMENT"
     WORK_SCHEDULE_NOT_FOUND = "WORK_SCHEDULE_NOT_FOUND"
     MEDICAL_RECORD_EXIST = "MEDICAL_RECORD_EXIST"
+    S3_UPLOAD_ERROR = "S3_UPLOAD_ERROR"
     YOU_HAVE_NOT_COMPLETE_OTHER_APPOINTMENT = "YOU_HAVE_NOT_COMPLETE_OTHER_APPOINTMENT"
     INVALID_MEDICAL_RECORD = "INVALID_MEDICAL_RECORD"
     PATIENT_NOT_FOUND = "PATIENT_NOT_FOUND"
@@ -51,6 +52,7 @@ class ErrorCode(Enum):
     msg_email_have_been_registered = "Email đã được đăng ký"
     msg_error_login = "Phone number or password is incorrect"
     msg_server_error = "Máy chủ bị lỗi, vui lòng thử lại sau"
+    msg_s3_error = "Lỗi khi tải file lên hệ thống"
     msg_payment_content_error = "Nội dung thanh toán không hợp lệ"
     msg_email_or_license_number_have_been_registered = (
         "Email hoặc số mã số bác sĩ này đã được đăng ký"

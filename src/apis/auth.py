@@ -1,7 +1,6 @@
 import logging
 from typing import Any, Dict
 
-from sqlalchemy.exc import NoResultFound
 from starlette.background import BackgroundTask
 from starlette.datastructures import UploadFile
 from starlette.requests import Request
@@ -12,6 +11,7 @@ from src.core.exception import BadRequest, BaseException, Forbidden, InternalSer
 from src.core.security.authentication import JsonWebToken
 from src.enum import ErrorCode, Role, TypeOfDisease
 from src.factory import Factory
+from src.helper.check_file_valid import is_valid_image
 from src.helper.doctor_helper import DoctorHelper
 from src.helper.email_helper import send_mail_request_additional_info, send_mail_request_final_success
 from src.helper.s3_helper import S3Service
@@ -30,19 +30,26 @@ from src.schema.register import (
 )
 
 
+
+
+async def get_url_from_request(request: Request,key:str) -> str | None:
+    form_request = await request.form()
+    upload_file = form_request.get(key, None) #type: ignore
+    if upload_file:
+        if isinstance(form_request.get("avatar"), UploadFile):
+            _ = is_valid_image(upload_file) #type: ignore
+            s3_service = S3Service()
+            url_datta = await s3_service.upload_file_from_form(upload_file) #type: ignore
+            return url_datta
+    return None
+
 class AdminRegisterApi(HTTPEndpoint):
     async def post(self, request: Request, form_data: RequestAdminRegisterSchema):
         """
         this api is used to register admin, only admin can access
         """
         try:
-            form_request = await request.form()
-            if form_request.get("avatar", None):
-                if isinstance(form_request.get("avatar"), UploadFile):
-                    upload_file: UploadFile = form_request.get("avatar")
-                    s3_service = S3Service()
-                    link_avatar = await s3_service.upload_file_from_form(upload_file)
-                    form_data.avatar = link_avatar
+            form_data.avatar = await get_url_from_request(request,"avatar")
             _user_helper: UserHelper = await Factory().get_user_helper()
             _result = await _user_helper.register_admin(form_data)
             return _result
@@ -88,18 +95,12 @@ class AdminNotifyRegisterMail(HTTPEndpoint):
 
 
 class PatientRegisterApi(HTTPEndpoint):
-    async def post(self, form_data: RequestRegisterPatientSchema):
+    async def post(self, request: Request,form_data: RequestRegisterPatientSchema):
         """
         this api is used to register patient
         """
         try:
-            avatar = None
-            if isinstance(form_data.avatar, UploadFile):
-                upload_file: UploadFile = form_data.avatar  # type: ignore
-                s3_service = S3Service()
-                await upload_file.seek(0)
-                avatar = await s3_service.upload_file_from_form(upload_file)
-            form_data.avatar = avatar
+            form_data.avatar = await get_url_from_request(request,"avatar")
             _user_helper = await Factory().get_user_helper()
             _result = await _user_helper.register_patient(form_data)
             return _result
@@ -111,13 +112,9 @@ class PatientRegisterApi(HTTPEndpoint):
                 error_code=ErrorCode.SERVER_ERROR.name,
                 errors={"message": ErrorCode.msg_server_error.value},
             ) from ex
-
-
 class DoctorLocalRegisterApi(HTTPEndpoint):
-
-
     async def post(
-        self, form_data: RequestRegisterDoctorLocalSchema, auth: JsonWebToken
+        self, request: Request ,form_data: RequestRegisterDoctorLocalSchema, auth: JsonWebToken
     ):
         """
         this api is used to register doctor local, only admin can access
@@ -128,13 +125,7 @@ class DoctorLocalRegisterApi(HTTPEndpoint):
                     error_code=ErrorCode.UNAUTHORIZED.name,
                     errors={"message": ErrorCode.msg_permission_denied.value},
                 )
-            avatar = None
-            if isinstance(form_data.avatar, UploadFile):
-                upload_file: UploadFile = form_data.avatar  # type: ignore
-                s3_service = S3Service()
-                await upload_file.seek(0)
-                avatar = await s3_service.upload_file_from_form(upload_file)
-            form_data.avatar = avatar
+            form_data.avatar = form_data.avatar = await get_url_from_request(request,"avatar")
             doctor_helper = await Factory().get_doctor_helper()
             data = form_data.model_dump()
             data["verify_status"] = 2
@@ -270,31 +261,25 @@ class DoctorOtherVerifyApiPut(HTTPEndpoint):
 
 
 class DoctorForeignRegisterApi(HTTPEndpoint):
-    async def post(self, form_data: RequestRegisterDoctorSchema):
+    async def post(self, request:Request ,form_data: RequestRegisterDoctorSchema):
         '''
         this api is used to register doctor foreign, verify_status = 0
         '''
         try:
-            avatar = None
-            if isinstance(form_data.avatar, UploadFile):
-                upload_file: UploadFile = form_data.avatar  # type: ignore
-                s3_service = S3Service()
-                avatar = await s3_service.upload_file_from_form(upload_file)
-            form_data.avatar = avatar
+            form_data.avatar = form_data.avatar = await get_url_from_request(request,"avatar")
             doctor_helper = await Factory().get_doctor_helper()
             data = form_data.model_dump()
             data["verify_status"] = 0
             data["is_local_person"] = False
             data["type_of_disease"] = TypeOfDisease.ONLINE.value
             result = await doctor_helper.create_doctor(data)
-            reponse = {"data": result[0].as_dict, "errors": None, "error_code": None}
-            return JSONResponse(content=reponse, status_code=200, background=result[1])
+            response = {"data": result[0].as_dict, "errors": None, "error_code": None}
+            return JSONResponse(content=response, status_code=200, background=result[1])
         except Exception as ex:
             if isinstance(ex, BaseException):
                 raise ex
             logging.error(f"Error: {ex}")
             raise InternalServer(
-                msg="Internal server error",
                 error_code=ErrorCode.SERVER_ERROR.name,
                 errors={"message": ErrorCode.msg_server_error.value},
             ) from ex

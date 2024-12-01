@@ -58,6 +58,8 @@ class Config(BaseSettings):
     MAX_TIME_QR_CODE:int = 600
     MAX_TIME_WORKING_TIME:int = 700
     MAX_TIME_DATA_API:int = 700
+    IMG_SIZE_MB:int = 5
+    MEDIA_SIZE_MB:int = 10
 
 config = Config()
 

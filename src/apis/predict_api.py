@@ -5,9 +5,10 @@ from starlette.datastructures import FormData, UploadFile
 from starlette.requests import Request
 
 from src.core.endpoint import HTTPEndpoint
-from src.core.exception import BaseException, Forbidden, InternalServer
+from src.core.exception import BadRequest, BaseException, Forbidden, InternalServer
 from src.core.security.authentication import JsonWebToken
 from src.enum import ErrorCode, Role
+from src.helper.check_file_valid import is_valid_image
 from src.helper.s3_helper import S3Service
 from src.schema.predict_schema import PredictSchema
 
@@ -102,13 +103,7 @@ class ApiPredictData(HTTPEndpoint):
                 form_request: FormData = await request.form()
                 image_file = form_request.get("image")
                 if isinstance(image_file,UploadFile):
-                    if image_file.content_type not in ["image/jpeg", "image/png","image/jpg","image/JPG","image/PNG"]:
-                        raise InternalServer(
-                            error_code=ErrorCode.SERVER_ERROR.name,
-                            errors={
-                                "message": "chỉ chấp nhận file ảnh định dạng jpg, jpeg hoặc png"
-                            },
-                        )
+                    _ = is_valid_image(image_file)
                     s3_service =S3Service()
                     image_url = await s3_service.upload_file_from_form(image_file)
                     if image_url is None:
@@ -119,7 +114,7 @@ class ApiPredictData(HTTPEndpoint):
                             }
                         )
                     if not image_url.startswith("http"):
-                        raise InternalServer(
+                        raise BadRequest(
                             error_code=ErrorCode.SERVER_ERROR.name,
                             errors={"message": "chỉ chấp nhân link ảnh hoặc file ảnh"},
                         )

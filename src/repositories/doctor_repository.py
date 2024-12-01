@@ -487,7 +487,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             "total_doctor_both": total_doctor_both
         }
 
-    @catch_error_repository("Server error when get doctor by id")
+    @catch_error_repository(None)
     async def get_doctor_with_ratings(self, doctor_id: int) -> Optional[Dict[str, Any]]:
         query = (
             select(

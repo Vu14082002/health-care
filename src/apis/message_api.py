@@ -8,6 +8,7 @@ from src.core.exception import BadRequest, BaseException, InternalServer
 from src.core.security.authentication import JsonWebToken
 from src.enum import ErrorCode, MessageContentSchema
 from src.factory import Factory
+from src.helper.check_file_valid import is_valid_size_media
 from src.helper.s3_helper import S3Service
 from src.schema.message_schema import (
     RequestCreateMessageSchema,
@@ -59,6 +60,7 @@ class MessageApi(HTTPEndpoint):
             if form_data.media:
                 if isinstance(form_data.media, UploadFile):
                     upload_file: UploadFile = form_data.media
+                    _ = is_valid_size_media(upload_file)
                     media = await s3_service.upload_file_from_form(upload_file)
                 elif isinstance(form_data.media, bytes):
                     media = await s3_service.upload_file_from_bytes(
@@ -67,7 +69,7 @@ class MessageApi(HTTPEndpoint):
                 else:
                     raise ValueError("media must be UploadFile or bytes")
                 if media is None:
-                    raise BadRequest(error_code=ErrorCode.S)
+                    raise BadRequest(error_code=ErrorCode.S3_UPLOAD_ERROR.name,errors={"message": ErrorCode.msg_s3_error.value})
             # Upload image file if provided
             form_request = await request.form()
             images = []
