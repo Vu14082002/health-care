@@ -98,3 +98,14 @@ class RequestStatisticalAppointmentSchema(BaseModel):
                 f"Năm phải lớn hơn 1970 và nhỏ hơn hoặc bằng năm hiện tại là ({current_year})."
             )
         return v
+
+
+class RequestStatisticalAppointmentOrderSchema(BaseModel):
+    from_date:date = Field(..., description="From date", examples=["2021-01-01"])
+    to_date:date = Field(..., description="To date", examples=["2021-01-01"])
+    user_id: int | None = Field(None, description="User id", examples=["1"])
+
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
+        extra = "forbid"
