@@ -84,6 +84,20 @@ class DoctorHelper:
             text_search=text_search,
         )
         return result
+    @catch_error_helper(message=None)
+    async def get_all_doctor_helper(
+        self,
+        current_page: int = 1,
+        page_size: int = 10,
+        text_search: str | None = None,
+        filter_data: dict[str, Any]={},
+        order_by:str | None = None,
+        is_desc:bool = False,
+    ):
+        result = await self.doctor_repository.get_all_doctor_repository(
+            current_page=current_page,page_size=page_size,text_search=text_search,filter_data=filter_data,order_by=order_by,is_desc=is_desc
+        )
+        return result
 
     @catch_error_helper(message=None)
     async def get_all_doctor_by_text_search(

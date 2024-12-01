@@ -45,6 +45,56 @@ from src.schema.doctor_schema import RequestDoctorWorkScheduleNextWeek
 
 
 class DoctorRepository(PostgresRepository[DoctorModel]):
+
+
+    @catch_error_repository(None)
+    async def get_all_doctor_repository(self,current_page: int =1 ,page_size: int = 10,text_search: str | None = None,filter_data: dict[str, Any]={},order_by:str | None = None,is_desc:bool = False):
+        conditions = [getattr(DoctorModel, key) == value for key, value in filter_data.items()]
+        _select = select(DoctorModel).filter(*conditions)
+        _select_count = select(func.count(DoctorModel.id)).filter(*conditions)
+        if text_search is not None:
+            text_search = text_search.strip().lower()
+            _select = _select.where(
+                or_(
+                    (self.model_class.first_name + " " + self.model_class.last_name).ilike(f"%{text_search}%"),
+                    (self.model_class.last_name + " " + self.model_class.first_name).ilike(f"%{text_search}%"),
+                    self.model_class.phone_number.ilike(f"%{text_search}%"),
+                    self.model_class.email.ilike(f"%{text_search}%"),
+                    self.model_class.license_number.ilike(f"%{text_search}%")
+                )
+            )
+            _select_count= _select_count.where(
+                or_(
+                    (self.model_class.first_name + " " + self.model_class.last_name).ilike(f"%{text_search}%"),
+                    (self.model_class.last_name + " " + self.model_class.first_name).ilike(f"%{text_search}%"),
+                )
+            )
+
+        _result_total_doctor = await self.session.execute(_select_count)
+        _total_doctor = _result_total_doctor.scalar_one_or_none() or 0
+        # skip data
+        _skip = (current_page - 1) * page_size
+        _limit = page_size
+        _select = _select.offset(offset=_skip).limit(limit=_limit)
+        if order_by is not None:
+            if is_desc:
+                _select = _select.order_by(desc(getattr(DoctorModel,order_by)))
+            else:
+                _select = _select.order_by(asc(getattr(DoctorModel,order_by)))
+        else:
+            _select = _select.order_by(asc(DoctorModel.id))
+
+        _result_doctor_data = await self.session.execute(_select)
+        _doctors_data = _result_doctor_data.unique().scalars().all()
+        return {
+            "data": [ _doctor.as_dict for _doctor in _doctors_data],
+            "total_page": math.ceil(_total_doctor / page_size),
+            "current_page":current_page,
+            "page_size": page_size,
+        }
+
+        _select_count = select(func.count(DoctorModel.id)).filter(**filter_data)
+    @catch_error_repository(None)
     async def get_all(
         self,
         skip: int = 0,

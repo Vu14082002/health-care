@@ -7,10 +7,12 @@ from src.enum import ErrorCode, Role
 from src.factory import Factory
 from src.helper.doctor_helper import DoctorHelper
 from src.models.doctor_model import DoctorModel
+from src.models.doctor_model import DoctorModel
 from src.schema.doctor_schema import (
     RequestDetailDoctorSchema,
     RequestDoctorPatientByIdSchema,
     RequestDoctorPatientSchema,
+    RequestGetAllDoctorsRootSchema,
     RequestGetAllDoctorsRootSchema,
     RequestGetAllDoctorsSchema,
 )
