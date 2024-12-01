@@ -41,7 +41,7 @@ class AppointmentModel(Model):
         Index("idx_appointment_status", "appointment_status"),
     )
 
-    id: Mapped[int] = mapped_column(Integer, Sequence('id_seq', start=1000000, increment=1),primary_key=True, autoincrement=True,)
+    id: Mapped[int] = mapped_column(Integer, Sequence('appointment_id_seq', start=1000000, increment=1),primary_key=True, autoincrement=True,)
 
     name: Mapped[str] = mapped_column(String, nullable=True)
 
