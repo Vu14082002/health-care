@@ -13,8 +13,6 @@ services:
         ports:
             - '6379:6379'
         command: redis-server --loglevel warning
-        volumes:
-            - ./docker-volumes/cache:/data
         networks:
             - local
     redis-commander:
@@ -35,16 +33,11 @@ services:
         ports:
             - '5432:5432'
         environment:
-            # - POSTGRES_USER=admin
-            # - POSTGRES_PASSWORD=admin
-            # - POSTGRES_DB=health_care
-            # - PGDATA: "/data"
             POSTGRES_USER: "admin"
             POSTGRES_PASSWORD: "admin"
             POSTGRES_DB: "health_care"
             PGDATA: "/data"
         volumes:
-        - ./postgres/pgdata:/data
         - ./postgres/config:/config/
         networks:
             - local
