@@ -21,20 +21,22 @@ class PaymentApi(HTTPEndpoint):
         '''
         this api is used to get all appointments, only admin, doctor and patient can get all appointments
         '''
-        data: QueryParams =request.query_params
-        payment_id= data.get("id")
+        _query_params: QueryParams =request.query_params
+        payment_id = _query_params.get("id")
         if not payment_id:
             raise BadRequest(
                 error_code=ErrorCode.BAD_REQUEST.name,
                 errors={"message":"payment_id is required"}
             )
-        status_code= data.get("code")
+        status_code = _query_params.get("code", "")
+
         appointment_helper = await Factory().get_appointment_helper()
 
-        data = await appointment_helper.create_appointment_with_payment(
-            payment_id, status_code=status_code
+        _data = await appointment_helper.create_appointment_with_payment(
+            payment_id=payment_id, status_code=status_code
         )
-        return data
+
+        return _data
 
 class AppointmentApiGET(HTTPEndpoint):
     async def get(

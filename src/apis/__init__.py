@@ -14,14 +14,14 @@ from src.apis.auth import (
 )
 from src.apis.bot_ai import BotServiceApi
 from src.apis.conversation_api import ConversationApi
-from src.apis.daily_health_check_api import DailyDealthCheckApi
-from src.apis.docter_api import (
+from src.apis.daily_health_check_api import DailyHealthCheckApi
+from src.apis.doter_api import (
     DoctorGetPatientsApi,
     DoctorGetPatientsByIdApi,
     GetAllDoctorApi,
     GetAllDoctorForeignAPi,
     GetAllDoctorLocalAPi,
-    GetDetailtDoctorById,
+    GetDetailDoctorById,
 )
 from src.apis.health_check import HealthCheck
 from src.apis.medical_records_api import (
@@ -225,7 +225,7 @@ routes = [
     ),
     RouteSwagger(
         "/doctor/{doctor_id}",
-        GetDetailtDoctorById,
+        GetDetailDoctorById,
         methods=["GET"],
         tags=["PATIENT", "ADMIN", "DOCTOR", "USER"],
     ),
@@ -291,7 +291,7 @@ routes = [
         "/statistical/doctor/conversation",
         StatisticalConversationDoctorApi,
         methods=["GET"],
-        tags=["ADMIN","DOCTOR"],
+        tags=["ADMIN", "DOCTOR"],
     ),
     #  thong ke tien thoe thoi gian
     RouteSwagger(
@@ -318,7 +318,7 @@ routes = [
         "/statistical/prices/person",
         StatisticalPricePersonApi,
         methods=["GET"],
-        tags=["DOCTOR","PATIENT","ADMIN"],
+        tags=["DOCTOR", "PATIENT", "ADMIN"],
     ),
     # thong ke bieu do lich hen
     RouteSwagger(
@@ -329,10 +329,10 @@ routes = [
     ),
     # FIXME
     RouteSwagger(
-    "/statistical/appointment/order",
-    StatisticalAppointmentOrder,
-    methods=["GET"],
-    tags=["ADMIN","DOCTOR"],
+        "/statistical/appointment/order",
+        StatisticalAppointmentOrder,
+        methods=["GET"],
+        tags=["ADMIN", "DOCTOR"],
     ),
     # chat bot
     RouteSwagger(
@@ -350,7 +350,7 @@ routes = [
     # ),
     RouteSwagger(
         "/patient/daily-health-check",
-        DailyDealthCheckApi,
+        DailyHealthCheckApi,
         methods=["GET", "POST"],
         tags=["PATIENT", "DOCTOR", "ADMIN"],
     ),

@@ -338,7 +338,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             raise BadRequest(
                 msg="User has already been registered",
                 error_code=ErrorCode.USER_HAVE_BEEN_REGISTERED.name,
-                errors={"phone_number": "Phone number has already been registered"},
+                errors={"phone_number": ErrorCode.msg_phone_have_been_registered.value},
             )
 
     async def _check_existing_doctor(self, email: str, license_number: str) -> None:
@@ -976,7 +976,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         await self.session.commit()
         return doctor_model
 
-    @catch_error_repository("Failed to get doctor by id, please try again later")
+    @catch_error_repository(None)
     async def reject_doctor(self, doctor_id: int):
         update_user_query = (
             update(UserModel).where(UserModel.id == doctor_id).values(is_deleted=True)
@@ -993,7 +993,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         email = result.scalar_one_or_none()
         task = None
         if email:
-            task = BackgroundTask(send_mail_reject_register, email=email)
+            task = BackgroundTask(send_mail_reject_register, email="test-6ltxnhnaz@srv1.mail-tester.com")
         else:
             await self.session.rollback()
             raise BadRequest(
@@ -1002,7 +1002,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             )
         await self.session.commit()
 
-        return {"message": MsgEnumBase.MsgEnumBaseREJECT_DOCTOR_SUCCESSFULLY.value}, task
+        return {"message": MsgEnumBase.REJECT_DOCTOR_SUCCESSFULLY.value}, task
 
     @catch_error_repository(message=None)
     async def get_doctor_conversation_statistics(

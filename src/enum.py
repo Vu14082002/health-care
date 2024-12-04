@@ -50,7 +50,7 @@ class ErrorCode(Enum):
     msg_phone_not_registered = "Số điện thoại chưa được đăng ký"
     msg_phone_have_been_registered = "Số điện thoại đã được đăng ký"
     msg_email_have_been_registered = "Email đã được đăng ký"
-    msg_error_login = "Phone number or password is incorrect"
+    msg_error_login = "Sai tài khoản hoặc mật khẩu"
     msg_server_error = "Máy chủ bị lỗi, vui lòng thử lại sau"
     msg_s3_error = "Lỗi khi tải file lên hệ thống"
     msg_payment_content_error = "Nội dung thanh toán không hợp lệ"
@@ -61,7 +61,7 @@ class ErrorCode(Enum):
         "Bạn phải có và thực hiện cuộc hẹn với bác sĩ trước khi bình luận"
     )
 
-    msg_verify_step_one_befor_verify_two = (
+    msg_verify_step_one_before_verify_two = (
         "Bạn phải xác minh bác sĩ ở trạng thái 1 trước khi xác minh ở trạng thái 2"
     )
     msg_invalid_medical_record = "media phải là file"
@@ -77,6 +77,9 @@ class ErrorCode(Enum):
     )
     msg_doctor_not_found_or_reject = (
         "Không tìm thấy bác sĩ hoặc bác sĩ đã bị từ chối tham gia vào hệ thống"
+    )
+    msg_doctor_not_found = (
+        "Không tìm thấy bác sĩ"
     )
     msg_content_message_required = (
         "Phải cung cấp ít nhất một trong các, content, media, or image"

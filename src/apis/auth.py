@@ -13,7 +13,10 @@ from src.enum import ErrorCode, Role, TypeOfDisease
 from src.factory import Factory
 from src.helper.check_file_valid import is_valid_image
 from src.helper.doctor_helper import DoctorHelper
-from src.helper.email_helper import send_mail_request_additional_info, send_mail_request_final_success
+from src.helper.email_helper import (
+    send_mail_request_additional_info,
+    send_mail_request_final_success,
+)
 from src.helper.s3_helper import S3Service
 from src.helper.user_helper import UserHelper
 from src.models.doctor_model import DoctorModel
@@ -30,17 +33,15 @@ from src.schema.register import (
 )
 
 
-
-
 async def get_url_from_request(request: Request,key:str) -> str | None:
     form_request = await request.form()
-    upload_file = form_request.get(key, None) #type: ignore
+    upload_file = form_request.get(key, None)
     if upload_file:
-        if isinstance(form_request.get("avatar"), UploadFile):
-            _ = is_valid_image(upload_file) #type: ignore
+        if isinstance(upload_file, UploadFile):
+            _ = is_valid_image(upload_file)
             s3_service = S3Service()
-            url_datta = await s3_service.upload_file_from_form(upload_file) #type: ignore
-            return url_datta
+            url_data = await s3_service.upload_file_from_form(upload_file)
+            return url_data
     return None
 
 class AdminRegisterApi(HTTPEndpoint):
@@ -132,8 +133,10 @@ class DoctorLocalRegisterApi(HTTPEndpoint):
             result: tuple[DoctorModel, BackgroundTask] = (
                 await doctor_helper.create_doctor(data)
             )
-            reponse = {"data": result[0].as_dict, "errors": None, "error_code": None}
-            return JSONResponse(content=reponse, status_code=200, background=result[1])
+            _response = {"data": result[0].as_dict, "errors": None, "error_code": None}
+            return JSONResponse(
+                content=_response, status_code=200, background=result[1]
+            )
         except Exception as ex:
             if isinstance(ex, BaseException):
                 raise ex
@@ -380,9 +383,7 @@ class DoctorOtherVerifyFinalApiPut(HTTPEndpoint):
                 online_price=form_data.online_price,
             )
             if result:
-                task = BackgroundTask(
-                send_mail_request_final_success, result
-                )
+                task = BackgroundTask(send_mail_request_final_success, result)
                 return JSONResponse(
                     content={"data":{"message": "Bác sĩ đã xác minh thành công ở trạng thái 2"}},
                     status_code=200,

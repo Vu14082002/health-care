@@ -18,7 +18,7 @@ from src.schema.daily_health_check_schema import (
 )
 
 
-class DailyDealthCheckApi(HTTPEndpoint):
+class DailyHealthCheckApi(HTTPEndpoint):
     async def post(
         self,
         request: Request,

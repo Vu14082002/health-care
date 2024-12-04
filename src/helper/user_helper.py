@@ -56,7 +56,7 @@ class UserHelper:
         if not PasswordHandler.verify(user.password_hash, plain_password=password):
             raise Unauthorized(
                 error_code=ErrorCode.UNAUTHORIZED.name,
-                errors={"message": ErrorCode.msg_wrong_password.name},
+                errors={"message": ErrorCode.msg_wrong_password.value},
             )
         return user
 

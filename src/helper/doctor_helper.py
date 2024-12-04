@@ -2,9 +2,11 @@ import logging
 from datetime import date, datetime, time, timedelta
 from typing import Any, Dict, List, Literal
 
+from sqlalchemy.exc import NoResultFound
+
 from src.core.decorator.exception_decorator import catch_error_helper
 from src.core.exception import BadRequest
-from src.enum import ErrorCode, TypeOfDisease
+from src.enum import ErrorCode
 from src.models.doctor_model import DoctorExaminationPriceModel, DoctorModel
 from src.repositories.doctor_repository import DoctorRepository
 from src.schema.doctor_schema import RequestDoctorWorkScheduleNextWeek
@@ -162,13 +164,22 @@ class DoctorHelper:
     async def verify_doctor(
         self, doctor_id: int, verify_status: int, online_price: float | None
     ) -> bool|str:
-        doctor = await self.doctor_repository.get_by("id", doctor_id, unique=True)
+        doctor = None
+        try:
+            doctor = await self.doctor_repository.get_by("id", doctor_id, unique=True)
+        except Exception as e:
+            if isinstance(e, NoResultFound):
+                raise BadRequest(
+                    error_code=ErrorCode.BAD_REQUEST.name,
+                    errors={"message": ErrorCode.msg_doctor_not_found.value},
+                )
+            raise e
         if doctor and doctor.verify_status in [0, 1, -1]:
             if verify_status == 2 and doctor.verify_status != 1:
                 raise BadRequest(
                     error_code=ErrorCode.BAD_REQUEST.name,
                     errors={
-                        "message": ErrorCode.msg_verify_step_one_befor_verify_two.value
+                        "message": ErrorCode.msg_verify_step_one_before_verify_two.value
                     },
                 )
             doctor_examination_price = DoctorExaminationPriceModel(
