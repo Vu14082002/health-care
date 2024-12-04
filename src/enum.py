@@ -52,6 +52,7 @@ class ErrorCode(Enum):
     msg_email_have_been_registered = "Email đã được đăng ký"
     msg_error_login = "Sai tài khoản hoặc mật khẩu"
     msg_server_error = "Máy chủ bị lỗi, vui lòng thử lại sau"
+    msg_working_already_order = "Lịch làm việc này đã được đặt, vui lòng chọn lịch làm việc khác"
     msg_s3_error = "Lỗi khi tải file lên hệ thống"
     msg_payment_content_error = "Nội dung thanh toán không hợp lệ"
     msg_email_or_license_number_have_been_registered = (

@@ -18,7 +18,7 @@ class PaymentHelper:
         amount: int,
         description: str,
         returnUrl: str,
-        cancelUrl:str|None = "",
+        cancelUrl:str = "",
         time_session:int = 300
     ):
         MAX_RETRY:Final[int]=5

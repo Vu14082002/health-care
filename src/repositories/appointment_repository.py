@@ -64,6 +64,12 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             )
 
         # check work schedule is ordered
+        _value_redis_order = await redis_working.get(str(work_schedule_id))
+        if _value_redis_order:
+            raise BadRequest(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_appointment_already_order.value},
+            )
         patient_model = await self._get_patient_model_by_id(patient_id)
         doctor_model = await self._get_doctor_model_by_id(doctor_id)
         work_schedule_model = self._get_work_schedule_model_by_id(
@@ -77,7 +83,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         fee_examprice = self._get_fee_examination(doctor_model, work_schedule_model)
         # validate appointment
         appointment = AppointmentModel()
-        # logic save redos if online and payment id bank
+        # logic save redis if online and payment id bank
         if work_schedule_model.examination_type.lower() == "online" and not is_payment:
             raise BadRequest(
                 error_code=ErrorCode.PAYMENT_REQUIRED.name,
@@ -294,6 +300,8 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             medical_examination_fee = work_schedule_model.medical_examination_fee
             # assign value to for instance
             payos_helper= PaymentHelper()
+            if not cancel_url:
+                cancel_url=""
             data = payos_helper.create_payment(
                 amount=int(medical_examination_fee),
                 description = f"Ma giao dich {work_schedule_id}.",

@@ -26,7 +26,7 @@ class PaymentApi(HTTPEndpoint):
         if not payment_id:
             raise BadRequest(
                 error_code=ErrorCode.BAD_REQUEST.name,
-                errors={"message":"payment_id is required"}
+                errors={"message":"id of payment is required"}
             )
         status_code = _query_params.get("code", "")
 
