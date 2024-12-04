@@ -97,9 +97,8 @@ class CreateDoctorWorkingTimeApi(HTTPEndpoint):
             if role not in [Role.DOCTOR.name, Role.ADMIN.name]:
                 raise Forbidden(
                     error_code=ErrorCode.FORBIDDEN.name,
-                    errors={"message": "You can't access this endpoint"},
+                    errors={"message": ErrorCode.msg_permission_denied.value},
                 )
-
             doctor_id = (
                 auth.get("id") if role == Role.DOCTOR.name else form_data.doctor_id
             )
@@ -135,15 +134,13 @@ class DoctorEmptyWorkingSchedulingTimeApi(HTTPEndpoint):
                 raise Forbidden(
                     msg="Forbidden",
                     error_code=ErrorCode.FORBIDDEN.name,
-                    errors={
-                        "message": "Only doctors or Admin can access this endpoint"
-                    },
+                    errors={"message": ErrorCode.msg_permission_denied.value},
                 )
             if user_role == Role.DOCTOR.name and query_params.doctor_id is not None:
                 raise Forbidden(
                     msg="Forbidden",
                     error_code=ErrorCode.FORBIDDEN.name,
-                    errors={"message": "You are not allowed to access this endpoint"},
+                    errors={"message": ErrorCode.msg_permission_denied.value},
                 )
             doctor_id = (
                 user_id if user_role == Role.DOCTOR.name else query_params.doctor_id

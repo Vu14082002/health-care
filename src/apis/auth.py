@@ -321,10 +321,10 @@ class LoginApi(HTTPEndpoint):
     async def post(self, form_data: RequestLoginSchema) -> Dict[str, Any]:
         try:
             user_helper: UserHelper = await Factory().get_user_helper()
-            reponse_json = await user_helper.login(
+            response_json = await user_helper.login(
                 form_data.phone_number, form_data.password
             )
-            return reponse_json
+            return response_json
         except Exception as ex:
             if isinstance(ex, BaseException):
                 raise ex

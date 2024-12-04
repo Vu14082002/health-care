@@ -579,7 +579,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 if data_check_model.type_of_disease != data.examination_type:
                     await self.session.rollback()
                     raise BadRequest(
-                        error_code=ErrorCode.FORBIDDEN.name,
+                        error_code=ErrorCode.BAD_REQUEST.name,
                         errors={
                             "message": f"Bạn không thẻ tạo lịch làm việc với lịch : {data.examination_type}"
                         },
