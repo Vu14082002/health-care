@@ -174,6 +174,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                     ).label("work_schedules"),
                 )
                 .where(
+                    WorkScheduleModel.ordered == False,
                     WorkScheduleModel.work_date.between(start_date, end_date),
                     # FIXME for redis
                     # WorkScheduleModel.id.not_in(ids),
