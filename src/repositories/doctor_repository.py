@@ -145,7 +145,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             # end_date = start_date + \
             #     timedelta(days=(6 - start_date.weekday()) % 7)
             # key in redis
-            ids = []
+            ids: list[int]= []
             key: List[str] = await redis_working.get_all_keys()
             if key:
                 for k in key:
@@ -174,6 +174,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                     ).label("work_schedules"),
                 )
                 .where(
+                    WorkScheduleModel.id.notin_(ids),
                     WorkScheduleModel.ordered == False,
                     WorkScheduleModel.work_date.between(start_date, end_date),
                     # FIXME for redis
