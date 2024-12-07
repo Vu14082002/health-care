@@ -300,8 +300,9 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             medical_examination_fee = work_schedule_model.medical_examination_fee
             # assign value to for instance
             payos_helper= PaymentHelper()
-            if not cancel_url:
-                cancel_url=""
+            # if not cancel_url:
+            #     cancel_url=""
+            cancel_url="https://www.google.com/"
             data = payos_helper.create_payment(
                 amount=int(medical_examination_fee),
                 description = f"Ma giao dich {work_schedule_id}.",

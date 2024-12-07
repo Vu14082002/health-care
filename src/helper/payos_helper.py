@@ -18,11 +18,13 @@ class PaymentHelper:
         amount: int,
         description: str,
         returnUrl: str,
-        cancelUrl:str = "",
+        cancelUrl:str |None= "",
         time_session:int = 300
     ):
         MAX_RETRY:Final[int]=5
         retry_count=0
+        if not isinstance(cancelUrl, str):
+            cancelUrl = ""
         while retry_count < MAX_RETRY:
             try:
                 utc_plus_7 = pytz.timezone("Asia/Ho_Chi_Minh")
