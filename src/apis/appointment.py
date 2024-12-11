@@ -120,7 +120,8 @@ class AppointmentApi(HTTPEndpoint):
                 await Factory().get_appointment_helper()
             )
             return_url: URL = request.url
-            call_back_url: str = f"{return_url.scheme}://{return_url.netloc}/payment-appointment"
+            # call_back_url: str = f"https://{return_url.netloc}/payment-appointment"
+            call_back_url: str = "https://ganache-staging.iuh-mern.id.vn/v1/health-care/payment-appointment"
             response_data = await appointment_helper.create_appointment(
                 patient_id=patient_id,
                 name=form_data.name,

@@ -148,9 +148,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             ids: list[int]= []
             key: List[str] = await redis_working.get_all_keys()
             if key:
-                for k in key:
-                    if k.isdigit():
-                        ids.append(int(k))
+                ids = [int(k) for k in key if k.isdigit()]
             work_schedule_subquery = (
                 select(
                     WorkScheduleModel.doctor_id,
