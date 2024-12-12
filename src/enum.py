@@ -122,6 +122,9 @@ class ErrorCode(Enum):
 
     msg_not_verify = "Bác sĩ chưa được xác minh, vui lòng chờ xác minh từ quản trị viên"
     msg_not_found_appointment_for_conversation = "Không tìm thấy cuộc hẹn hoặc bạn không được phép tạo cuộc trò chuyện trong cuộc hẹn này"
+    msg_error_delete_working_time_before = (
+        "Bạn không thể  xóa  lịch đã được lên lịch thành công trước đó"
+    )
 
 class MsgEnumBase(Enum):
     DES_MEDIA_FILE: Final[str] = "is video of post, and accept one file"

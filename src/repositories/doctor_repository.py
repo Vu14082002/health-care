@@ -584,6 +584,45 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                             "message": f"Bạn không thẻ tạo lịch làm việc với lịch : {data.examination_type}"
                         },
                     )
+            # check list update in week have working schedule has order is true
+            # get range week
+            work_date: date = data.work_schedule[0].work_date
+            def get_week_range(work_date: date):
+                monday = work_date - timedelta(days=work_date.weekday())  # Ngày thứ 2
+                sunday = monday + timedelta(days=6)                      # Ngày Chủ Nhật
+                return monday, sunday
+            monday_date, sunday_date = get_week_range(work_date)
+            # check working schedule in week
+            # get working schedule in week
+            query = select(WorkScheduleModel).where(
+                and_(
+                    WorkScheduleModel.doctor_id == doctor_id,
+                    WorkScheduleModel.work_date.between(monday_date, sunday_date),
+                    WorkScheduleModel.ordered == True
+                )
+            )
+            result_query = await self.session.execute(query)
+            _list_working_schedule_in_week = result_query.scalars().all()
+            # check data have time slot in _list_working_schedule_in_week if not have time slot in _list_working_schedule_in_week raise error
+            for work_ordered  in  _list_working_schedule_in_week:
+                is_contain = False
+                for daily_schedule_time in data.work_schedule:
+                    if work_ordered.work_date == daily_schedule_time.work_date:
+                        for time_slot in daily_schedule_time.time_slots:
+                            if work_ordered.start_time <= time_slot.start_time and work_ordered.end_time >= time_slot.end_time:
+                                is_contain = True
+                                # remove time slot in data
+                                daily_schedule_time.time_slots.remove(time_slot)
+                                break
+                if not is_contain:
+                    raise BadRequest(
+                        error_code=ErrorCode.SCHEDULE_CONFLICT.name,
+                        errors={
+                            "message": ErrorCode.msg_error_delete_working_time_before.value,
+                            "data": work_ordered.as_dict,
+                        },
+                    )
+
             new_schedules = []
             conflicts = []
             for daily_schedule in data.work_schedule:
@@ -605,23 +644,24 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                     existing_schedules = existing_schedules.scalars().all()
 
                     for existing_schedule in existing_schedules:
-                        if existing_schedule.appointment:
-                            raise BadRequest(
-                                error_code=ErrorCode.SCHEDULE_CONFLICT.name,
-                                errors={
-                                    "message": ErrorCode.msg_conflict_working_schedule_with_appointment.value,
-                                    "conflicts": [
-                                        {
-                                            "work_date": existing_schedule.work_date.isoformat(),
-                                            "start_time": existing_schedule.start_time.isoformat(),
-                                            "end_time": existing_schedule.end_time.isoformat(),
-                                            "examination_type": existing_schedule.examination_type,
-                                        }
-                                    ],
-                                    "appointment_ids": existing_schedule.appointment.as_dict,
-                                },
-                            )
-                        await self.session.delete(existing_schedule)
+                        # if existing_schedule.appointment:
+                        #     raise BadRequest(
+                        #         error_code=ErrorCode.SCHEDULE_CONFLICT.name,
+                        #         errors={
+                        #             "message": ErrorCode.msg_conflict_working_schedule_with_appointment.value,
+                        #             "conflicts": [
+                        #                 {
+                        #                     "work_date": existing_schedule.work_date.isoformat(),
+                        #                     "start_time": existing_schedule.start_time.isoformat(),
+                        #                     "end_time": existing_schedule.end_time.isoformat(),
+                        #                     "examination_type": existing_schedule.examination_type,
+                        #                 }
+                        #             ],
+                        #             "appointment_ids": existing_schedule.appointment.as_dict,
+                        #         },
+                        #     )
+                        if not existing_schedule.ordered:
+                            await self.session.delete(existing_schedule)
 
                     query_doctor_model = (
                         select(DoctorModel)
