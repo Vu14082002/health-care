@@ -10,4 +10,5 @@ COPY . .
 # RUN alembic upgrade head
 EXPOSE 5005
 # CMD ["python", "main.py"]
-CMD ["sh", "-c", "alembic upgrade head && python main.py"]
+# CMD ["sh", "-c", "alembic upgrade head && python main.py"]
+CMD ["sh", "-c", "python main.py"]

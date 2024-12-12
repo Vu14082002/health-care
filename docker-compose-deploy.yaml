@@ -1,89 +1,17 @@
-version: '3'
 services:
-    web:
-        container_name: health_care
-        build:
-            context: .
-            dockerfile: Dockerfile
-        ports:
-            - '5005:5005'
-        depends_on:
-            - redis
-            - postgres
-        networks:
-            - app-network
-        env_file:
-            - .env
-        volumes:
-            - .:/app
-    bot_chat:
-        container_name: bot-chat-service:1.0
-        image: sherlockvufullsnack/health_care_bot-api:latest
-        restart: always
-        ports:
-            - '6000:8080'
-        networks:
-            - app-network
-    redis:
-        container_name: redis_health_care
-        image: redis:alpine
-        restart: always
-        ports:
-            - '6379:6379'
-        command: redis-server --loglevel warning
-        volumes:
-            - ./docker-volumes/cache:/data
-        networks:
-            - app-network
-
-    redis-commander:
-        container_name: redis_commander_health_care
-        image: ghcr.io/joeferner/redis-commander:latest
-        restart: always
-        ports:
-            - '8081:8081'
-        environment:
-            - REDIS_HOSTS=local:redis:6379
-        networks:
-            - app-network
-
-    postgres:
-        container_name: postgres_health_care
-        image: postgres:13.15
-        restart: always
-        ports:
-            - '5432:5432'
-        environment:
-            - POSTGRES_USER=admin
-            - POSTGRES_PASSWORD=admin
-            - POSTGRES_DB=health_care
-        networks:
-            - app-network
-    adminer:
-        container_name: adminer-lung
-        image: adminer
-        restart: always
-        ports:
-            - '9999:8080'
-        networks:
-            - app-network
-    pgamdin:
-        container_name: pgadmin_health_care
-        image: dpage/pgadmin4:snapshot
-        restart: always
-        ports:
-            - '9000:80'
-        environment:
-            PGADMIN_DEFAULT_EMAIL: admin@gmail.com
-            PGADMIN_DEFAULT_PASSWORD: admin
-        depends_on:
-            - postgres
-        networks:
-            - app-network
+  web:
+    container_name: health_care
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '5005:5005'
+    networks:
+      - local
+    env_file:
+      - .env
+    volumes:
+      - .:/app
 networks:
-    app-network:
-        driver: bridge
-
-volumes:
-    postgresql_master_data:
-        driver: local
+  local:
+    driver: bridge
