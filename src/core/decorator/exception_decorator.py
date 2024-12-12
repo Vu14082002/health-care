@@ -43,6 +43,7 @@ def catch_error_repository(message: str | None = None):
                     logging.error(f"Business logic error in {func.__name__}: {e}")
                     await _rollback_session(self)
                     raise e
+                logging.error("Error From Repository")
                 logging.error(f"Unexpected error in {func.__name__}: {e}")
                 await _rollback_session(self)
                 raise InternalServer(
@@ -68,6 +69,7 @@ def catch_error_helper(message: Optional[str] = None):
                 logging.info(f"{func.__name__} executed successfully")
                 return result
             except Exception as e:
+                logging.error("Error From Helper")
                 if isinstance(e, BaseException):
                     raise e
                 logging.error(f"Unexpected error in {func.__name__}: {e}")
