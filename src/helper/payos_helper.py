@@ -1,3 +1,4 @@
+import logging
 import random
 from datetime import datetime, timedelta
 from typing import Final
@@ -55,8 +56,8 @@ class PaymentHelper:
     ):
         try:
             payment_link_info: PaymentLinkInformation = payOsIns.getPaymentLinkInformation(orderId = orderId)
+            logging.info(f"payment_link_info: {payment_link_info}")
             return payment_link_info.to_json()
-
         except Exception as e:
-            print(e)
+            logging.error(f"Error occurred: {e}")
             return None

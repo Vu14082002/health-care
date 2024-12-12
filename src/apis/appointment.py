@@ -31,7 +31,7 @@ class PaymentApi(HTTPEndpoint):
         status_code = _query_params.get("code", "")
 
         appointment_helper = await Factory().get_appointment_helper()
-
+        log.info(f"continue from api payment::::payment_id: {payment_id}, status_code: {status_code}")
         _data = await appointment_helper.create_appointment_with_payment(
             payment_id=payment_id, status_code=status_code
         )
@@ -119,7 +119,6 @@ class AppointmentApi(HTTPEndpoint):
             appointment_helper: AppointmentHelper = (
                 await Factory().get_appointment_helper()
             )
-            return_url: URL = request.url
             call_back_url: str = "https://ganache-staging.iuh-mern.id.vn/v1/health-care/payment-appointment"
             response_data = await appointment_helper.create_appointment(
                 patient_id=patient_id,

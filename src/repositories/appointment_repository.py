@@ -149,6 +149,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
     @catch_error_repository(message=None)
     async def create_appointment_with_payment(self, payment_id: str,status_code:str):
         MAX_RETRY:Final[int]=3
+        log.info(f"CHECK:::: GET PAYMENT INFO: {payment_id}")
         obj_payment=payment_helper.get_payment_info(payment_id)
         while obj_payment is None and MAX_RETRY > 0:
             time.sleep(2)
@@ -167,6 +168,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                 error_code=ErrorCode.PAYMENT_CONTENT_ERROR.name,
                 errors={"message": ErrorCode.msg_payment_content_error.value},
             )
+        log.info(f"CHECK:::: CHECK WORK SCHEDULE ID: {match.group(1)}")
         work_schedule_id = match.group(1)
 
         value_redis = await redis_working.get(work_schedule_id)
@@ -181,6 +183,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         appointment_data = value_redis.get("appointment")
         del appointment_data["id"]
 
+        log.info(f"CHECK: BUSSINISLOGIC: {match.group(1)}")
         patient_id: Final[int] = value_redis.get("patient").get("id")
         work_schedule_id:Final[str]= value_redis.get("work_schedule").get("id")
         insert_appointment= insert(AppointmentModel).values(**appointment_data).returning(AppointmentModel.id)

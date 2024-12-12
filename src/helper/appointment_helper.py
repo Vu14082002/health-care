@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 from typing import Optional
 
@@ -33,9 +34,11 @@ class AppointmentHelper:
         )
     @catch_error_helper(message=None)
     async def create_appointment_with_payment(self, payment_id: str, status_code:str):
+        logging.info(f"create_appointment_with_payment with data : {payment_id} and status_code: {status_code}")
         _result = await self.appointment_repository.create_appointment_with_payment(
             payment_id, status_code=status_code
         )
+        logging.info(f"create_appointment_with_payment: {_result}")
         return _result
 
     @catch_error_helper(message=None)
