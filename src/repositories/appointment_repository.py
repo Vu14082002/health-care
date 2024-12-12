@@ -178,20 +178,39 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                 error_code=ErrorCode.SERVER_ERROR.name,
                 errors={"message": ErrorCode.msg_server_error.value},
             )
-
+        log.info("CHECK: BUSSINISLOGIC: GET VALUE REDIS")
+        log.info(value_redis)
         # assign value fot instance
         appointment_data = value_redis.get("appointment")
+        if not appointment_data:
+            raise ValueError("Appointment data is missing")
         del appointment_data["id"]
 
         log.info(f"CHECK: BUSSINISLOGIC: {match.group(1)}")
         patient_id: Final[int] = value_redis.get("patient").get("id")
+        if not patient_id:
+            log.error("Patient not found")
+            raise BadRequest(
+                error_code=ErrorCode.NOT_FOUND.name,
+                errors={"message": ErrorCode.msg_patient_not_found.value},
+            )
         work_schedule_id:Final[str]= value_redis.get("work_schedule").get("id")
+        if not work_schedule_id:
+            log.error("Work schedule not found")
+            raise BadRequest(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.SERVER_ERROR.value},
+            )
+
         insert_appointment= insert(AppointmentModel).values(**appointment_data).returning(AppointmentModel.id)
+        log.info(f"CHECK: BUSSINISLOGIC: INSERT APPOINTMENT with  check work_schedule_id: {work_schedule_id}")
         update_work_schedule = (
             update(WorkScheduleModel)
             .values({"ordered": True})
             .where(WorkScheduleModel.id == int(work_schedule_id))
         )
+
+        log.info(f"CHECK: BUSSINISLOGIC: UPDATE PATIENT with  check work_schedule_id: {work_schedule_id}")
         update_patient = (
             update(PatientModel)
             .values(
