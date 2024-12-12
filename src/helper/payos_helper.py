@@ -34,6 +34,10 @@ class PaymentHelper:
                 time_expired = current_time_utc_plus_7 + timedelta(seconds=time_session)
                 expired_at = int(time_expired.timestamp())
                 random_number= random.randint(1000, 99999)
+                logging.info(f"CHECK:::: random_number: {random_number}")
+                logging.info(f"CHECK:::: returnUrl: {returnUrl}")
+                logging.info(f"CHECK:::: cancelUrl: {cancelUrl}")
+
                 payment_data = PaymentData(
                     orderCode=random_number,
                     amount=amount,
