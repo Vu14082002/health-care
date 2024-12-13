@@ -32,9 +32,24 @@ class PatientRegisterApi(HTTPEndpoint):
 class UserProfile(HTTPEndpoint):
     async def put(self, form_data: RequestUpdateUserSchema, auth: JsonWebToken):
         try:
-            if auth.get("role") == Role.ADMIN.value:
-                return {"msg": "not implemented yet "}
             user_helper = await Factory().get_user_helper()
+            _user_role = auth.get("role")
+            _user_id:int = auth.get("id")
+            if _user_role == Role.ADMIN.value and not form_data.doctor_id:
+                raise BadRequest(
+                    error_code=ErrorCode.BAD_REQUEST.name,
+                    errors={"doctor_id": ErrorCode.msg_required_field.value},
+                )
+            if _user_role == Role.ADMIN.value:
+                _user_id= form_data.doctor_id
+                form_data.doctor_id = None
+            else:
+                form_data.doctor_id = None
+                form_data.type_of_disease = None
+                form_data.offline_price = None
+                form_data.online_price = None
+                form_data.is_local_person = None
+
             if form_data.avatar:
                 if isinstance(form_data.avatar, UploadFile):
                     upload_file: UploadFile = form_data.avatar  # type: ignore
@@ -43,7 +58,7 @@ class UserProfile(HTTPEndpoint):
                     avatar = await s3_service.upload_file_from_form(upload_file)
                     form_data.avatar = avatar
             user_saved = await user_helper.update_profile(
-                user_id=auth.get("id"), data=form_data.model_dump()
+                user_id=_user_id, data=form_data.model_dump()
             )
             return user_saved
         except Exception as e:

@@ -125,6 +125,7 @@ class ErrorCode(Enum):
     msg_error_delete_working_time_before = (
         "Bạn không thể  xóa  lịch đã được lên lịch thành công trước đó"
     )
+    msg_required_field = "Trường này là bắt buộc"
 
 class MsgEnumBase(Enum):
     DES_MEDIA_FILE: Final[str] = "is video of post, and accept one file"

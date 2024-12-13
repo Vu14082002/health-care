@@ -13,7 +13,7 @@ from src.core.decorator.exception_decorator import (
 from src.core.exception import BadRequest, InternalServer
 from src.core.security.password import PasswordHandler
 from src.enum import ErrorCode
-from src.models.doctor_model import DoctorModel
+from src.models.doctor_model import DoctorExaminationPriceModel, DoctorModel
 from src.models.patient_model import PatientModel
 from src.models.staff_model import StaffModel
 from src.models.user_model import Role, UserModel
@@ -107,8 +107,10 @@ class UserRepository(PostgresRepository[UserModel]):
             if user_model.role == Role.PATIENT.value
             else user_model.doctor
         )
+        # examing fee
+        _data_exclude = ["offline_price", "online_price"]
         value_update = {
-            k: v for k, v in data.items() if k in model.as_dict and v is not None
+            k: v for k, v in data.items() if k in model.as_dict and v is not None and k not in _data_exclude
         }
         # check value_update phone_number or email exists
         value_check = {
@@ -137,8 +139,17 @@ class UserRepository(PostgresRepository[UserModel]):
                 )
         if value_update:
             for key, value in value_update.items():
-                setattr(model, key, value)
-            await self.session.commit()
+                if hasattr(model, key):
+                    setattr(model, key, value)
+
+        if data.get("offline_price") is not None or data.get("online_price") is not None:
+            examination_price = DoctorExaminationPriceModel()
+            examination_price.doctor_id = user_id
+            examination_price.offline_price = data.get("offline_price",0)
+            examination_price.online_price = data.get("online_price",0)
+            self.session.add(examination_price)
+        self.session.add(model)
+        await self.session.commit()
         return model.as_dict
 
     async def _is_phone_exist(

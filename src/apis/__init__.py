@@ -149,7 +149,7 @@ routes = [
         "/user-settings/profile",
         UserProfile,
         methods=["PUT"],
-        tags=["PATIENT", "DOCTOR"],
+        tags=["PATIENT", "DOCTOR","ADMIN"],
     ),
     RouteSwagger(
         "/user-settings/reset-password",

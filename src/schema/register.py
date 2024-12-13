@@ -312,13 +312,64 @@ class RequestUpdateUserSchema(BaseModel):
     description: str | None = None
     license_number: str | None = None
     education: Education | None = None
-    certifications: str | None = None
-
-    # Original Config
+    certification: str | None = None
+    # for admin role
+    offline_price: Optional[float] = None
+    online_price: Optional[float] = None
+    type_of_disease: Literal[
+        TypeOfDisease.BOTH.value, # type: ignore
+        TypeOfDisease.OFFLINE.value, # type: ignore
+        TypeOfDisease.ONLINE.value, # type: ignore
+        None
+    ] = None
+    doctor_id: int | None = None
+    is_local_person: bool | None = None
     class Config:
         from_attributes = True
         arbitrary_types_allowed = True
         extra = "forbid"
+
+    @validator("type_of_disease")
+    def check_type_of_disease(cls, v, values):
+        offline_price = values.get("offline_price")
+        online_price = values.get("online_price")
+
+        if v not in [
+            TypeOfDisease.BOTH.value,
+            TypeOfDisease.OFFLINE.value,
+            TypeOfDisease.ONLINE.value,
+        ]:
+            raise ValueError(
+                f"Invalid type of disease, type_of_disease should be one of {TypeOfDisease.BOTH.value}, {TypeOfDisease.OFFLINE.value}, {TypeOfDisease.ONLINE.value}"
+            )
+
+        if v == TypeOfDisease.OFFLINE.value:
+            if offline_price is None or offline_price <= 0:
+                raise ValueError("Missing or invalid offline price")
+            if online_price is not None:
+                raise ValueError("Online price should not be set for offline-only type")
+
+        elif v == TypeOfDisease.ONLINE.value:
+            if online_price is None or online_price <= 0:
+                raise ValueError("Missing or invalid online price")
+            if offline_price is not None:
+                raise ValueError("Offline price should not be set for online-only type")
+
+        elif v == TypeOfDisease.BOTH.value:
+            if (
+                offline_price is None
+                or offline_price <= 0
+                or online_price is None
+                or online_price <= 0
+            ):
+                raise ValueError(
+                    "Missing or invalid offline/online price for both types"
+                )
+
+        return v
+
+    # Original Config
+
 
     @validator("education", pre=True)
     def check_education(cls, v):
