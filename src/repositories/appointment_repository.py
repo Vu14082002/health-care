@@ -3,7 +3,7 @@ import re
 import time
 from collections import defaultdict
 from datetime import date, datetime, timedelta
-from typing import Final, Optional
+from typing import Final, Literal, Optional
 
 import requests
 from sqlalchemy import and_, case, extract, func, insert, or_, select, update
@@ -878,3 +878,28 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             _patient_data["total_price"] = _total_price
             data.append(_patient_data)
         return data
+
+    @catch_error_repository(message=None)
+    async def statistical_appointment_sum_with_group_by_patient(self, doctor_id: int, examination_type: Literal["online", "offline"]):
+        _select_appointment = select(AppointmentModel).join(WorkScheduleModel).where(
+            and_(
+                AppointmentModel.doctor_id == doctor_id,
+                WorkScheduleModel.examination_type == examination_type
+            )
+        )
+        _execute_query = await self.session.execute(_select_appointment)
+        _result_data = _execute_query.scalars().all()
+        _data = {
+            "total_appointment": len(_result_data),
+            "approved": 0,
+            "processing": 0,
+            "completed": 0,
+        }
+        for appointment in _result_data:
+            if appointment.appointment_status == AppointmentModelStatus.APPROVED.value:
+                _data["approved"] += 1
+            elif appointment.appointment_status == AppointmentModelStatus.PROCESSING.value:
+                _data["processing"] += 1
+            elif appointment.appointment_status == AppointmentModelStatus.COMPLETED.value:
+                _data["completed"] += 1
+        return _data

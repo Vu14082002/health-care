@@ -109,3 +109,19 @@ class RequestStatisticalAppointmentOrderSchema(BaseModel):
         from_attributes = True
         arbitrary_types_allowed = True
         extra = "forbid"
+
+class RequestStatisticalAppointmentSumGroupByPatient(BaseModel):
+    examination_type: Literal["online", "offline"] = Field(
+        default=...,
+        description="query appointment by examination type,if not assign will ignore",
+        examples=["online", "offline", "None"],
+    )
+    doctor_id: int | None = Field(
+        default=None,
+        description="query appointment by doctor id,if not assign will ignore",
+    )
+
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
+        extra = "forbid"

@@ -38,6 +38,7 @@ from src.apis.statistical_api import (
     StatisticalAgeDistributionPatientApi,
     StatisticalAppointment,
     StatisticalAppointmentOrder,
+    StatisticalAppointmentSumGroupByPatient,
     StatisticalConversationDoctorApi,
     StatisticalCountPatientApi,
     StatisticalDoctorApi,
@@ -331,6 +332,13 @@ routes = [
     RouteSwagger(
         "/statistical/appointment/order",
         StatisticalAppointmentOrder,
+        methods=["GET"],
+        tags=["ADMIN", "DOCTOR"],
+    ),
+    # thi so luong lich hen theo benh nhan  va loai kham
+    RouteSwagger(
+        "/statistical/appointment",
+        StatisticalAppointmentSumGroupByPatient,
         methods=["GET"],
         tags=["ADMIN", "DOCTOR"],
     ),

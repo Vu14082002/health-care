@@ -6,8 +6,18 @@ from src.core.security import JsonWebToken
 from src.enum import ErrorCode, Role
 from src.factory import Factory
 from src.helper.doctor_helper import DoctorHelper
-from src.schema.appointment_schema import RequestStatisticalAppointmentOrderSchema, RequestStatisticalAppointmentSchema
-from src.schema.statistical_schema import StatisticalConversation, StatisticalPrice, StatisticalPriceAllDoctor, StatisticalPriceAllPatient, StatisticalPricePerson
+from src.schema.appointment_schema import (
+    RequestStatisticalAppointmentOrderSchema,
+    RequestStatisticalAppointmentSchema,
+    RequestStatisticalAppointmentSumGroupByPatient,
+)
+from src.schema.statistical_schema import (
+    StatisticalConversation,
+    StatisticalPrice,
+    StatisticalPriceAllDoctor,
+    StatisticalPriceAllPatient,
+    StatisticalPricePerson,
+)
 
 
 class StatisticalCountPatientApi(HTTPEndpoint):
@@ -140,6 +150,40 @@ class StatisticalAppointmentOrder(HTTPEndpoint):
                 error_code=ErrorCode.SERVER_ERROR.name,
                 errors={"message": ErrorCode.msg_server_error.value},
             ) from e
+
+
+class StatisticalAppointmentSumGroupByPatient(HTTPEndpoint):
+    async def get(
+        self,
+        query_params: RequestStatisticalAppointmentSumGroupByPatient,
+        auth: JsonWebToken,
+    ):
+        try:
+            user_role: str = auth.get("role")
+            user_id: int = auth.get("id")
+            if user_role == Role.PATIENT.name or not user_id:
+                raise Forbidden(
+                    error_code=ErrorCode.FORBIDDEN.name,
+                    errors={
+                        "message": ErrorCode.msg_permission_denied.value,
+                    },
+                )
+            _user_id = query_params.doctor_id if user_role == Role.ADMIN.name else user_id
+            _examination_type= query_params.examination_type
+            appointment_helper = await Factory().get_appointment_helper()
+            statistics = await appointment_helper.statistical_appointment_sum_with_group_by_patient(
+                doctor_id=_user_id, examination_type=_examination_type
+            )
+            return statistics
+        except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
+            log.error(f"Error: {e}")
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from e
+
 class StatisticalConversationDoctorApi(HTTPEndpoint):
     async def get(self,query_params:StatisticalConversation  , auth: JsonWebToken):
         try:
