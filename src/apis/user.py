@@ -44,6 +44,7 @@ class UserProfile(HTTPEndpoint):
                 _user_id= form_data.doctor_id
                 form_data.doctor_id = None
             else:
+                form_data.verify_status = None
                 form_data.doctor_id = None
                 form_data.type_of_disease = None
                 form_data.offline_price = None

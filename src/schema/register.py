@@ -323,6 +323,7 @@ class RequestUpdateUserSchema(BaseModel):
         None
     ] = None
     doctor_id: int | None = None
+    verify_status: int | None = None
     is_local_person: bool | None = None
     class Config:
         from_attributes = True
