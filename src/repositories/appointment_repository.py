@@ -148,139 +148,144 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
 
     @catch_error_repository(message=None)
     async def create_appointment_with_payment(self, payment_id: str,status_code:str):
-        MAX_RETRY:Final[int]=3
-        log.info(f"CHECK:::: GET PAYMENT INFO: {payment_id}")
-        obj_payment=payment_helper.get_payment_info(payment_id)
-        while obj_payment is None and MAX_RETRY > 0:
-            time.sleep(2)
+        try:
+            MAX_RETRY:Final[int]=3
+            log.info(f"CHECK:::: GET PAYMENT INFO: {payment_id}")
             obj_payment=payment_helper.get_payment_info(payment_id)
-            MAX_RETRY-=1
-        if not obj_payment:
-            raise BadRequest(
-                error_code=ErrorCode.BAD_REQUEST.name,
-                errors={"message": ErrorCode.msg_payment_not_found.value},
-            )
-        transactions = obj_payment.get("transactions", [])
-        description = transactions[0].get("description")
-        match = re.search(r"Ma giao dich (\d+)", description)
-        if not match:
-            raise BadRequest(
-                error_code=ErrorCode.PAYMENT_CONTENT_ERROR.name,
-                errors={"message": ErrorCode.msg_payment_content_error.value},
-            )
-        log.info(f"CHECK:::: CHECK WORK SCHEDULE ID: {match.group(1)}")
-        work_schedule_id = match.group(1)
+            while obj_payment is None and MAX_RETRY > 0:
+                print(f"RETRY :{MAX_RETRY}")
+                time.sleep(2)
+                obj_payment=payment_helper.get_payment_info(payment_id)
+                MAX_RETRY-=1
+            if not obj_payment:
+                raise BadRequest(
+                    error_code=ErrorCode.BAD_REQUEST.name,
+                    errors={"message": ErrorCode.msg_payment_not_found.value},
+                )
+            transactions = obj_payment.get("transactions", [])
+            description = transactions[0].get("description")
+            match = re.search(r"Ma giao dich (\d+)", description)
+            if not match:
+                raise BadRequest(
+                    error_code=ErrorCode.PAYMENT_CONTENT_ERROR.name,
+                    errors={"message": ErrorCode.msg_payment_content_error.value},
+                )
+            log.info(f"CHECK:::: CHECK WORK SCHEDULE ID: {match.group(1)}")
+            work_schedule_id = match.group(1)
 
-        value_redis = await redis_working.get(work_schedule_id)
-        if not value_redis:
-            log.error("Value redis not found")
-            raise InternalServer(
-                error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": ErrorCode.msg_server_error.value},
-            )
-        log.info("CHECK: BUSSINISLOGIC: GET VALUE REDIS")
-        log.info(value_redis)
-        # assign value fot instance
-        appointment_data = value_redis.get("appointment")
-        if not appointment_data:
-            raise ValueError("Appointment data is missing")
-        del appointment_data["id"]
+            value_redis = await redis_working.get(work_schedule_id)
+            if not value_redis:
+                log.error("Value redis not found")
+                raise InternalServer(
+                    error_code=ErrorCode.SERVER_ERROR.name,
+                    errors={"message": ErrorCode.msg_server_error.value},
+                )
+            log.info("CHECK: BUSSINISLOGIC: GET VALUE REDIS")
+            log.info(value_redis)
+            # assign value fot instance
+            appointment_data = value_redis.get("appointment")
+            if not appointment_data:
+                raise ValueError("Appointment data is missing")
+            del appointment_data["id"]
 
-        log.info(f"CHECK: BUSSINISLOGIC: {match.group(1)}")
-        patient_id: Final[int] = value_redis.get("patient").get("id")
-        if not patient_id:
-            log.error("Patient not found")
-            raise BadRequest(
-                error_code=ErrorCode.NOT_FOUND.name,
-                errors={"message": ErrorCode.msg_patient_not_found.value},
-            )
-        work_schedule_id:Final[str]= value_redis.get("work_schedule").get("id")
-        if not work_schedule_id:
-            log.error("Work schedule not found")
-            raise BadRequest(
-                error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": ErrorCode.SERVER_ERROR.value},
-            )
+            log.info(f"CHECK: BUSSINISLOGIC: {match.group(1)}")
+            patient_id: Final[int] = value_redis.get("patient").get("id")
+            if not patient_id:
+                log.error("Patient not found")
+                raise BadRequest(
+                    error_code=ErrorCode.NOT_FOUND.name,
+                    errors={"message": ErrorCode.msg_patient_not_found.value},
+                )
+            work_schedule_id:Final[str]= value_redis.get("work_schedule").get("id")
+            if not work_schedule_id:
+                log.error("Work schedule not found")
+                raise BadRequest(
+                    error_code=ErrorCode.SERVER_ERROR.name,
+                    errors={"message": ErrorCode.SERVER_ERROR.value},
+                )
 
-        insert_appointment= insert(AppointmentModel).values(**appointment_data).returning(AppointmentModel.id)
-        log.info(f"CHECK: BUSSINISLOGIC: INSERT APPOINTMENT with  check work_schedule_id: {work_schedule_id}")
-        update_work_schedule = (
-            update(WorkScheduleModel)
-            .values({"ordered": True})
-            .where(WorkScheduleModel.id == int(work_schedule_id))
-        )
-
-        log.info(f"CHECK: BUSSINISLOGIC: UPDATE PATIENT with  check work_schedule_id: {work_schedule_id}")
-        update_patient = (
-            update(PatientModel)
-            .values(
-                {"doctor_manage_id": value_redis.get("patient").get("doctor_manage_id")}
-            )
-            .where(PatientModel.id == patient_id)
-        )
-        update_medical_record_by_patient=None
-        if value_redis.get("medical_record_by_patient"):
-            update_medical_record_by_patient = (
-                update(MedicalRecordModel).values(
-                    {"doctor_read_id": value_redis.get("medical_record_by_patient").get("doctor_read_id")}
-                ).where(MedicalRecordModel.patient_id == patient_id)
-            )
-        result_appointment =await self.session.execute(insert_appointment)
-        appointment_id = result_appointment.scalar_one_or_none()
-        if not appointment_id:
-            log.error("Insert appointment error")
-            raise InternalServer(
-                error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": ErrorCode.msg_server_error.value},
-            )
-        _= await self.session.execute(update_work_schedule)
-        _= await self.session.execute(update_patient)
-        _= await self.session.execute(update_medical_record_by_patient) if update_medical_record_by_patient else None
-        # add instance to session
-        payment_model = PaymentModel()
-        payment_model.appointment_id = appointment_id
-        payment_model.amount = obj_payment.get("amountPaid")
-        payment_model.payment_time = datetime.fromisoformat(
-            obj_payment.get("createdAt")
-        ).replace(tzinfo=None)
-        self.session.add(payment_model)
-        await redis_working.delete(work_schedule_id)
-
-        # send socket to patient
-        url_chat_service = f"{config.BASE_URL_CHAT_SERVICE}/api/payment"
-        json_data = {
-            "userId": patient_id,
-            "isSuccess": True if status_code == "00" else False,
-        }
-        data = requests.post(url_chat_service, json=json_data)
-        if data.status_code != 200:
-            log.error("Service chat current not working")
-            raise InternalServer(
-                error_code=ErrorCode.SERVER_ERROR.name,
-                errors={"message": ErrorCode.msg_server_error.value},
-            )
-        if status_code != "00":
-            raise BadRequest(
-                error_code=ErrorCode.BAD_REQUEST.name,
-                errors={"message": ErrorCode.msg_payment_fail.value},
+            insert_appointment= insert(AppointmentModel).values(**appointment_data).returning(AppointmentModel.id)
+            log.info(f"CHECK: BUSSINISLOGIC: INSERT APPOINTMENT with  check work_schedule_id: {work_schedule_id}")
+            update_work_schedule = (
+                update(WorkScheduleModel)
+                .values({"ordered": True})
+                .where(WorkScheduleModel.id == int(work_schedule_id))
             )
 
-        # send socket to doctor
-        url_socket = f"{config.BASE_URL_CHAT_SERVICE}/api/notify/appointment/new"
-        _select_work = select(WorkScheduleModel).where(WorkScheduleModel.id == int(work_schedule_id))
-        _result_select_work = await self.session.execute(_select_work)
-        _work_schedule = _result_select_work.scalar_one()
-        data={
-            "userId": _work_schedule.doctor_id,
-            "fromTime": _work_schedule.start_time.isoformat(),
-            "toTime": _work_schedule.end_time.isoformat(),
-        }
-        result_reponse= requests.post(url_socket, json={"doctor_id": appointment_data.get("doctor_id")})
-        if (result_reponse.status_code != 200):
-            log.error("Service chat current not working,")
+            log.info(f"CHECK: BUSSINISLOGIC: UPDATE PATIENT with  check work_schedule_id: {work_schedule_id}")
+            update_patient = (
+                update(PatientModel)
+                .values(
+                    {"doctor_manage_id": value_redis.get("patient").get("doctor_manage_id")}
+                )
+                .where(PatientModel.id == patient_id)
+            )
+            update_medical_record_by_patient=None
+            if value_redis.get("medical_record_by_patient"):
+                update_medical_record_by_patient = (
+                    update(MedicalRecordModel).values(
+                        {"doctor_read_id": value_redis.get("medical_record_by_patient").get("doctor_read_id")}
+                    ).where(MedicalRecordModel.patient_id == patient_id)
+                )
+            result_appointment =await self.session.execute(insert_appointment)
+            appointment_id = result_appointment.scalar_one_or_none()
+            if not appointment_id:
+                log.error("Insert appointment error")
+                raise InternalServer(
+                    error_code=ErrorCode.SERVER_ERROR.name,
+                    errors={"message": ErrorCode.msg_server_error.value},
+                )
+            _= await self.session.execute(update_work_schedule)
+            _= await self.session.execute(update_patient)
+            _= await self.session.execute(update_medical_record_by_patient) if update_medical_record_by_patient else None
+            # add instance to session
+            payment_model = PaymentModel()
+            payment_model.appointment_id = appointment_id
+            payment_model.amount = obj_payment.get("amountPaid")
+            payment_model.payment_time = datetime.fromisoformat(
+                obj_payment.get("createdAt")
+            ).replace(tzinfo=None)
+            self.session.add(payment_model)
+            await redis_working.delete(work_schedule_id)
 
-        await self.session.commit()
-        return {"message": ErrorCode.msg_create_appointment_successfully.value}
+            # send socket to patient
+            url_chat_service = f"{config.BASE_URL_CHAT_SERVICE}/api/payment"
+            json_data = {
+                "userId": patient_id,
+                "isSuccess": True if status_code == "00" else False,
+            }
+            data = requests.post(url_chat_service, json=json_data)
+            if data.status_code != 200:
+                log.error("Service chat current not working")
+                raise InternalServer(
+                    error_code=ErrorCode.SERVER_ERROR.name,
+                    errors={"message": ErrorCode.msg_server_error.value},
+                )
+            if status_code != "00":
+                raise BadRequest(
+                    error_code=ErrorCode.BAD_REQUEST.name,
+                    errors={"message": ErrorCode.msg_payment_fail.value},
+                )
+
+            # send socket to doctor
+            url_socket = f"{config.BASE_URL_CHAT_SERVICE}/api/notify/appointment/new"
+            _select_work = select(WorkScheduleModel).where(WorkScheduleModel.id == int(work_schedule_id))
+            _result_select_work = await self.session.execute(_select_work)
+            _work_schedule = _result_select_work.scalar_one()
+            data={
+                "userId": _work_schedule.doctor_id,
+                "fromTime": _work_schedule.start_time.isoformat(),
+                "toTime": _work_schedule.end_time.isoformat(),
+            }
+            result_reponse= requests.post(url_socket, json={"doctor_id": appointment_data.get("doctor_id")})
+            if (result_reponse.status_code != 200):
+                log.error("Service chat current not working,")
+
+            await self.session.commit()
+            return {"message": ErrorCode.msg_create_appointment_successfully.value}
+        except Exception as e:
+            log.error(e)
+            raise e
 
     async def _get_doctor_model_by_id(self, doctor_id: int):
         try:
