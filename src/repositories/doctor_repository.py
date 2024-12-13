@@ -987,9 +987,6 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 .join(PatientModel.appointments)
                 .join(AppointmentModel.work_schedule)
             )
-            if examination_type:
-                query_patient = query_patient.where(WorkScheduleModel.examination_type == examination_type)
-
             if status_order:
                 query_patient = query_patient.where(AppointmentModel.appointment_status.in_(status_order))
 
@@ -1053,7 +1050,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             # destruct object
             custom_data_reponse = []
             for appointments in sorted_appointments_limit:
-                if appointments.doctor_id != doctor_id:
+                if appointments.doctor_id != doctor_id or  appointments.work_schedule.examination_type != examination_type:
                     continue
                 item = {}
                 item["patient"] = appointments.patient.as_dict
