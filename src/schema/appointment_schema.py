@@ -125,3 +125,15 @@ class RequestStatisticalAppointmentSumGroupByPatient(BaseModel):
         from_attributes = True
         arbitrary_types_allowed = True
         extra = "forbid"
+class RequestGetBillAppointmentSchema(BaseModel):
+    appointment_id: int = Field(..., description="appointment id")
+    user_id: int | None = Field(None, description="User id", examples=["1"])
+
+class RequestGetBillsAppointmentSchema(BaseModel):
+    from_date: date | None = Field(None, description="From date", examples=["2021-01-01"])
+    to_date: date | None = Field(None, description="To date", examples=["2021-01-01"])
+    doctor_name: str | None = Field(None, description="Doctor name", examples=["Nguyen Van Hieu"])
+    patient_name: str | None = Field(None, description="Patient name", examples=["Nguyen Van Hieu"])
+    doctor_phone: str | None = Field(None, description="Phone number", examples=["0123456789"])
+    patient_phone: str | None = Field(None, description="Phone number", examples=["0123456789"])
+    user_id: int | None = Field(None, description="User id", examples=["1"])

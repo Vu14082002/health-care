@@ -3,7 +3,7 @@ import re
 import time
 from collections import defaultdict
 from datetime import date, datetime, timedelta
-from typing import Final, Literal, Optional
+from typing import Final, List, Literal, Optional
 
 import requests
 from sqlalchemy import and_, case, extract, func, insert, or_, select, update
@@ -20,6 +20,7 @@ from src.models.doctor_model import DoctorExaminationPriceModel, DoctorModel
 from src.models.medical_records_model import MedicalRecordModel
 from src.models.patient_model import PatientModel
 from src.models.payment_model import PaymentModel
+from src.models.staff_model import StaffModel
 from src.models.work_schedule_model import WorkScheduleModel
 from src.repositories.global_helper_repository import redis_working
 
@@ -903,3 +904,172 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             elif appointment.appointment_status == AppointmentModelStatus.COMPLETED.value:
                 _data["completed"] += 1
         return _data
+
+
+    @catch_error_repository(message=None)
+    async def get_appointment_bill(self, appointment_id: int, user_id:int | None):
+        _select_appointment = (
+            select(AppointmentModel)
+            .where(AppointmentModel.id == appointment_id)
+            .options(
+                joinedload(AppointmentModel.patient),
+                joinedload(AppointmentModel.doctor),
+                joinedload(AppointmentModel.work_schedule),
+                joinedload(AppointmentModel.payment),
+            )
+        )
+        if user_id:
+            _select_appointment = _select_appointment.where(
+                or_(
+                    AppointmentModel.doctor_id == user_id,
+                    AppointmentModel.patient_id == user_id,
+                )
+            )
+        _result_appointment = await self.session.execute(_select_appointment)
+        _data_appointment = _result_appointment.scalar_one_or_none()
+        if not _data_appointment:
+            raise BadRequest(
+                error_code=ErrorCode.NOT_FOUND.name,
+                errors={"message": ErrorCode.msg_not_found_appointment.value},
+            )
+
+        _staff_create = select(StaffModel)
+        _result_staff = await self.session.execute(_staff_create)
+        _staff = _result_staff.scalar_one()
+        _appointment = self._refactor_data_bill(_data_appointment,_staff)
+        return _appointment
+
+    @catch_error_repository(message=None)
+    async def get_appointment_bills(
+        self,
+        from_date: date | None,
+        to_date: date | None,
+        doctor_name: str | None,
+        doctor_phone: str | None,
+        patient_name: str | None,
+        patient_phone: str | None,
+        user_id: int | None,
+        **kwargs,
+    ):
+        _select_appointment = select(AppointmentModel).options(
+            joinedload(AppointmentModel.patient),
+            joinedload(AppointmentModel.doctor),
+            joinedload(AppointmentModel.work_schedule),
+            joinedload(AppointmentModel.payment),
+        )
+
+        if user_id:
+            _select_appointment = _select_appointment.where(
+                or_(
+                    AppointmentModel.doctor_id == user_id,
+                    AppointmentModel.patient_id == user_id,
+                )
+            )
+        if from_date and to_date:
+            _select_appointment = _select_appointment.join(AppointmentModel.work_schedule).where(
+                and_(
+                    WorkScheduleModel.work_date >= from_date,
+                    WorkScheduleModel.work_date <= to_date,
+                )
+            )
+        else:
+            if from_date:
+                _select_appointment = _select_appointment.join(AppointmentModel.work_schedule).where(
+                    WorkScheduleModel.work_date >= from_date
+                )
+            if to_date:
+                _select_appointment = _select_appointment.join(AppointmentModel.work_schedule).where(
+                    WorkScheduleModel.work_date <= to_date
+                )
+
+        if doctor_name:
+            _doctor_name = doctor_name.strip().lower()
+            _select_appointment = _select_appointment.join(AppointmentModel.doctor).where(
+                func.lower(DoctorModel.first_name + " "+ DoctorModel.last_name).ilike(
+                    f"%{_doctor_name}%"
+                )
+            )
+        if doctor_phone:
+            _doctor_phone = doctor_phone.strip()
+            _select_appointment = _select_appointment.join(AppointmentModel.doctor).where(
+                DoctorModel.phone_number.ilike(f"%{_doctor_phone}%")
+            )
+
+        if patient_name:
+            _patient_name = patient_name.strip().lower()
+            _select_appointment = _select_appointment.join(AppointmentModel.patient).where(
+                func.lower(PatientModel.first_name+ " "+ PatientModel.last_name).ilike(
+                    f"%{_patient_name}%"
+                )
+            )
+
+        if patient_phone:
+            _patient_phone = patient_phone.strip()
+            _select_appointment = _select_appointment.join(AppointmentModel.patient).where(
+                PatientModel.phone_number.ilike(f"%{_patient_phone}%")
+            )
+
+        _result_appointment = await self.session.execute(_select_appointment)
+        _data_appointment = _result_appointment.scalars().all()
+
+        _staff_create = select(StaffModel)
+        _result_staff = await self.session.execute(_staff_create)
+        _staff = _result_staff.scalar_one()
+
+        _data = []
+        for item in _data_appointment:
+            _appointment = self._refactor_data_bill(item, _staff)
+            _data.append(_appointment)
+
+        return _data
+
+    def _refactor_data_bill(self, appointment: AppointmentModel,staff:StaffModel):
+        _data_appointment = appointment
+        _staff = staff
+        _include_field = [
+            "first_name",
+            "last_name",
+            "phone_number",
+            "date_of_birth",
+            "email",
+            "work_date",
+            "start_time",
+            "end_time",
+            "examination_type",
+            "pre_examination_notes",
+            "id",
+        ]
+        _staff_create = {k: v for k, v in _staff.as_dict.items() if k in _include_field}
+
+        _payment_data = (
+            _data_appointment.payment.as_dict if _data_appointment.payment else {}
+        )
+        _doctor_data = {
+            k: v
+            for k, v in _data_appointment.doctor.as_dict.items()
+            if k in _include_field
+        }
+        _patient_data = {
+            k: v
+            for k, v in _data_appointment.patient.as_dict.items()
+            if k in _include_field
+        }
+        _work_schedule_data = {
+            k: v
+            for k, v in _data_appointment.work_schedule.as_dict.items()
+            if k in _include_field
+        }
+        _appointment = {
+            "id": _data_appointment.id,
+            "pre_examination_notes": _data_appointment.pre_examination_notes,
+            "name": _data_appointment.name,
+        }
+        _appointment = {
+            "appointment": _appointment,
+            "doctor": _doctor_data,
+            "patient": _patient_data,
+            "work_schedule": _work_schedule_data,
+            "payment": _payment_data,
+            "staff_create": _staff_create,
+        }
+        return _appointment

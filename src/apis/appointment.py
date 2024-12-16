@@ -12,6 +12,8 @@ from src.helper.appointment_helper import AppointmentHelper
 from src.schema.appointment_schema import (
     RequestDeleteAppointment,
     RequestGetAllAppointmentSchema,
+    RequestGetBillAppointmentSchema,
+    RequestGetBillsAppointmentSchema,
     RequestRegisterAppointment,
 )
 
@@ -79,6 +81,59 @@ class AppointmentApiGET(HTTPEndpoint):
                     **filter_params
                 )
             return appointments
+        except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
+            log.error(e)
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from e
+
+
+class AppointmentBillApiGET(HTTPEndpoint):
+    async def get(
+        self, query_params: RequestGetBillAppointmentSchema, auth: JsonWebToken
+    ):
+        """
+        this api is used to get all appointments, only admin, doctor and patient can get all appointments
+        """
+        try:
+            _user_role = auth.get("role", "")
+            _user_id = query_params.user_id
+            if _user_role != Role.ADMIN.value:
+                _user_id = auth.get("id")
+            _appointment_id = query_params.appointment_id
+            _appointment_helper = await Factory().get_appointment_helper()
+            _data = await _appointment_helper.get_appointment_bill(
+                appointment_id=_appointment_id,
+                user_id=_user_id,
+            )
+            return _data
+        except Exception as e:
+            if isinstance(e, BaseException):
+                raise e
+            log.error(e)
+            raise InternalServer(
+                error_code=ErrorCode.SERVER_ERROR.name,
+                errors={"message": ErrorCode.msg_server_error.value},
+            ) from e
+
+class AppointmentListBillApiGET(HTTPEndpoint):
+    async def get(
+        self, query_params: RequestGetBillsAppointmentSchema, auth: JsonWebToken
+    ):
+        """
+        this api is used to get all appointments, only admin, doctor and patient can get all appointments
+        """
+        try:
+            _user_role = auth.get("role", "")
+            _user_id = auth.get("id")
+            if _user_role != Role.ADMIN.value:
+                query_params.user_id = _user_id
+            _appointment_helper = await Factory().get_appointment_helper()
+            _data = await _appointment_helper.get_appointment_bills(**query_params.model_dump())
+            return _data
         except Exception as e:
             if isinstance(e, BaseException):
                 raise e

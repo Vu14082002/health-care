@@ -1,6 +1,6 @@
 import logging
 from datetime import date
-from typing import  Literal, Optional
+from typing import Literal, Optional
 
 from src.core.decorator.exception_decorator import catch_error_helper
 from src.repositories.appointment_repository import AppointmentRepository
@@ -83,3 +83,29 @@ class AppointmentHelper:
     @catch_error_helper(message=None)
     async def statistical_price_person(self, from_date:date, to_date:date ,user_id:int):
         return await self.appointment_repository.statistical_price_person(from_date,to_date,user_id)
+
+
+    @catch_error_helper(message=None)
+    async def get_appointment_bill(self, appointment_id: int,user_id:int |None):
+        return await self.appointment_repository.get_appointment_bill(appointment_id,user_id)
+    @catch_error_helper(message=None)
+    async def get_appointment_bills(
+        self,
+        from_date: date | None,
+        to_date: date | None,
+        doctor_name: str | None,
+        doctor_phone: str | None,
+        patient_name: str | None,
+        patient_phone: str | None,
+        user_id: int | None,
+    ):
+        _data = await self.appointment_repository.get_appointment_bills(
+            from_date=from_date,
+            to_date=to_date,
+            doctor_name=doctor_name,
+            doctor_phone=doctor_phone,
+            patient_name=patient_name,
+            patient_phone=patient_phone,
+            user_id=user_id,
+        )
+        return _data

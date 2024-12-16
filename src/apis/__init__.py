@@ -1,4 +1,10 @@
-from src.apis.appointment import AppointmentApi, AppointmentApiGET, PaymentApi
+from src.apis.appointment import (
+    AppointmentApi,
+    AppointmentApiGET,
+    AppointmentBillApiGET,
+    AppointmentListBillApiGET,
+    PaymentApi,
+)
 from src.apis.auth import (
     AdminNotifyRegisterMail,
     AdminRegisterApi,
@@ -149,7 +155,7 @@ routes = [
         "/user-settings/profile",
         UserProfile,
         methods=["PUT"],
-        tags=["PATIENT", "DOCTOR","ADMIN"],
+        tags=["PATIENT", "DOCTOR", "ADMIN"],
     ),
     RouteSwagger(
         "/user-settings/reset-password",
@@ -243,6 +249,18 @@ routes = [
     RouteSwagger(
         "/appointment",
         AppointmentApiGET,
+        methods=["GET"],
+        tags=["PATIENT", "ADMIN", "DOCTOR"],
+    ),
+    RouteSwagger(
+        "/appointment/bill",
+        AppointmentBillApiGET,
+        methods=["GET"],
+        tags=["PATIENT", "ADMIN", "DOCTOR"],
+    ),
+    RouteSwagger(
+        "/appointment/bills",
+        AppointmentListBillApiGET,
         methods=["GET"],
         tags=["PATIENT", "ADMIN", "DOCTOR"],
     ),
