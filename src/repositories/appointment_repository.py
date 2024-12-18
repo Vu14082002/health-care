@@ -15,6 +15,7 @@ from src.core.decorator.exception_decorator import catch_error_repository
 from src.core.exception import BadRequest, BaseException, InternalServer
 from src.enum import AppointmentModelStatus, ErrorCode
 from src.helper.payos_helper import PaymentHelper
+from src.helper.socket_api_helper import SocketServiceHelper
 from src.models.appointment_model import AppointmentModel, AppointmentModelTypeStatus
 from src.models.doctor_model import DoctorExaminationPriceModel, DoctorModel
 from src.models.medical_records_model import MedicalRecordModel
@@ -23,6 +24,7 @@ from src.models.payment_model import PaymentModel
 from src.models.staff_model import StaffModel
 from src.models.work_schedule_model import WorkScheduleModel
 from src.repositories.global_helper_repository import redis_working
+from src.repositories.notification_repository import NotificationRepository
 
 payment_helper=PaymentHelper()
 
@@ -215,7 +217,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             .values(
                 {"doctor_manage_id": value_redis.get("patient").get("doctor_manage_id")}
             )
-            .where(PatientModel.id == patient_id)
+            .where(PatientModel.id == patient_id).returning(PatientModel)
         )
         is_update_medical_record_by_patient=False
         update_medical_record_by_patient=None
@@ -235,7 +237,8 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
                 errors={"message": ErrorCode.msg_server_error.value},
             )
         _= await self.session.execute(update_work_schedule)
-        _= await self.session.execute(update_patient)
+        _execute_update_patient = await self.session.execute(update_patient)
+        _patient_updated = _execute_update_patient.scalar_one()
         if is_update_medical_record_by_patient:
             _= await self.session.execute(update_medical_record_by_patient)
         # add instance to session
@@ -277,10 +280,27 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             "fromTime": _work_schedule.start_time.isoformat(),
             "toTime": _work_schedule.end_time.isoformat(),
         }
-        result_reponse= requests.post(url_socket, json={"doctor_id": appointment_data.get("doctor_id")})
-        if (result_reponse.status_code != 200):
+        result_response= requests.post(url_socket, json={"doctor_id": appointment_data.get("doctor_id")})
+        if result_response.status_code != 200:
             log.error("Service chat current not working,")
-
+        # FIXME: optimize code here for future
+        # send logic notify to doctor
+        try:
+            _message = f"Bạn có một cuộc hẹn mới với Bệnh nhân {_patient_updated.last_name} {_patient_updated.first_name} vào lúc {_work_schedule.start_time.isoformat()} đến {_work_schedule.end_time.isoformat()}"
+            _notification = await NotificationRepository.insert_notification(
+                session=self.session,
+                user_receive=_work_schedule.doctor_id,
+                message=_message,
+                title="Thông báo",
+            )
+            _socket_service = SocketServiceHelper()
+            _total_unread = await NotificationRepository.get_total_message_unread(
+                session=self.session, user_id=_work_schedule.doctor_id
+            )
+            _socket_service.send_notify_helper(_notification, _total_unread)
+        except Exception as e:
+            log.error(e)
+        # not commit for data test
         await self.session.commit()
         return {"message": ErrorCode.msg_create_appointment_successfully.value}
 
