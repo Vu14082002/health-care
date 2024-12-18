@@ -1008,7 +1008,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
             _select_appointment = _select_appointment.join(AppointmentModel.patient).where(
                 PatientModel.phone_number.ilike(f"%{_patient_phone}%")
             )
-
+        _select_appointment=_select_appointment.order_by(AppointmentModel.created_at.desc())
         _result_appointment = await self.session.execute(_select_appointment)
         _data_appointment = _result_appointment.scalars().all()
 
