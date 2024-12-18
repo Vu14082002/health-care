@@ -36,6 +36,7 @@ from src.apis.medical_records_api import (
     MedicalRecordsApiPOST,
 )
 from src.apis.message_api import MessageApi
+from src.apis.notify_api import NotificationApi, NotificationUnreadApi
 from src.apis.patient_api import PatientApi
 from src.apis.post_api import CommentApi, CreatePostApi, GetPostByIdApi, GetPostUserApi
 from src.apis.predict_api import ApiPredictData
@@ -398,5 +399,17 @@ routes = [
         RatingApi,
         methods=["POST", "DELETE"],
         tags=["PATIENT"],
+    ),
+    RouteSwagger(
+        "/notification",
+        NotificationApi,
+        methods=["GET"],
+        tags=["PATIENT", "DOCTOR", "ADMIN"],
+    ),
+    RouteSwagger(
+        "/notification/unread",
+        NotificationUnreadApi,
+        methods=["GET"],
+        tags=["PATIENT", "DOCTOR", "ADMIN"],
     ),
 ]

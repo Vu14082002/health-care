@@ -8,6 +8,7 @@ from src.helper import (
     DoctorHelper,
     MedicalRecordsHelper,
     MessageHelper,
+    NotificationHelper,
     PatientHelper,
     PostHelper,
     UserHelper,
@@ -19,6 +20,7 @@ from src.models import (
     DoctorModel,
     MedicalRecordModel,
     MessageModel,
+    NotificationModel,
     PatientModel,
     PostModel,
     UserModel,
@@ -30,6 +32,7 @@ from src.repositories import (
     DoctorRepository,
     MedicalRecordsRepository,
     MessageRepository,
+    NotificationRepository,
     PatientRepository,
     PostRepository,
     UserRepository,
@@ -50,6 +53,7 @@ class Factory:
         DailyHealthCheckRepository, DailyHealCheckModel
     )
     post_repository = partial(PostRepository, PostModel)
+    notification_repository = partial(NotificationRepository, NotificationModel)
 
     async def get_patient_helper(self) -> PatientHelper:
         async with get_session() as session:
@@ -104,3 +108,9 @@ class Factory:
     async def get_post_helper(self) -> PostHelper:
         async with get_session() as session:
             return PostHelper(post_repository=self.post_repository(db_session=session))
+
+    async def get_notification_helper(self) -> NotificationHelper:
+        async with get_session() as session:
+            return NotificationHelper(
+                notification_repository=self.notification_repository(db_session=session)
+            )
