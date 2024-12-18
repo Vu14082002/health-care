@@ -1,5 +1,5 @@
-def send_mail_register_success_local_template() -> str:
-    HTML_BODY = """
+def send_mail_register_success_local_template(phone_number: str, password: str) -> str:
+    HTML_BODY = f"""
         <body>
             <table border="0" cellpadding="0" cellspacing="0" style="
                                 padding-top: 16px;
@@ -26,6 +26,13 @@ def send_mail_register_success_local_template() -> str:
                             <p>
                                 Admin đã thêm bạn vào hệ thống Health Care System với vai trò là bác sĩ.
                             </p>
+                            <p>
+                                Thông tin tài khoản của bạn như sau:
+                            </p>
+                            <ul>
+                                <li><strong>Số điện thoại:</strong> {phone_number}</li>
+                                <li><strong>Mật khẩu:</strong> {password}</li>
+                            </ul>
                             <p>
                                 Nếu bạn không yêu cầu thêm tài khoản này, vui lòng bỏ qua email này.
                             </p>

@@ -12,8 +12,8 @@ async def send_mail_password_change(email: str) -> str:
     return await send_mail_action(email, html_body)
 
 
-async def send_mail_register_success_local(email: str, *args, **kwargs) -> str:
-    html_body = template_mail.send_mail_register_success_local_template()
+async def send_mail_register_success_local(email: str, phone_number:str, password:str, *args, **kwargs) -> str:
+    html_body = template_mail.send_mail_register_success_local_template(phone_number, password)
     return await send_mail_action(email, html_body)
 
 

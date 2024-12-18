@@ -322,7 +322,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         task = None
         if data["is_local_person"]:
             task = BackgroundTask(
-                send_mail_register_success_local, email=data.get("email")
+                send_mail_register_success_local, email=data.get("email"),phone_number=data.get("phone_number",""),password=data.get("password_hash","")
             )
         else:
             task = BackgroundTask(
