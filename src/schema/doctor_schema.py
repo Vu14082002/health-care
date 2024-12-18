@@ -265,7 +265,7 @@ class RequestDoctorPatientSchema(BaseModel):
     )
     text_search: str | None = Field(
         default=None,
-        description="Search by patient name or phone number",
+        description="Search by patient name or phone number or email",
         examples=["John Handsome", "0123456789"],
     )
 

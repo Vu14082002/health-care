@@ -126,6 +126,7 @@ class ErrorCode(Enum):
         "Bạn không thể  xóa  lịch đã được lên lịch thành công trước đó"
     )
     msg_required_field = "Trường này là bắt buộc"
+    msg_duplicate_daily_health_check = "Bạn đã cập nhật hồ sơ sức khỏe ngày hôm nay rồi, vui lòng thử lại vào ngày hôm sau"
 
 class MsgEnumBase(Enum):
     DES_MEDIA_FILE: Final[str] = "is video of post, and accept one file"
@@ -145,6 +146,9 @@ CACHE_REFRESH_TOKEN = 60 * 60 * 5
 CACHE_ACCESS_TOKEN = 60 * 60 * 5
 KEY_CACHE_LOGOUT = "logout"
 
+class MessageTemplate(Enum):
+    REIVE_MESSAGE_TITLE = "Bạn vừa nhận được một tin nhắn mới"
+    NOTiFY_TITLE = "Thông báo"
 
 class Role(Enum):
     ADMIN = "ADMIN"

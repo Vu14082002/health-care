@@ -312,7 +312,7 @@ routes = [
         methods=["GET"],
         tags=["ADMIN", "DOCTOR"],
     ),
-    #  thong ke tien thoe thoi gian
+    #  thong ke tien theo thoi gian
     RouteSwagger(
         "/statistical/prices",
         StatisticalPriceApi,

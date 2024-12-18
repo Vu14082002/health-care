@@ -445,7 +445,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         to_date: date = kwargs.get("to_date", None)
         examination_type: str = kwargs.get("examination_type", None)
         doctor_name: str = kwargs.get("doctor_name", None)
-        patient_name: int = kwargs.get("patient_name", None)
+        patient_name: str = kwargs.get("patient_name", None)
         current_page: int = kwargs.get("current_page", 1)
         page_size: int = kwargs.get("page_size", 10)
         doctor_id: int = kwargs.get("doctor_id", None)
@@ -486,26 +486,19 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         if patient_id:
             query = query.filter(self.model_class.patient_id == patient_id)
         if doctor_name:
-            name_parts = doctor_name.split()
-            conditions = [
-                or_(
-                    self.model_class.doctor.has(
-                        DoctorModel.first_name.ilike(f"%{part}%")
-                    ),
-                    self.model_class.doctor.has(
-                        DoctorModel.last_name.ilike(f"%{part}%")
-                    ),
+            _doctor_name = doctor_name.strip().lower()
+            query = query.join(AppointmentModel.doctor).where(
+                func.lower(DoctorModel.last_name + " " + DoctorModel.first_name).ilike(
+                    f"%{_doctor_name}%"
                 )
-                for part in name_parts
-            ]
-            query = query.join(self.model_class.doctor).filter(or_(*conditions))
+            )
         if patient_name:
-            name_parts = patient_name.split()
-            conditions = [
-                or_(self.model_class.patient.name.ilike(f"%{part}%"))
-                for part in name_parts
-            ]
-            query = query.join(self.model_class.patient).filter(or_(*conditions))
+            patient_name = patient_name.strip().lower()
+            query = query.join(AppointmentModel.patient).where(
+                func.lower(
+                    PatientModel.last_name + " " + PatientModel.first_name
+                ).ilike(f"%{patient_name}%")
+            )
         total_count = await self.session.execute(
             select(func.count()).select_from(query)
         )
@@ -985,7 +978,7 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
         if doctor_name:
             _doctor_name = doctor_name.strip().lower()
             _select_appointment = _select_appointment.join(AppointmentModel.doctor).where(
-                func.lower(DoctorModel.first_name + " "+ DoctorModel.last_name).ilike(
+                func.lower(DoctorModel.last_name + " "+ DoctorModel.first_name).ilike(
                     f"%{_doctor_name}%"
                 )
             )
@@ -997,8 +990,10 @@ class AppointmentRepository(PostgresRepository[AppointmentModel]):
 
         if patient_name:
             _patient_name = patient_name.strip().lower()
-            _select_appointment = _select_appointment.join(AppointmentModel.patient).where(
-                func.lower(PatientModel.first_name+ " "+ PatientModel.last_name).ilike(
+            _select_appointment = _select_appointment.join(
+                AppointmentModel.patient
+            ).where(
+                func.lower(PatientModel.last_name + " " + PatientModel.first_name).ilike(
                     f"%{_patient_name}%"
                 )
             )

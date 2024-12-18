@@ -1,5 +1,6 @@
 from datetime import date
 from typing import Any
+
 from pydantic import BaseModel, Field, validator
 
 from src.enum import ImageDailyHealthCheck
@@ -7,7 +8,7 @@ from src.enum import ImageDailyHealthCheck
 
 class RequestCreateHealthCheckSchema(BaseModel):
     patient_id: int | None = Field(
-        ..., description="Patient ID, if role Admin this value must assign", examples=[1]
+        None, description="Patient ID, if role Admin this value must assign", examples=[1]
     )
     appointment_id: int = Field(description="is id appointment", examples=[1])
 

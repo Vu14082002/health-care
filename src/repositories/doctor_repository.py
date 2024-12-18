@@ -223,42 +223,29 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 query = query.where(subquery.c.rating_count >= min_rating_count)
 
             if kwargs.get("text_search") is not None:
-                text_search = kwargs.get("text_search").strip().lower()
-                data_text_search = text_search.split(" ")
+                text_search = kwargs.get("text_search","").strip().lower()
                 query = query.where(
                     or_(
-                        *[
-                            or_(
-                                self.model_class.first_name.ilike(f"%{name}%"),
-                                self.model_class.last_name.ilike(f"%{name}%"),
-                            )
-                            for name in data_text_search
-                        ],
+                        (
+                            self.model_class.last_name
+                            + " "
+                            + self.model_class.first_name
+                        ).ilike(f"%{text_search}%"),
                         self.model_class.phone_number.ilike(f"%{text_search}%"),
+                        self.model_class.email.ilike(f"%{text_search}%"),
+                        self.model_class.license_number.ilike(f"%{text_search}%"),
                     )
                 )
-
-            # Handle sorting
-            if order_by and "avg_rating" in order_by:
-                direction = desc if order_by["avg_rating"].lower() == "desc" else asc
-                query = query.order_by(direction(subquery.c.avg_rating))
-            else:
-                # Default sorting by avg_rating desc
-                query = query.order_by(desc(subquery.c.avg_rating))
-
-            other_order_expressions = process_orderby(
-                self.model_class,
-                {k: v for k, v in (order_by or {}).items() if k != "avg_rating"},
+            where_conditions = query._where_criteria #type: ignore
+            query_funccount = select(func.count(self.model_class.id)).where(
+                *where_conditions
             )
-            if other_order_expressions:
-                query = query.order_by(*other_order_expressions)
-
-            query_funccount = select(func.count(self.model_class.id)).select_from(query)
             result_count = await self.session.execute(query_funccount)
-            total_pages = (result_count.scalar_one() + limit - 1) // limit
+            total_pages = math.ceil(result_count.scalar_one() / limit)
             current_page: int = skip // limit + 1
             query = query.offset(skip).limit(limit)
 
+            query = query.order_by(desc("avg_rating"), desc("rating_count"))
             result = await self.session.execute(query)
             doctors = result.all()
             _doctors = [
@@ -857,120 +844,6 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             logging.error(f"Error in get_working_schedules_v2 : {e}")
             raise
 
-    # async def get_patient_by_doctor_id(
-    #     self,
-    #     doctor_id: int | None,
-    #     current_page: int = 1,
-    #     page_size: int = 10,
-    #     appointment_status: str | None = None,
-    #     status_order: tuple[str, ...] = ("approved", "processing", "completed"),
-    #     examination_type: Literal["online", "offline"] | None = None,
-    #     text_search: str | None = None,
-    # ):
-    #     try:
-    #         query_patient = (
-    #             select(PatientModel)
-    #             .distinct()
-    #             .join(PatientModel.appointments)
-    #             .join(AppointmentModel.work_schedule)
-    #         )
-    #         if doctor_id:
-    #             query_patient = query_patient.where(
-    #                 PatientModel.doctor_manage_id == doctor_id
-    #             )
-
-    #         if examination_type:
-    #             query_patient = query_patient.where(
-    #                 WorkScheduleModel.examination_type == examination_type
-    #             )
-    #         if status_order:
-    #             query_patient = query_patient.where(
-    #                 AppointmentModel.appointment_status.in_(status_order)
-    #             )
-    #         query_patient = query_patient.options(
-    #             joinedload(PatientModel.appointments).joinedload(
-    #                 AppointmentModel.work_schedule
-    #             )
-    #         )
-    #         if text_search is not None:
-    #             text_search = text_search.strip().lower()
-    #             data_text_search = text_search.split(" ")
-    #             query_patient = query_patient.where(
-    #                 or_(
-    #                     *[
-    #                         or_(
-    #                             self.model_class.first_name.ilike(f"%{name}%"),
-    #                             self.model_class.last_name.ilike(f"%{name}%"),
-    #                         )
-    #                         for name in data_text_search
-    #                     ],
-    #                     self.model_class.phone_number.ilike(f"%{text_search}%"),
-    #                 )
-    #             )
-    #         # query_patient = query_patient.offset((current_page - 1) * page_size).limit(
-    #         #     page_size
-    #         # )
-
-    #         # Thực hiện truy vấn
-    #         result = await self.session.execute(query_patient)
-
-    #         patients_list = result.unique().scalars().all()
-    #         appointments = []
-    #         for item in patients_list:
-    #             for appoint in item.appointments:
-    #                 appointments.append(appoint)
-    #         now = datetime.now()
-
-    #         def time_to_seconds(t: time) -> int:
-    #             """Chuyển đổi thời gian thành số giây kể từ đầu ngày."""
-    #             return t.hour * 3600 + t.minute * 60 + t.second
-
-    #         sorted_appointments: list[AppointmentModel] = sorted(
-    #             appointments,
-    #             key=lambda a: (
-    #                 (
-    #                     status_order.index(a.appointment_status)
-    #                     if a.appointment_status in status_order
-    #                     else len(status_order)
-    #                 ),
-    #                 abs((a.work_schedule.work_date - now.date()).days),
-    #                 abs(
-    #                     time_to_seconds(a.work_schedule.start_time)
-    #                     - time_to_seconds(now.time())
-    #                 ),
-    #             ),
-    #         )
-    #         start_index = (current_page - 1) * page_size
-    #         end_index = start_index + page_size
-    #         # paging
-    #         sorted_appointments_limit = sorted_appointments[start_index:end_index]
-    #         # destruct object
-    #         custom_data_reponse = []
-    #         for appointments in sorted_appointments_limit:
-    #             item = {}
-    #             item["patient"] = appointments.patient.as_dict
-    #             item["work_schedule"] = {
-    #                 "work_date": appointments.work_schedule.work_date.isoformat(),
-    #                 "start_time": appointments.work_schedule.start_time.isoformat(),
-    #                 "end_time": appointments.work_schedule.end_time.isoformat(),
-    #                 "examination_type": appointments.work_schedule.examination_type,
-    #                 "medical_examination_fee": appointments.work_schedule.medical_examination_fee,
-    #             }
-    #             item["appointment"] = appointments.as_dict
-    #             custom_data_reponse.append(item)
-    #         return {
-    #             "items": custom_data_reponse,
-    #             "total_page": math.ceil(len(sorted_appointments) / page_size),
-    #             "current_page": current_page,
-    #             "page_size": page_size,
-    #         }
-    #     except SQLAlchemyError as e:
-    #         logging.error(f"Error in get_patient_by_doctor_id: {e}")
-    #         raise e
-    #     except Exception as e:
-    #         logging.error(f"Error in get_patient_by_doctor_id: {e}")
-    #         raise e
-
     async def get_patient_by_doctor_id(
         self,
         doctor_id: int | None,
@@ -986,7 +859,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 select(PatientModel)
                 .join(PatientModel.appointments)
                 .join(AppointmentModel.work_schedule)
-            )
+            ).where(AppointmentModel.doctor_id == doctor_id)
             if status_order:
                 query_patient = query_patient.where(AppointmentModel.appointment_status.in_(status_order))
 
@@ -997,23 +870,15 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             )
             if text_search is not None:
                 text_search = text_search.strip().lower()
-                data_text_search = text_search.split(" ")
                 query_patient = query_patient.where(
                     or_(
-                        *[
-                            or_(
-                                self.model_class.first_name.ilike(f"%{name}%"),
-                                self.model_class.last_name.ilike(f"%{name}%"),
-                            )
-                            for name in data_text_search
-                        ],
-                        self.model_class.phone_number.ilike(f"%{text_search}%"),
+                        (PatientModel.last_name + " " + PatientModel.first_name).ilike(
+                            f"%{text_search}%"
+                        ),
+                        PatientModel.phone_number.ilike(f"%{text_search}%"),
+                        PatientModel.email.ilike(f"%{text_search}%"),
                     )
                 )
-            # query_patient = query_patient.offset((current_page - 1) * page_size).limit(
-            #     page_size
-            # )
-
             # Thực hiện truy vấn
             result = await self.session.execute(query_patient)
 
@@ -1043,14 +908,14 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                     ),
                 ),
             )
-            start_index = (current_page - 1) * page_size
-            end_index = start_index + page_size
+            start_index = math.ceil((current_page - 1) * page_size)
+            end_index = start_index + page_size +1
             # paging
             sorted_appointments_limit = sorted_appointments[start_index:end_index]
             # destruct object
             custom_data_reponse = []
             for appointments in sorted_appointments_limit:
-                if appointments.doctor_id != doctor_id or  appointments.work_schedule.examination_type != examination_type:
+                if  examination_type and appointments.work_schedule.examination_type != examination_type:
                     continue
                 item = {}
                 item["patient"] = appointments.patient.as_dict
