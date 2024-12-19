@@ -492,7 +492,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 )
             )
             .group_by(self.model_class.id, DoctorExaminationPriceModel.id)
-            .order_by(desc(DoctorExaminationPriceModel.created_at))
+            .order_by(desc(DoctorExaminationPriceModel.id))
             .limit(1)
         )
 
