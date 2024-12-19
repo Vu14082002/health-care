@@ -72,12 +72,16 @@ class NotificationRepository(PostgresRepository[NotificationModel]):
         _update_query = (
             update(NotificationModel)
             .where(NotificationModel.user_id == user_id)
-            .values(is_read=True)
+            .values(is_read=True).returning(NotificationModel)
         )
-        _ = await self.session.execute(_update_query)
+        execute_update_notification = await self.session.execute(_update_query)
+        _notifications = execute_update_notification.scalars().all()
         await self.session.commit()
-        return {"message": "Update all read notification success"}
-
+        items = []
+        for item in _notifications:
+            items.append(self._format_data(item))
+        items = sorted(items, key=lambda x: x["id"], reverse=True)
+        return {"items": items, "total": len(items), "unread": 0}
     @staticmethod
     async def insert_notification(
         session: AsyncSession,
