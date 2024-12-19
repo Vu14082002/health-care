@@ -3,13 +3,16 @@ import math
 from typing import Any
 
 from sqlalchemy import and_, insert, select, update
+from sqlalchemy.orm import joinedload
 
 from src.core.database.postgresql import PostgresRepository
 from src.core.exception import BadRequest, InternalServer
 from src.enum import ErrorCode, Role
+from src.helper.socket_api_helper import SocketServiceHelper
 from src.models.appointment_model import AppointmentModel, AppointmentModelStatus
 from src.models.medical_records_model import MedicalRecordModel
 from src.repositories.global_func import destruct_where, process_orderby
+from src.repositories.notification_repository import NotificationRepository
 
 
 class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
@@ -98,7 +101,7 @@ class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
                         AppointmentModel.id == value["appointment_id"],
                         AppointmentModel.doctor_id == value["doctor_create_id"],
                     )
-                )
+                ).options(joinedload(AppointmentModel.doctor),joinedload(AppointmentModel.work_schedule))
             )
             appointment = appointment.scalar_one_or_none()
             if not appointment:
@@ -131,12 +134,26 @@ class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
                 insert(MedicalRecordModel).values(value)
             )
             appointment.appointment_status = AppointmentModelStatus.COMPLETED.value
+            # logic to send notification to patient
+            _message = (
+                f"Bác sĩ {appointment.doctor.last_name} {appointment.doctor.first_name} "
+                f"đã hoàn thành hồ sơ sức khỏe cho cuộc hẹn '{appointment.name}' của bạn. "
+                f"Lịch trình: {appointment.work_schedule.start_time} - {appointment.work_schedule.end_time}, ngày {appointment.work_schedule.work_date}. "
+                f"Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của chúng tôi!"
+            )
+            _notification_model = await NotificationRepository.insert_notification(
+                session=self.session,
+                user_receive=appointment.patient_id,
+                message=_message,
+            )
             await self.session.commit()
+            _total_unread = await NotificationRepository.get_total_message_unread(session=self.session, user_id=appointment.patient_id)
+            _socket_api_helper = SocketServiceHelper()
+            _socket_api_helper.send_notify_helper(notifyModel=_notification_model, total_unread=_total_unread)
             return {
                 "message": "Medical record created successfully",
                 "data": medical_record.scalars().first(),
             }
-
         except (BadRequest, InternalServer) as e:
             logging.error(e)
             await self.session.rollback()
@@ -154,6 +171,8 @@ class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
         try:
             query_medical_record = select(MedicalRecordModel).where(
                 MedicalRecordModel.id == value["id"],
+            ).options(
+                joinedload(MedicalRecordModel.appointment).joinedload(AppointmentModel.work_schedule),
             )
             result_medical_record = await self.session.execute(query_medical_record)
             medical_record = result_medical_record.scalar_one_or_none()
@@ -174,10 +193,30 @@ class MedicalRecordsRepository(PostgresRepository[MedicalRecordModel]):
             update_query = (
                 update(MedicalRecordModel)
                 .where(MedicalRecordModel.id == value["id"])
-                .values(value)
+                .values(value).returning(MedicalRecordModel)
             )
-            _ = await self.session.execute(update_query)
+            execute_update_medical = await self.session.execute(update_query)
+            execute_update_medical = execute_update_medical.scalar_one()
+            appointment=execute_update_medical.appointment
+            _message = (
+                f"Bác sĩ {appointment.doctor.last_name} {appointment.doctor.first_name} "
+                f"đã cập nhật hồ sơ bệnh án cho cuộc hẹn '{appointment.name}' của bạn. "
+                f"Lịch trình: {appointment.work_schedule.start_time} - {appointment.work_schedule.end_time}, ngày {appointment.work_schedule.work_date}. "
+                f"Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của chúng tôi!"
+            )
+            _notification_model = await NotificationRepository.insert_notification(
+                session=self.session,
+                user_receive=appointment.patient_id,
+                message=_message,
+            )
             await self.session.commit()
+            _total_unread = await NotificationRepository.get_total_message_unread(
+                session=self.session, user_id=appointment.patient_id
+            )
+            _socket_api_helper = SocketServiceHelper()
+            _socket_api_helper.send_notify_helper(
+                notifyModel=_notification_model, total_unread=_total_unread
+            )
             return {
                 "message": "medical record updated successfully",
             }
