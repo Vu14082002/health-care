@@ -19,6 +19,7 @@ class SocketServiceHelper:
             _create_date = datetime.fromtimestamp(notifyModel.created_at, tz=timezone.utc)
             _data_json={
                     "userId":notifyModel.user_id,
+                    "id":notifyModel.id,
                     "title":notifyModel.title,
                     "message":notifyModel.message,
                     "totalUnread":total_unread,
