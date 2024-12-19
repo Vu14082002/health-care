@@ -1,7 +1,8 @@
 
-from datetime import datetime, timezone
+from datetime import datetime
 
-from sqlalchemy import select, update
+import pytz
+from sqlalchemy import desc, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func, insert
 
@@ -18,27 +19,33 @@ class NotificationRepository(PostgresRepository[NotificationModel]):
     @catch_error_repository(None)
     async def get_all_notifications(self, user_id: int):
         # mark as read
-        #
-        update_notification_query = (
-            update(NotificationModel)
+        # update_notification_query = (
+        #     update(NotificationModel)
+        #     .where(NotificationModel.user_id == user_id)
+        #     .values(is_read=True)
+        #     .returning(NotificationModel)
+        # )
+        _select_query = (
+            select(NotificationModel)
             .where(NotificationModel.user_id == user_id)
-            .values(is_read=True)
-            .returning(NotificationModel)
+            .order_by(desc(NotificationModel.created_at))
         )
-        executed_update_result = await self.session.execute(update_notification_query)
-        updated_notifications = executed_update_result.scalars().all()
-        await self.session.commit()
-        _sort_data = sorted(
-            [self._format_data(item) for item in updated_notifications],
-            key=lambda x: x["created_at"],
-            reverse=True,
-        )
-        return _sort_data
+        executed_query_result = await self.session.execute(_select_query)
+        _notifications = executed_query_result.scalars().all()
+        # await self.session.commit()
+        # {"items": _result, "total": len(_result), "unread": 0}
+        items=[]
+        unread= 0
+        for item in _notifications:
+            if not item.is_read:
+                unread+=1
+            items.append(self._format_data(item))
+        return {"items": items, "total": len(items), "unread": unread}
 
     def _format_data(self, data:NotificationModel):
         # utc because we database store in utc +7 so we need to convert to utc
         _create_date_fmt = datetime.fromtimestamp(
-            data.created_at, tz=timezone.utc
+            data.created_at
         ).isoformat()
         return {
             "id": data.id,
@@ -56,9 +63,12 @@ class NotificationRepository(PostgresRepository[NotificationModel]):
         title: str | None = None,
     ):
         try:
+            _current_datetime = int(
+                datetime.now(pytz.timezone("Asia/Ho_Chi_Minh")).timestamp()
+            )
             if not title:
                 title = MessageTemplate.NOTiFY_TITLE.value
-            _insert_query = insert(NotificationModel).values(user_id=user_receive, title=title, message=message).returning(NotificationModel)
+            _insert_query = insert(NotificationModel).values(user_id=user_receive, title=title, message=message,created_at=_current_datetime,updated_at=_current_datetime).returning(NotificationModel)
             result = await session.execute(_insert_query)
             data = result.scalar_one()
             return data
