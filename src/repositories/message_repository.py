@@ -152,9 +152,9 @@ class MessageRepository(PostgresRepository[MessageModel]):
         elif _user_model.patient:
             _message = (
                 "Bệnh nhân "
-                + _user_model.patient.first_name
-                + " "
                 + _user_model.patient.last_name
+                + " "
+                + _user_model.patient.first_name
                 + " đã gửi tin nhắn cho bạn"
             ) # type: ignore
         # send notify
