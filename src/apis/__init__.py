@@ -36,7 +36,11 @@ from src.apis.medical_records_api import (
     MedicalRecordsApiPOST,
 )
 from src.apis.message_api import MessageApi
-from src.apis.notify_api import NotificationApi, NotificationUnreadApi
+from src.apis.notify_api import (
+    NotificationApi,
+    NotificationReadApi,
+    NotificationUnreadApi,
+)
 from src.apis.patient_api import PatientApi
 from src.apis.post_api import CommentApi, CreatePostApi, GetPostByIdApi, GetPostUserApi
 from src.apis.predict_api import ApiPredictData
@@ -404,6 +408,12 @@ routes = [
         "/notification",
         NotificationApi,
         methods=["GET"],
+        tags=["PATIENT", "DOCTOR", "ADMIN"],
+    ),
+    RouteSwagger(
+        "/notification/read",
+        NotificationReadApi,
+        methods=["PUT"],
         tags=["PATIENT", "DOCTOR", "ADMIN"],
     ),
     RouteSwagger(

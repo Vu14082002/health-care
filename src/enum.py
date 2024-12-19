@@ -127,6 +127,7 @@ class ErrorCode(Enum):
     )
     msg_required_field = "Trường này là bắt buộc"
     msg_duplicate_daily_health_check = "Bạn đã cập nhật hồ sơ sức khỏe ngày hôm nay rồi, vui lòng thử lại vào ngày hôm sau"
+    msg_notification_not_found = "Không tìm thấy thông báo phù hợp với yêu cầu của bạn"
 
 class MsgEnumBase(Enum):
     DES_MEDIA_FILE: Final[str] = "is video of post, and accept one file"

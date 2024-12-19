@@ -9,7 +9,8 @@ from sqlalchemy.sql import func, insert
 from src.core import logger
 from src.core.database.postgresql import PostgresRepository
 from src.core.decorator.exception_decorator import catch_error_repository
-from src.enum import MessageTemplate
+from src.core.exception import BadRequest
+from src.enum import ErrorCode, MessageTemplate
 from src.models.notification_model import NotificationModel
 
 
@@ -18,13 +19,6 @@ class NotificationRepository(PostgresRepository[NotificationModel]):
 
     @catch_error_repository(None)
     async def get_all_notifications(self, user_id: int):
-        # mark as read
-        # update_notification_query = (
-        #     update(NotificationModel)
-        #     .where(NotificationModel.user_id == user_id)
-        #     .values(is_read=True)
-        #     .returning(NotificationModel)
-        # )
         _select_query = (
             select(NotificationModel)
             .where(NotificationModel.user_id == user_id)
@@ -43,9 +37,9 @@ class NotificationRepository(PostgresRepository[NotificationModel]):
         return {"items": items, "total": len(items), "unread": unread}
 
     def _format_data(self, data:NotificationModel):
-        # utc because we database store in utc +7 so we need to convert to utc
+        # FIXME for ec2 instance
         _create_date_fmt = datetime.fromtimestamp(
-            data.created_at
+            data.created_at, tz=pytz.timezone("Asia/Ho_Chi_Minh")
         ).isoformat()
         return {
             "id": data.id,
@@ -55,6 +49,23 @@ class NotificationRepository(PostgresRepository[NotificationModel]):
             "created_at": _create_date_fmt,
         }
 
+    @catch_error_repository(None)
+    async def update_read_notification(self, notification_id: int, user_id: int):
+        _update_query = (
+            update(NotificationModel)
+            .where(NotificationModel.id == notification_id, NotificationModel.user_id == user_id)
+            .values(is_read=True)
+            .returning(NotificationModel)
+        )
+        executed_query_result = await self.session.execute(_update_query)
+        _notification = executed_query_result.scalars().first()
+        await self.session.commit()
+        if _notification:
+            return self._format_data(_notification)
+        raise BadRequest(
+            error_code=ErrorCode.NOT_FOUND.name,
+            errors={"message": ErrorCode.msg_notification_not_found.value},
+        )
     @staticmethod
     async def insert_notification(
         session: AsyncSession,
