@@ -14,3 +14,6 @@ class NotificationHelper:
         return await self.notification_repository.update_read_notification(notification_id=notification_id, user_id=user_id)
     async def get_all_unread_notifications(self,user_id:int):
         return await self.notification_repository.get_total_message_unread(session=self.notification_repository.session, user_id=user_id)
+
+    async def update_all_read_notification(self,user_id:int):
+        return await self.notification_repository.update_all_read_notification(user_id=user_id)

@@ -66,6 +66,18 @@ class NotificationRepository(PostgresRepository[NotificationModel]):
             error_code=ErrorCode.NOT_FOUND.name,
             errors={"message": ErrorCode.msg_notification_not_found.value},
         )
+
+    @catch_error_repository(None)
+    async def update_all_read_notification(self, user_id: int):
+        _update_query = (
+            update(NotificationModel)
+            .where(NotificationModel.user_id == user_id)
+            .values(is_read=True)
+        )
+        _ = await self.session.execute(_update_query)
+        await self.session.commit()
+        return {"message": "Update all read notification success"}
+
     @staticmethod
     async def insert_notification(
         session: AsyncSession,

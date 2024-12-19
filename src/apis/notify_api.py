@@ -10,6 +10,11 @@ class NotificationApi(HTTPEndpoint):
         _notification_helper = await Factory().get_notification_helper()
         _result =await _notification_helper.get_all_notifications(_user_id)
         return _result
+    async def put(self,auth:JsonWebToken):
+        _user_id= auth.get("id")
+        _notification_helper = await Factory().get_notification_helper()
+        _result = await _notification_helper.update_all_read_notification(_user_id)
+        return _result
 class NotificationReadApi(HTTPEndpoint):
     async def put(self, form_data: NotificationSchemaUPdateToRead, auth: JsonWebToken):
         _user_id = auth.get("id")

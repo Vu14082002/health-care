@@ -407,7 +407,7 @@ routes = [
     RouteSwagger(
         "/notification",
         NotificationApi,
-        methods=["GET"],
+        methods=["GET","PUT"],
         tags=["PATIENT", "DOCTOR", "ADMIN"],
     ),
     RouteSwagger(
