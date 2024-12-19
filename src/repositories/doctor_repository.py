@@ -855,38 +855,27 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         text_search: str | None = None,
     ):
         try:
-            query_patient = (
-                select(PatientModel)
-                .join(PatientModel.appointments)
-                .join(AppointmentModel.work_schedule)
-            ).where(AppointmentModel.doctor_id == doctor_id)
-            if status_order:
-                query_patient = query_patient.where(AppointmentModel.appointment_status.in_(status_order))
-
-            query_patient = query_patient.options(
-                joinedload(PatientModel.appointments).joinedload(
-                    AppointmentModel.work_schedule
+            _examination_type = (
+                [examination_type] if examination_type else ["offline", "online"]
+            )
+            _select_appointment = (
+                select(AppointmentModel)
+                .join(WorkScheduleModel)
+                .where(
+                    AppointmentModel.doctor_id == doctor_id,
+                    WorkScheduleModel.examination_type.in_(_examination_type),
                 )
             )
-            if text_search is not None:
-                text_search = text_search.strip().lower()
-                query_patient = query_patient.where(
-                    or_(
-                        (PatientModel.last_name + " " + PatientModel.first_name).ilike(
-                            f"%{text_search}%"
-                        ),
-                        PatientModel.phone_number.ilike(f"%{text_search}%"),
-                        PatientModel.email.ilike(f"%{text_search}%"),
-                    )
+            if status_order:
+                _select_appointment = _select_appointment.where(
+                    AppointmentModel.appointment_status.in_(status_order)
                 )
-            # Thực hiện truy vấn
-            result = await self.session.execute(query_patient)
+            _select_appointment=_select_appointment.options(
+                joinedload(AppointmentModel.patient),
+            )
+            result = await self.session.execute(_select_appointment)
 
-            patients_list = result.unique().scalars().all()
-            appointments = []
-            for item in patients_list:
-                for appoint in item.appointments:
-                    appointments.append(appoint)
+            appointment_list = result.unique().scalars().all()
             now = datetime.now()
 
             def time_to_seconds(t: time) -> int:
@@ -894,7 +883,7 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
                 return t.hour * 3600 + t.minute * 60 + t.second
 
             sorted_appointments: list[AppointmentModel] = sorted(
-                appointments,
+                appointment_list,
                 key=lambda a: (
                     (
                         status_order.index(a.appointment_status)
@@ -915,8 +904,8 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
             # destruct object
             custom_data_reponse = []
             for appointments in sorted_appointments_limit:
-                if  examination_type and appointments.work_schedule.examination_type != examination_type:
-                    continue
+                # if  examination_type and appointments.work_schedule.examination_type != examination_type:
+                #     continue
                 item = {}
                 item["patient"] = appointments.patient.as_dict
                 item["work_schedule"] = {
