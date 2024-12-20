@@ -934,10 +934,10 @@ class DoctorRepository(PostgresRepository[DoctorModel]):
         try:
             query_patient = select(PatientModel).where(PatientModel.id == patient_id)
 
-            if doctot_id:
-                query_patient = query_patient.where(
-                    PatientModel.doctor_manage_id == doctot_id
-                )
+            # if doctot_id:
+            #     query_patient = query_patient.where(
+            #         PatientModel.doctor_manage_id == doctot_id
+            #     )
 
             result_patient = await self.session.execute(query_patient)
             patient = result_patient.scalar_one_or_none()
